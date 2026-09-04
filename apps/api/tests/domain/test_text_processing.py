@@ -73,6 +73,18 @@ def test_chunk_text_prefers_paragraph_then_newline_boundaries() -> None:
     assert chunks[1].text.endswith("\n")
 
 
+def test_chunk_text_finds_paragraph_boundary_with_zero_overlap() -> None:
+    chunks = chunk_text("a\n\nbcdefgh", max_chars=6, overlap_chars=0)
+
+    assert chunks[0] == TextChunk(
+        ordinal=0,
+        text="a\n\n",
+        start_offset=0,
+        end_offset=3,
+    )
+    assert chunks[1].start_offset == 3
+
+
 def test_chunk_text_falls_back_to_whitespace_then_hard_boundary() -> None:
     with_whitespace = chunk_text("alpha beta gamma", max_chars=11, overlap_chars=2)
     without_whitespace = chunk_text("abcdefghijklmno", max_chars=10, overlap_chars=2)

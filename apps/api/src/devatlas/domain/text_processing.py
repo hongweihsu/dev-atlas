@@ -81,7 +81,8 @@ def _preferred_boundary(
     minimum_end = start + overlap_chars + 1
 
     for separator in ("\n\n", "\n"):
-        position = text.rfind(separator, minimum_end - len(separator), hard_end)
+        search_start = max(start, minimum_end - len(separator))
+        position = text.rfind(separator, search_start, hard_end)
         if position >= start:
             boundary = position + len(separator)
             if boundary >= minimum_end:
