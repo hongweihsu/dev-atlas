@@ -17,6 +17,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Deterministic text normalization, SHA-256 fingerprinting, and traceable
   character-based chunking
 - Framework-independent validation and preparation for bounded UTF-8 text files
+- Provider-independent new-document ingestion orchestration with an atomic
+  persistence boundary and deterministic test doubles
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
@@ -108,6 +110,6 @@ only with tests, documented trade-offs, and measurements where applicable.
 
 - No RAG, LLM, ingestion, authentication, or workspace features exist yet.
 - Document persistence and text preparation exist, but no upload endpoint,
-  production embedding adapter, or retrieval API uses them yet.
+  production embedding/persistence adapters, or retrieval API uses them yet.
 - The health endpoint currently reports API liveness, not database readiness.
 - No performance or quality benchmark claims have been made.
