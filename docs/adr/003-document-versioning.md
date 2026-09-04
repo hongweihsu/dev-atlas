@@ -1,6 +1,6 @@
 # ADR-003: Version documents explicitly
 
-- **Status:** Proposed; implementation is planned for a later phase
+- **Status:** Accepted; persistence structure implemented in Phase 1
 - **Date:** 2026-08-19
 
 ## Context
@@ -32,3 +32,7 @@ verify. Explicit versions add schema and lifecycle complexity.
 Default retrieval will target active versions. Historical versions remain for
 audit, rollback, provenance, and future comparison. Incremental ingestion remains
 an explicitly deferred optimization.
+
+The Phase 1 schema enforces unique version numbers and content checksums within
+each document and permits at most one active version through a partial unique
+index. The application-level atomic version transition is not implemented yet.

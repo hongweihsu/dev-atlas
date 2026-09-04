@@ -2,7 +2,9 @@
 
 ## Status
 
-Planned and deliberately not implemented in Phase 0.
+The `Document`, `DocumentVersion`, and `Chunk` persistence slice is implemented
+in Phase 1. User, workspace, membership, and knowledge-base entities remain
+planned and are not enforced by the runtime.
 
 DevAtlas will use the following conceptual ownership model unless a later ADR
 changes it:
@@ -33,5 +35,11 @@ Key invariants:
 - Retrieval must resolve identity, selected scope, and authorization before
   content can be selected for model context.
 
-No domain tables are created yet. Their concrete schema, constraints, indexes,
-and security tests will be designed in the phases that implement them.
+The implemented document tables enforce version-number and content-checksum
+uniqueness per document, at most one active version per document, ordered chunk
+identity per version, exact offset bounds, fixed 1,536-dimensional embeddings,
+and cascading ownership. Cross-table provenance and lifecycle transitions still
+require application and integration tests in the ingestion slice.
+
+The remaining entities will receive concrete schemas, constraints, indexes, and
+security tests only in the phases that implement them.

@@ -13,7 +13,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - React, Vite, and TypeScript web application
 - FastAPI service with a typed `GET /health` endpoint
 - PostgreSQL development service with pgvector available
-- Alembic migration infrastructure
+- Alembic migration infrastructure and an initial document/version/chunk schema
+- Deterministic text normalization, SHA-256 fingerprinting, and traceable
+  character-based chunking
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
@@ -104,5 +106,7 @@ only with tests, documented trade-offs, and measurements where applicable.
 ## Limitations
 
 - No RAG, LLM, ingestion, authentication, or workspace features exist yet.
+- Document persistence and text processing exist, but no upload, embedding, or
+  retrieval API uses them yet.
 - The health endpoint currently reports API liveness, not database readiness.
 - No performance or quality benchmark claims have been made.

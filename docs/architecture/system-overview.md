@@ -2,8 +2,8 @@
 
 ## Status
 
-Phase 0 foundation. This document distinguishes implemented components from
-planned architecture.
+Phase 1 persistence foundation. This document distinguishes implemented
+components from planned architecture.
 
 ## Implemented runtime
 
@@ -18,9 +18,11 @@ React + Vite
   v
 FastAPI
   |
-  | async PostgreSQL connection (future application data)
+  | async PostgreSQL connection
   v
-PostgreSQL with pgvector extension available
+PostgreSQL + pgvector
+  |
+  +-- Document -> DocumentVersion -> Chunk schema
 ```
 
 Docker Compose runs one service for each boundary and gives them a private
@@ -30,8 +32,11 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 
 - **Web:** presentation, browser interaction, and API status display.
 - **API:** HTTP contracts and the future application/domain boundary.
-- **Database:** durable relational data and, later, vector storage.
+- **Database:** durable document/version/chunk metadata and vector storage. No
+  upload or retrieval use case is connected yet.
 - **Alembic:** explicit, reviewable database schema evolution.
+- **Domain text processing:** deterministic line-ending normalization,
+  normalized-content fingerprinting, and traceable character-based chunks.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A
