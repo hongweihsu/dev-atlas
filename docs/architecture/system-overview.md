@@ -37,6 +37,9 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 - **Alembic:** explicit, reviewable database schema evolution.
 - **Domain text processing:** deterministic line-ending normalization,
   normalized-content fingerprinting, and traceable character-based chunks.
+- **Application ports:** provider-independent embedding contract with strict
+  batch count, dimension, and finite-value validation. Routine tests use an
+  offline deterministic fake; no production provider adapter is connected yet.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A
