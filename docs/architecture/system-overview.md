@@ -36,7 +36,8 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   upload or retrieval use case is connected yet.
 - **Alembic:** explicit, reviewable database schema evolution.
 - **Domain text processing:** deterministic line-ending normalization,
-  normalized-content fingerprinting, and traceable character-based chunks.
+  normalized-content fingerprinting, traceable character-based chunks, and
+  bounded UTF-8 plain-text preparation with stable validation codes.
 - **Application ports:** provider-independent embedding contract with strict
   batch count, dimension, and finite-value validation. Routine tests use an
   offline deterministic fake; no production provider adapter is connected yet.
