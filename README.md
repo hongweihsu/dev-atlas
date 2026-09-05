@@ -19,12 +19,14 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Framework-independent validation and preparation for bounded UTF-8 text files
 - Provider-independent new-document ingestion orchestration with an atomic
   persistence boundary and deterministic test doubles
+- Async SQLAlchemy repository and Unit of Work adapters, verified against a
+  migrated disposable PostgreSQL database
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
 ### Planned
 
-- Document ingestion and source provenance
+- HTTP document upload and production embedding-provider integration
 - Vector and lexical retrieval with measured evaluation
 - Workspace-scoped authorization and explicit search scope
 - Document versioning, asynchronous ingestion, and AWS deployment
@@ -108,8 +110,9 @@ only with tests, documented trade-offs, and measurements where applicable.
 
 ## Limitations
 
-- No RAG, LLM, ingestion, authentication, or workspace features exist yet.
-- Document persistence and text preparation exist, but no upload endpoint,
-  production embedding/persistence adapters, or retrieval API uses them yet.
+- No user-facing RAG, LLM, authentication, or workspace features exist yet.
+- Document persistence, preparation, chunking, and transactional ingestion are
+  implemented below HTTP, but no upload or retrieval API uses them yet and no
+  production embedding-provider adapter is connected.
 - The health endpoint currently reports API liveness, not database readiness.
 - No performance or quality benchmark claims have been made.

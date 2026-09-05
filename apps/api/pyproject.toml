@@ -32,6 +32,9 @@ packages = ["src/devatlas"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+  "integration: requires a migrated PostgreSQL test database",
+]
 
 [tool.ruff]
 line-length = 88
