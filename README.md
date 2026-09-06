@@ -23,12 +23,14 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   migrated disposable PostgreSQL database
 - Typed `POST /documents` multipart boundary with bounded reads and stable
   validation errors, tested through dependency-injected offline adapters
+- OpenAI `text-embedding-3-small` adapter and FastAPI lifespan wiring, enabled
+  only when `OPENAI_API_KEY` is configured
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
 ### Planned
 
-- Production embedding-provider integration and runtime upload wiring
+- Manual end-to-end upload verification with an explicitly configured API key
 - Vector and lexical retrieval with measured evaluation
 - Workspace-scoped authorization and explicit search scope
 - Document versioning, asynchronous ingestion, and AWS deployment
@@ -101,7 +103,8 @@ pnpm build
 
 Copy `.env.example` to `.env` for local defaults. `.env` is ignored by Git.
 Production credentials must be supplied through an appropriate secrets system;
-the example values are development-only.
+the example values are development-only. Set `OPENAI_API_KEY` to enable live
+document ingestion; leave it empty to keep the endpoint safely unavailable.
 
 ## Future direction
 
@@ -113,9 +116,9 @@ only with tests, documented trade-offs, and measurements where applicable.
 ## Limitations
 
 - No user-facing RAG, LLM, authentication, or workspace features exist yet.
-- Document persistence, preparation, chunking, transactional ingestion, and an
-  upload HTTP contract are implemented, but runtime ingestion remains
-  unavailable until a production embedding-provider adapter is connected. No
-  retrieval API exists yet.
+- Document persistence, preparation, chunking, transactional ingestion, the
+  upload HTTP contract, and an OpenAI embedding adapter are implemented.
+  Ingestion requires an API key and incurs provider usage; no retrieval API
+  exists yet.
 - The health endpoint currently reports API liveness, not database readiness.
 - No performance or quality benchmark claims have been made.

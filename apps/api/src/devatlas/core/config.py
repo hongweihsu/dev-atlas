@@ -1,6 +1,7 @@
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +11,16 @@ class Settings(BaseSettings):
     app_name: str = "DevAtlas API"
     database_url: str = "postgresql+asyncpg://devatlas:devatlas@localhost:5432/devatlas"
     cors_origins: list[str] = ["http://localhost:5173"]
+    openai_api_key: SecretStr | None = None
+    embedding_model: str = "text-embedding-3-small"
+    embedding_dimension: Literal[1536] = 1536
+
+    @field_validator("openai_api_key", mode="before")
+    @classmethod
+    def empty_openai_key_is_unconfigured(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
     @field_validator("cors_origins", mode="before")
     @classmethod

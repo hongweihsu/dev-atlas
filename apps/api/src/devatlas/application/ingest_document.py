@@ -32,6 +32,10 @@ class IngestedDocument:
     chunk_count: int
 
 
+class InvalidDocumentTitleError(ValueError):
+    """Raised when a document title violates the ingestion contract."""
+
+
 class IngestNewDocument:
     """Prepare, embed, and atomically persist a new document and Version 1."""
 
@@ -53,9 +57,9 @@ class IngestNewDocument:
     async def execute(self, command: IngestNewDocumentCommand) -> IngestedDocument:
         title = command.title.strip()
         if not title:
-            raise ValueError("title must not be empty")
+            raise InvalidDocumentTitleError("title must not be empty")
         if len(title) > 255:
-            raise ValueError("title must not exceed 255 characters")
+            raise InvalidDocumentTitleError("title must not exceed 255 characters")
 
         prepared = prepare_text_document(
             content=command.content,

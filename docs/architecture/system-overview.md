@@ -40,7 +40,10 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   bounded UTF-8 plain-text preparation with stable validation codes.
 - **Application ports:** provider-independent embedding contract with strict
   batch count, dimension, and finite-value validation. Routine tests use an
-  offline deterministic fake; no production provider adapter is connected yet.
+  offline deterministic fake.
+- **Embedding adapter:** uses the async OpenAI client with
+  `text-embedding-3-small`, explicit 1,536-dimensional float output, ordered
+  result-index validation, and safe translation of SDK failures.
 - **Ingestion application:** prepares a new document, creates traceable chunks,
   validates ordered embeddings, and stages the complete Version 1 aggregate
   behind a Unit of Work so persistence can commit or roll back atomically.
@@ -52,8 +55,10 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 - **Upload API:** `POST /documents` accepts multipart title and file fields,
   reads at most one byte beyond the 1 MiB domain limit, and maps safe validation
   failures to stable `413`, `415`, and `422` responses. Tests inject offline
-  embedding and persistence adapters. Runtime wiring intentionally returns
-  `503 ingestion_unavailable` until a production embedding adapter exists.
+  embedding and persistence adapters. FastAPI lifespan wires the OpenAI and
+  SQLAlchemy adapters when `OPENAI_API_KEY` is present; otherwise the endpoint
+  intentionally returns `503 ingestion_unavailable`. Provider outages map to a
+  safe `503`, while structurally incompatible provider output maps to `502`.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A

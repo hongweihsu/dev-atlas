@@ -1,10 +1,15 @@
 from collections.abc import Iterator
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
 
 from devatlas.api.routes.documents import get_ingest_new_document
 from devatlas.application.ingest_document import IngestNewDocument
+from devatlas.application.ports.embedding import (
+    EmbeddingBatchError,
+    EmbeddingProviderUnavailableError,
+)
 from devatlas.domain.document_ingestion import DEFAULT_MAX_TEXT_BYTES
 from devatlas.main import app
 from tests.fakes import (
@@ -123,3 +128,45 @@ def test_post_document_requires_file(
 
     assert response.status_code == 422
     assert factory.committed_documents == []
+
+
+def test_post_document_maps_embedding_provider_failure() -> None:
+    service = AsyncMock(spec=IngestNewDocument)
+    service.execute.side_effect = EmbeddingProviderUnavailableError(
+        "embedding provider request failed"
+    )
+    app.dependency_overrides[get_ingest_new_document] = lambda: service
+    try:
+        response = TestClient(app).post(
+            "/documents",
+            data={"title": "Notes"},
+            files={"file": ("notes.txt", b"content", "text/plain")},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == {
+        "code": "embedding_unavailable",
+        "message": "embedding provider request failed",
+    }
+
+
+def test_post_document_maps_incompatible_embedding_response() -> None:
+    service = AsyncMock(spec=IngestNewDocument)
+    service.execute.side_effect = EmbeddingBatchError("invalid provider indices")
+    app.dependency_overrides[get_ingest_new_document] = lambda: service
+    try:
+        response = TestClient(app).post(
+            "/documents",
+            data={"title": "Notes"},
+            files={"file": ("notes.txt", b"content", "text/plain")},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == {
+        "code": "invalid_embedding_response",
+        "message": "invalid provider indices",
+    }

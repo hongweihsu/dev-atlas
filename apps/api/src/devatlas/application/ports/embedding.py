@@ -27,6 +27,10 @@ class EmbeddingBatchError(ValueError):
     """Raised when a provider returns an incompatible embedding batch."""
 
 
+class EmbeddingProviderUnavailableError(RuntimeError):
+    """Raised when an embedding provider cannot complete a request."""
+
+
 def validate_embedding_batch(
     embeddings: Sequence[EmbeddingVector],
     *,

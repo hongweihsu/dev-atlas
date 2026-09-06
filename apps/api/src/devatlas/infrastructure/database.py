@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import (
 from devatlas.core.config import get_settings
 
 
-def create_database_engine() -> AsyncEngine:
-    return create_async_engine(get_settings().database_url, pool_pre_ping=True)
+def create_database_engine(database_url: str | None = None) -> AsyncEngine:
+    url = database_url or get_settings().database_url
+    return create_async_engine(url, pool_pre_ping=True)
 
 
 def create_session_factory(

@@ -15,6 +15,11 @@ from pydantic import BaseModel
 from devatlas.application.ingest_document import (
     IngestNewDocument,
     IngestNewDocumentCommand,
+    InvalidDocumentTitleError,
+)
+from devatlas.application.ports.embedding import (
+    EmbeddingBatchError,
+    EmbeddingProviderUnavailableError,
 )
 from devatlas.domain.document_ingestion import (
     DEFAULT_MAX_TEXT_BYTES,
@@ -86,10 +91,20 @@ async def ingest_document(
             status_code=_validation_status(error.code),
             detail={"code": error.code, "message": str(error)},
         ) from error
-    except ValueError as error:
+    except InvalidDocumentTitleError as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "invalid_title", "message": str(error)},
+        ) from error
+    except EmbeddingBatchError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "invalid_embedding_response", "message": str(error)},
+        ) from error
+    except EmbeddingProviderUnavailableError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": "embedding_unavailable", "message": str(error)},
         ) from error
 
     return IngestDocumentResponse(
