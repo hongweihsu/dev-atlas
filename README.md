@@ -21,12 +21,14 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   persistence boundary and deterministic test doubles
 - Async SQLAlchemy repository and Unit of Work adapters, verified against a
   migrated disposable PostgreSQL database
+- Typed `POST /documents` multipart boundary with bounded reads and stable
+  validation errors, tested through dependency-injected offline adapters
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
 ### Planned
 
-- HTTP document upload and production embedding-provider integration
+- Production embedding-provider integration and runtime upload wiring
 - Vector and lexical retrieval with measured evaluation
 - Workspace-scoped authorization and explicit search scope
 - Document versioning, asynchronous ingestion, and AWS deployment
@@ -111,8 +113,9 @@ only with tests, documented trade-offs, and measurements where applicable.
 ## Limitations
 
 - No user-facing RAG, LLM, authentication, or workspace features exist yet.
-- Document persistence, preparation, chunking, and transactional ingestion are
-  implemented below HTTP, but no upload or retrieval API uses them yet and no
-  production embedding-provider adapter is connected.
+- Document persistence, preparation, chunking, transactional ingestion, and an
+  upload HTTP contract are implemented, but runtime ingestion remains
+  unavailable until a production embedding-provider adapter is connected. No
+  retrieval API exists yet.
 - The health endpoint currently reports API liveness, not database readiness.
 - No performance or quality benchmark claims have been made.

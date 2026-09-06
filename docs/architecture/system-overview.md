@@ -49,6 +49,11 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   Work owns one session, commits once, and rolls back exceptions or uncommitted
   exits. A PostgreSQL integration test exercises this path against a migrated,
   disposable test database.
+- **Upload API:** `POST /documents` accepts multipart title and file fields,
+  reads at most one byte beyond the 1 MiB domain limit, and maps safe validation
+  failures to stable `413`, `415`, and `422` responses. Tests inject offline
+  embedding and persistence adapters. Runtime wiring intentionally returns
+  `503 ingestion_unavailable` until a production embedding adapter exists.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A
