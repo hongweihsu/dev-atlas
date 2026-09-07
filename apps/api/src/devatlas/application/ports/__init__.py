@@ -5,6 +5,13 @@ from devatlas.application.ports.embedding import (
     EmbeddingProvider,
     validate_embedding_batch,
 )
+from devatlas.application.ports.generation import (
+    AnswerGenerationRequest,
+    AnswerGenerator,
+    AnswerGeneratorUnavailableError,
+    EvidenceSource,
+    GeneratedAnswer,
+)
 from devatlas.application.ports.persistence import (
     DocumentIngestionRepository,
     IngestionUnitOfWork,
@@ -17,6 +24,11 @@ from devatlas.application.ports.persistence import (
 __all__ = [
     "EmbeddingBatchError",
     "EmbeddingProvider",
+    "AnswerGenerationRequest",
+    "AnswerGenerator",
+    "AnswerGeneratorUnavailableError",
+    "EvidenceSource",
+    "GeneratedAnswer",
     "DocumentIngestionRepository",
     "IngestionUnitOfWork",
     "IngestionUnitOfWorkFactory",
