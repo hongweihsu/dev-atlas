@@ -1,5 +1,4 @@
 from functools import lru_cache
-from typing import Literal
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,13 +12,20 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173"]
     openai_api_key: SecretStr | None = None
     embedding_model: str = "text-embedding-3-small"
-    embedding_dimension: Literal[1536] = 1536
+    embedding_dimension: int = 1536
 
     @field_validator("openai_api_key", mode="before")
     @classmethod
     def empty_openai_key_is_unconfigured(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip():
             return None
+        return value
+
+    @field_validator("embedding_dimension")
+    @classmethod
+    def dimension_matches_schema(cls, value: int) -> int:
+        if value != 1536:
+            raise ValueError("embedding_dimension must be 1536 for the current schema")
         return value
 
     @field_validator("cors_origins", mode="before")

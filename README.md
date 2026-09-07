@@ -25,12 +25,14 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   validation errors, tested through dependency-injected offline adapters
 - OpenAI `text-embedding-3-small` adapter and FastAPI lifespan wiring, enabled
   only when `OPENAI_API_KEY` is configured
+- Controlled live upload verified document, active-version, chunk, model, and
+  1,536-dimensional vector persistence in PostgreSQL
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
 ### Planned
 
-- Manual end-to-end upload verification with an explicitly configured API key
+- Provenance-rich vector retrieval over active document versions
 - Vector and lexical retrieval with measured evaluation
 - Workspace-scoped authorization and explicit search scope
 - Document versioning, asynchronous ingestion, and AWS deployment

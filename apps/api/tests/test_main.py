@@ -11,6 +11,14 @@ from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.core.config import Settings
 
 
+def test_settings_parse_schema_dimension_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("EMBEDDING_DIMENSION", "1536")
+
+    assert Settings().embedding_dimension == 1536
+
+
 def test_lifespan_wires_and_releases_ingestion_dependencies(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
