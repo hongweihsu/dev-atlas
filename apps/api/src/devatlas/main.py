@@ -7,13 +7,17 @@ from openai import AsyncOpenAI
 
 from devatlas.api.router import api_router
 from devatlas.application.ingest_document import IngestNewDocument
+from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
 from devatlas.infrastructure.database import (
     create_database_engine,
     create_session_factory,
 )
 from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
-from devatlas.infrastructure.persistence import SqlAlchemyIngestionUnitOfWorkFactory
+from devatlas.infrastructure.persistence import (
+    SqlAlchemyChunkSearchRepository,
+    SqlAlchemyIngestionUnitOfWorkFactory,
+)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -34,16 +38,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             model=app_settings.embedding_model,
             dimension=app_settings.embedding_dimension,
         )
+        session_factory = create_session_factory(engine)
         application.state.ingest_new_document = IngestNewDocument(
             embedding_provider=provider,
-            unit_of_work_factory=SqlAlchemyIngestionUnitOfWorkFactory(
-                create_session_factory(engine)
-            ),
+            unit_of_work_factory=SqlAlchemyIngestionUnitOfWorkFactory(session_factory),
             expected_embedding_dimension=app_settings.embedding_dimension,
+        )
+        application.state.search_documents = SearchDocuments(
+            embedding_provider=provider,
+            repository=SqlAlchemyChunkSearchRepository(session_factory),
         )
         try:
             yield
         finally:
+            del application.state.search_documents
             del application.state.ingest_new_document
             await client.close()
             await engine.dispose()

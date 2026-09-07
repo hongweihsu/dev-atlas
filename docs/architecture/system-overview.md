@@ -64,8 +64,11 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 - **Retrieval adapter:** computes pgvector cosine distance only across active
   versions with matching embedding model and dimension, orders the closest
   chunks first with a stable UUID tie-break, and returns document, version,
-  chunk, text-offset, and similarity provenance. The HTTP search route is not
-  connected yet.
+  chunk, text-offset, and similarity provenance.
+- **Search API:** `POST /search` accepts a bounded JSON query and result limit,
+  maps known embedding failures to stable `502`/`503` responses, and returns
+  ranked chunk evidence with full provenance. A controlled live query retrieved
+  the retained ingestion fixture; the observed score is not a quality claim.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A

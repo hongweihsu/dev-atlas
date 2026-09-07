@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 import devatlas.main as main_module
 from devatlas.application.ingest_document import IngestNewDocument
+from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings
 
 
@@ -41,8 +42,10 @@ def test_lifespan_wires_and_releases_ingestion_dependencies(
             application.state.ingest_new_document,
             IngestNewDocument,
         )
+        assert isinstance(application.state.search_documents, SearchDocuments)
 
     assert not hasattr(application.state, "ingest_new_document")
+    assert not hasattr(application.state, "search_documents")
     client.close.assert_awaited_once()
     engine.dispose.assert_awaited_once()
 
@@ -52,3 +55,4 @@ def test_lifespan_leaves_ingestion_unconfigured_without_api_key() -> None:
 
     with TestClient(application):
         assert not hasattr(application.state, "ingest_new_document")
+        assert not hasattr(application.state, "search_documents")

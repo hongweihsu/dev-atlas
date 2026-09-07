@@ -29,12 +29,14 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   1,536-dimensional vector persistence in PostgreSQL
 - Provider-independent search orchestration and pgvector cosine retrieval over
   compatible chunks from active document versions
+- Typed `POST /search` endpoint with bounded input, stable provider errors, and
+  source/version/chunk provenance; verified through one controlled live query
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
 ### Planned
 
-- Typed `POST /search` endpoint returning provenance-rich ranked chunks
+- Bounded answer generation with citations linked to retrieved chunks
 - Vector and lexical retrieval with measured evaluation
 - Workspace-scoped authorization and explicit search scope
 - Document versioning, asynchronous ingestion, and AWS deployment
