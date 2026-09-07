@@ -27,12 +27,14 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   only when `OPENAI_API_KEY` is configured
 - Controlled live upload verified document, active-version, chunk, model, and
   1,536-dimensional vector persistence in PostgreSQL
+- Provider-independent search orchestration and pgvector cosine retrieval over
+  compatible chunks from active document versions
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
 ### Planned
 
-- Provenance-rich vector retrieval over active document versions
+- Typed `POST /search` endpoint returning provenance-rich ranked chunks
 - Vector and lexical retrieval with measured evaluation
 - Workspace-scoped authorization and explicit search scope
 - Document versioning, asynchronous ingestion, and AWS deployment

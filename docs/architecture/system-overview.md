@@ -59,6 +59,13 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   SQLAlchemy adapters when `OPENAI_API_KEY` is present; otherwise the endpoint
   intentionally returns `503 ingestion_unavailable`. Provider outages map to a
   safe `503`, while structurally incompatible provider output maps to `502`.
+- **Retrieval application:** validates bounded queries, embeds each query once,
+  and delegates ranking through a provider-independent search port.
+- **Retrieval adapter:** computes pgvector cosine distance only across active
+  versions with matching embedding model and dimension, orders the closest
+  chunks first with a stable UUID tie-break, and returns document, version,
+  chunk, text-offset, and similarity provenance. The HTTP search route is not
+  connected yet.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A
