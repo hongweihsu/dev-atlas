@@ -25,6 +25,7 @@ class AnswerDocumentsCommand:
 class AnswerDocumentsResult:
     answer: str
     citations: tuple[EvidenceSource, ...]
+    has_sufficient_evidence: bool
 
 
 class AnswerDocuments:
@@ -43,7 +44,11 @@ class AnswerDocuments:
         )
         context, sources = build_bounded_context(chunks)
         if not sources:
-            return AnswerDocumentsResult(answer=NO_EVIDENCE_ANSWER, citations=())
+            return AnswerDocumentsResult(
+                answer=NO_EVIDENCE_ANSWER,
+                citations=(),
+                has_sufficient_evidence=False,
+            )
 
         generated = await self._generator.generate(
             AnswerGenerationRequest(
@@ -75,4 +80,5 @@ class AnswerDocuments:
         return AnswerDocumentsResult(
             answer=answer,
             citations=tuple(sources_by_id[item] for item in citation_ids),
+            has_sufficient_evidence=generated.has_sufficient_evidence,
         )

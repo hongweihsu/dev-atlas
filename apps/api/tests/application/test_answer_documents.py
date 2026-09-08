@@ -62,6 +62,7 @@ async def test_answer_searches_builds_context_and_returns_cited_sources() -> Non
     result = await use_case.execute(AnswerDocumentsCommand(question="  What is it?  "))
 
     assert result.answer == "It defines the transaction boundary. [S1]"
+    assert result.has_sufficient_evidence is True
     assert [source.chunk_id for source in result.citations] == [chunk.chunk_id]
     assert generator.requests[0].question == "What is it?"
     assert '"citation_id":"S1"' in generator.requests[0].context
@@ -79,6 +80,7 @@ async def test_answer_does_not_call_generator_without_evidence() -> None:
     result = await use_case.execute(AnswerDocumentsCommand(question="unknown"))
 
     assert result.answer == NO_EVIDENCE_ANSWER
+    assert result.has_sufficient_evidence is False
     assert result.citations == ()
     assert generator.requests == []
 
@@ -152,6 +154,7 @@ async def test_answer_allows_explicit_insufficient_evidence_without_citations() 
     result = await use_case.execute(AnswerDocumentsCommand(question="Unrelated?"))
 
     assert result.answer == "The indexed evidence is insufficient."
+    assert result.has_sufficient_evidence is False
     assert result.citations == ()
 
 

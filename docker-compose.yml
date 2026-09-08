@@ -24,6 +24,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
       EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-1536}
+      ANSWER_MODEL: ${ANSWER_MODEL:-gpt-4.1-mini}
       PYTHONPATH: /app/src
     ports:
       - "8000:8000"
