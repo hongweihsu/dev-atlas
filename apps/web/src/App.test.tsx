@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 
 import App from './App'
@@ -12,7 +12,7 @@ function jsonResponse(body: object, status = 200) {
   })
 }
 
-test('shows the product identity and healthy API state', async () => {
+test('shows the product identity and hides healthy API status', async () => {
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(
     jsonResponse({ status: 'ok', service: 'devatlas-api' }),
   )
@@ -23,7 +23,25 @@ test('shows the product identity and healthy API state', async () => {
     screen.getByRole('heading', { name: /Ask your documents/i }),
   ).toBeInTheDocument()
   expect(screen.getByText('Grounded technical research')).toBeInTheDocument()
-  expect(await screen.findByText('API connected')).toBeInTheDocument()
+  await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
+  expect(screen.queryByText('API connected')).not.toBeInTheDocument()
+})
+
+test('shows an unavailable banner and retries the health check', async () => {
+  const fetchMock = vi
+    .spyOn(globalThis, 'fetch')
+    .mockRejectedValueOnce(new Error('offline'))
+    .mockResolvedValueOnce(jsonResponse({ status: 'ok', service: 'devatlas-api' }))
+
+  render(<App />)
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Service temporarily unavailable',
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Retry connection' }))
+
+  await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+  expect(fetchMock).toHaveBeenCalledTimes(2)
 })
 
 test('uploads a text document and reports the indexed chunk count', async () => {
@@ -44,6 +62,7 @@ test('uploads a text document and reports the indexed chunk count', async () => 
     )
   })
   render(<App />)
+  await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
 
   fireEvent.change(screen.getByLabelText('Document title'), {
     target: { value: 'Architecture notes' },
@@ -87,6 +106,7 @@ test('asks a question and renders expandable citation provenance', async () => {
     })
   })
   render(<App />)
+  await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
 
   fireEvent.change(screen.getByLabelText('Question'), {
     target: { value: 'How is evidence traced?' },
@@ -109,6 +129,7 @@ test('shows the API error message without discarding the question', async () => 
     return jsonResponse({ detail: { message: 'answer provider request failed' } }, 503)
   })
   render(<App />)
+  await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
 
   const question = screen.getByLabelText('Question')
   fireEvent.change(question, { target: { value: 'What happened?' } })

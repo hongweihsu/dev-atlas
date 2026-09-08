@@ -35,6 +35,16 @@ export default function App() {
     return () => controller.abort()
   }, [])
 
+  async function handleRetryConnection() {
+    setApiState('checking')
+    try {
+      await checkHealth()
+      setApiState('healthy')
+    } catch {
+      setApiState('unavailable')
+    }
+  }
+
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!file || !title.trim()) return
@@ -69,12 +79,6 @@ export default function App() {
     }
   }
 
-  const statusText = {
-    checking: 'Checking API…',
-    healthy: 'API connected',
-    unavailable: 'API unavailable',
-  }[apiState]
-
   return (
     <main className="shell">
       <header className="topbar">
@@ -82,11 +86,25 @@ export default function App() {
           <span className="brand__mark">DA</span>
           <span>DevAtlas</span>
         </a>
-        <div className={`status status--${apiState}`} role="status">
-          <span className="status__dot" aria-hidden="true" />
-          {statusText}
-        </div>
+        {apiState === 'checking' && (
+          <div className="status" role="status">
+            <span className="status__dot" aria-hidden="true" />
+            Connecting…
+          </div>
+        )}
       </header>
+
+      {apiState === 'unavailable' && (
+        <div className="service-banner" role="alert">
+          <div>
+            <strong>Service temporarily unavailable</strong>
+            <span>Check that the local API is running, then try again.</span>
+          </div>
+          <button type="button" onClick={() => void handleRetryConnection()}>
+            Retry connection
+          </button>
+        </div>
+      )}
 
       <section className="hero" id="top" aria-labelledby="title">
         <p className="eyebrow">Grounded technical research</p>
@@ -134,7 +152,12 @@ export default function App() {
 
             <button
               type="submit"
-              disabled={!file || !title.trim() || uploadState === 'submitting'}
+              disabled={
+                apiState !== 'healthy' ||
+                !file ||
+                !title.trim() ||
+                uploadState === 'submitting'
+              }
             >
               {uploadState === 'submitting' ? 'Indexing…' : 'Index document'}
             </button>
@@ -168,7 +191,11 @@ export default function App() {
               <span>{question.length} / 2,000</span>
               <button
                 type="submit"
-                disabled={!question.trim() || answerState === 'submitting'}
+                disabled={
+                  apiState !== 'healthy' ||
+                  !question.trim() ||
+                  answerState === 'submitting'
+                }
               >
                 {answerState === 'submitting' ? 'Researching…' : 'Generate answer'}
               </button>
