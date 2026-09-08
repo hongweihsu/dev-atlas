@@ -36,8 +36,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   source/version/chunk provenance; verified through one controlled live query
 - Bounded grounded-answer generation through `POST /answers`, with citations
   mapped back to document versions, chunks, source text, and character offsets
-- React document workspace for text upload, questions, answer sufficiency, and
-  expandable citation provenance
+- React document workspace for text upload, consecutive version replacement,
+  questions, answer sufficiency, and expandable citation provenance
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 

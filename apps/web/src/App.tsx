@@ -6,6 +6,7 @@ import {
   answerQuestion,
   checkHealth,
   uploadDocument,
+  uploadDocumentVersion,
 } from './api'
 
 type ApiState = 'checking' | 'healthy' | 'unavailable'
@@ -18,6 +19,9 @@ export default function App() {
   const [uploadState, setUploadState] = useState<RequestState>('idle')
   const [uploadResult, setUploadResult] = useState<IngestDocumentResponse | null>(null)
   const [uploadError, setUploadError] = useState('')
+  const [versionFile, setVersionFile] = useState<File | null>(null)
+  const [versionState, setVersionState] = useState<RequestState>('idle')
+  const [versionError, setVersionError] = useState('')
   const [question, setQuestion] = useState('')
   const [answerState, setAnswerState] = useState<RequestState>('idle')
   const [answerResult, setAnswerResult] = useState<AnswerResponse | null>(null)
@@ -55,10 +59,33 @@ export default function App() {
     try {
       const result = await uploadDocument(file, title.trim())
       setUploadResult(result)
+      setVersionFile(null)
+      setVersionError('')
+      setVersionState('idle')
       setUploadState('success')
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed')
       setUploadState('error')
+    }
+  }
+
+  async function handleVersionUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!uploadResult || !versionFile) return
+
+    setVersionState('submitting')
+    setVersionError('')
+    try {
+      const result = await uploadDocumentVersion(
+        uploadResult.document_id,
+        versionFile,
+      )
+      setUploadResult(result)
+      setVersionFile(null)
+      setVersionState('success')
+    } catch (error) {
+      setVersionError(error instanceof Error ? error.message : 'Version upload failed')
+      setVersionState('error')
     }
   }
 
@@ -164,13 +191,50 @@ export default function App() {
           </form>
 
           {uploadResult && (
-            <div className="notice notice--success" role="status">
-              <strong>{uploadResult.filename}</strong>
-              <span>{uploadResult.chunk_count} chunk indexed and ready</span>
-            </div>
+            <>
+              <div className="notice notice--success" role="status">
+                <strong>
+                  Version {uploadResult.version_number}: {uploadResult.filename}
+                </strong>
+                <span>{uploadResult.chunk_count} chunk indexed and ready</span>
+              </div>
+              <form className="version-form" onSubmit={handleVersionUpload}>
+                <div>
+                  <strong>Update this document</strong>
+                  <span>Keep its identity and source history.</span>
+                </div>
+                <label>
+                  <span>New version file</span>
+                  <input
+                    key={uploadResult.version_id}
+                    type="file"
+                    accept=".txt,text/plain"
+                    onChange={(event) =>
+                      setVersionFile(event.target.files?.[0] ?? null)
+                    }
+                    required
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={
+                    apiState !== 'healthy' ||
+                    !versionFile ||
+                    versionState === 'submitting'
+                  }
+                >
+                  {versionState === 'submitting'
+                    ? 'Indexing new version…'
+                    : `Upload Version ${uploadResult.version_number + 1}`}
+                </button>
+              </form>
+            </>
           )}
           {uploadError && (
             <p className="notice notice--error" role="alert">{uploadError}</p>
+          )}
+          {versionError && (
+            <p className="notice notice--error" role="alert">{versionError}</p>
           )}
         </article>
 

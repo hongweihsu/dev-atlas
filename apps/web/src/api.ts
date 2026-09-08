@@ -66,6 +66,20 @@ export async function uploadDocument(
   return parseResponse(await fetch('/api/documents', { method: 'POST', body }))
 }
 
+export async function uploadDocumentVersion(
+  documentId: string,
+  file: File,
+): Promise<IngestDocumentResponse> {
+  const body = new FormData()
+  body.append('file', file)
+  return parseResponse(
+    await fetch(`/api/documents/${documentId}/versions`, {
+      method: 'POST',
+      body,
+    }),
+  )
+}
+
 export async function answerQuestion(question: string): Promise<AnswerResponse> {
   return parseResponse(
     await fetch('/api/answers', {

@@ -30,8 +30,9 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 
 ## Responsibilities
 
-- **Web:** document upload, questions, grounded answers, expandable citation
-  provenance, and actionable API availability feedback.
+- **Web:** document upload and replacement-version forms, questions, grounded
+  answers, expandable citation provenance, and actionable API availability
+  feedback.
 - **API:** HTTP contracts and the application/domain boundary.
 - **Database:** durable document/version/chunk metadata and vector storage.
 - **Alembic:** explicit, reviewable database schema evolution.

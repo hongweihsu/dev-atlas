@@ -56,6 +56,7 @@ test('uploads a text document and reports the indexed chunk count', async () => 
         filename: 'notes.txt',
         checksum: 'checksum',
         chunk_count: 2,
+        version_number: 1,
         status: 'ready',
       },
       201,
@@ -79,6 +80,121 @@ test('uploads a text document and reports the indexed chunk count', async () => 
   const uploadCall = fetchMock.mock.calls.find(([input]) => input === '/api/documents')
   expect(uploadCall?.[1]?.method).toBe('POST')
   expect(uploadCall?.[1]?.body).toBeInstanceOf(FormData)
+})
+
+test('uploads a new version for the document that was just indexed', async () => {
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    if (input === '/api/documents') {
+      return jsonResponse(
+        {
+          document_id: 'document-id',
+          version_id: 'version-1-id',
+          filename: 'notes.txt',
+          checksum: 'first-checksum',
+          chunk_count: 1,
+          version_number: 1,
+          status: 'ready',
+        },
+        201,
+      )
+    }
+    return jsonResponse(
+      {
+        document_id: 'document-id',
+        version_id: 'version-2-id',
+        filename: 'notes-v2.txt',
+        checksum: 'second-checksum',
+        chunk_count: 2,
+        version_number: 2,
+        status: 'ready',
+      },
+      201,
+    )
+  })
+  render(<App />)
+  await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
+
+  fireEvent.change(screen.getByLabelText('Document title'), {
+    target: { value: 'Architecture notes' },
+  })
+  fireEvent.change(screen.getByLabelText(/Plain-text file/), {
+    target: { files: [new File(['first'], 'notes.txt', { type: 'text/plain' })] },
+  })
+  const createButton = screen.getByRole('button', { name: 'Index document' })
+  fireEvent.submit(createButton.closest('form')!)
+  expect(await screen.findByText('Version 1: notes.txt')).toBeInTheDocument()
+
+  fireEvent.change(screen.getByLabelText('New version file'), {
+    target: {
+      files: [new File(['second'], 'notes-v2.txt', { type: 'text/plain' })],
+    },
+  })
+  const versionButton = screen.getByRole('button', { name: 'Upload Version 2' })
+  fireEvent.submit(versionButton.closest('form')!)
+
+  expect(await screen.findByText('Version 2: notes-v2.txt')).toBeInTheDocument()
+  const versionCall = fetchMock.mock.calls.find(
+    ([input]) => input === '/api/documents/document-id/versions',
+  )
+  expect(versionCall?.[1]?.method).toBe('POST')
+  expect(versionCall?.[1]?.body).toBeInstanceOf(FormData)
+})
+
+test('shows a duplicate-content error when a version is rejected', async () => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    if (input === '/api/documents') {
+      return jsonResponse(
+        {
+          document_id: 'document-id',
+          version_id: 'version-1-id',
+          filename: 'notes.txt',
+          checksum: 'checksum',
+          chunk_count: 1,
+          version_number: 1,
+          status: 'ready',
+        },
+        201,
+      )
+    }
+    return jsonResponse(
+      {
+        detail: {
+          code: 'duplicate_document_content',
+          message: 'this document already has a version with the same content',
+        },
+      },
+      409,
+    )
+  })
+  render(<App />)
+  await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
+
+  fireEvent.change(screen.getByLabelText('Document title'), {
+    target: { value: 'Architecture notes' },
+  })
+  fireEvent.change(screen.getByLabelText(/Plain-text file/), {
+    target: { files: [new File(['same'], 'notes.txt', { type: 'text/plain' })] },
+  })
+  const createButton = screen.getByRole('button', { name: 'Index document' })
+  fireEvent.submit(createButton.closest('form')!)
+  await screen.findByText('Version 1: notes.txt')
+
+  fireEvent.change(screen.getByLabelText('New version file'), {
+    target: { files: [new File(['same'], 'notes-again.txt', { type: 'text/plain' })] },
+  })
+  const versionButton = screen.getByRole('button', { name: 'Upload Version 2' })
+  fireEvent.submit(versionButton.closest('form')!)
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'this document already has a version with the same content',
+  )
+  expect(screen.getByText('Version 1: notes.txt')).toBeInTheDocument()
 })
 
 test('asks a question and renders expandable citation provenance', async () => {
