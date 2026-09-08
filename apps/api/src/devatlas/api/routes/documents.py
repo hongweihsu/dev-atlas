@@ -1,4 +1,5 @@
 from typing import Annotated, Literal, cast
+from uuid import UUID
 
 from fastapi import (
     APIRouter,
@@ -21,6 +22,10 @@ from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
 )
+from devatlas.application.ports.persistence import (
+    DocumentNotFoundError,
+    DuplicateDocumentContentError,
+)
 from devatlas.domain.document_ingestion import (
     DEFAULT_MAX_TEXT_BYTES,
     DocumentValidationCode,
@@ -34,6 +39,7 @@ class IngestDocumentResponse(BaseModel):
     filename: str
     checksum: str
     chunk_count: int
+    version_number: int
     status: Literal["ready"]
 
 
@@ -73,19 +79,49 @@ async def ingest_document(
     service: IngestionService,
     title: Annotated[str, Form()] = "",
 ) -> IngestDocumentResponse:
+    return await _ingest(file=file, title=title, service=service)
+
+
+@router.post(
+    "/{document_id}/versions",
+    response_model=IngestDocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def ingest_document_version(
+    document_id: UUID,
+    file: Annotated[UploadFile, File()],
+    service: IngestionService,
+) -> IngestDocumentResponse:
+    return await _ingest(
+        file=file,
+        title="",
+        service=service,
+        document_id=document_id,
+    )
+
+
+async def _ingest(
+    *,
+    file: UploadFile,
+    title: str,
+    service: IngestNewDocument,
+    document_id: UUID | None = None,
+) -> IngestDocumentResponse:
     filename = file.filename or ""
     media_type = file.content_type or ""
     content = await file.read(DEFAULT_MAX_TEXT_BYTES + 1)
 
     try:
-        result = await service.execute(
-            IngestNewDocumentCommand(
-                title=title,
-                source_filename=filename,
-                media_type=media_type,
-                content=content,
-            )
+        command = IngestNewDocumentCommand(
+            title=title,
+            source_filename=filename,
+            media_type=media_type,
+            content=content,
         )
+        if document_id is None:
+            result = await service.execute(command)
+        else:
+            result = await service.execute_version(document_id, command)
     except DocumentValidationError as error:
         raise HTTPException(
             status_code=_validation_status(error.code),
@@ -106,6 +142,16 @@ async def ingest_document(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": "embedding_unavailable", "message": str(error)},
         ) from error
+    except DocumentNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "document_not_found", "message": str(error)},
+        ) from error
+    except DuplicateDocumentContentError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "duplicate_document_content", "message": str(error)},
+        ) from error
 
     return IngestDocumentResponse(
         document_id=str(result.document_id),
@@ -113,5 +159,6 @@ async def ingest_document(
         filename=filename,
         checksum=result.checksum,
         chunk_count=result.chunk_count,
+        version_number=result.version_number,
         status="ready",
     )

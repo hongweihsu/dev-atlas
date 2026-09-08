@@ -2,8 +2,8 @@
 
 ## Status
 
-Phase 1 persistence foundation. This document distinguishes implemented
-components from planned architecture.
+Phase 1 document-ingestion and grounded-answer vertical slice. This document
+distinguishes implemented components from planned architecture.
 
 ## Implemented runtime
 
@@ -30,10 +30,10 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 
 ## Responsibilities
 
-- **Web:** presentation, browser interaction, and API status display.
-- **API:** HTTP contracts and the future application/domain boundary.
-- **Database:** durable document/version/chunk metadata and vector storage. No
-  upload or retrieval use case is connected yet.
+- **Web:** document upload, questions, grounded answers, expandable citation
+  provenance, and actionable API availability feedback.
+- **API:** HTTP contracts and the application/domain boundary.
+- **Database:** durable document/version/chunk metadata and vector storage.
 - **Alembic:** explicit, reviewable database schema evolution.
 - **Domain text processing:** deterministic line-ending normalization,
   normalized-content fingerprinting, traceable character-based chunks, and
@@ -59,6 +59,10 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   SQLAlchemy adapters when `OPENAI_API_KEY` is present; otherwise the endpoint
   intentionally returns `503 ingestion_unavailable`. Provider outages map to a
   safe `503`, while structurally incompatible provider output maps to `502`.
+- **Version API:** `POST /documents/{document_id}/versions` accepts replacement
+  content for a logical document. A row lock serializes concurrent updates;
+  duplicate normalized content returns `409`, missing documents return `404`,
+  and the old-active/new-active transition commits atomically.
 - **Retrieval application:** validates bounded queries, embeds each query once,
   and delegates ranking through a provider-independent search port.
 - **Retrieval adapter:** computes pgvector cosine distance only across active
@@ -69,6 +73,10 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   maps known embedding failures to stable `502`/`503` responses, and returns
   ranked chunk evidence with full provenance. A controlled live query retrieved
   the retained ingestion fixture; the observed score is not a quality claim.
+- **Answer API:** `POST /answers` retrieves bounded evidence, asks the configured
+  model for structured output, validates citation identifiers, and returns
+  source text plus document/version/chunk/offset provenance. Empty retrieval
+  returns a deterministic insufficient-evidence response without generation.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A
@@ -76,7 +84,8 @@ separate readiness check can be added when deployment requirements justify it.
 
 ## Failure cases
 
-- If the API is unavailable, the web app displays an unavailable status.
+- If the API is unavailable, the web app displays a retryable banner and
+  disables upload and answer actions.
 - If PostgreSQL is unavailable, Compose does not start the dependent API until
   the database health check passes.
 - If a future migration fails, startup should stop rather than silently creating
@@ -90,6 +99,5 @@ unauthorized content must never enter model context.
 
 ## Planned evolution
 
-The planned system adds document ingestion, retrieval, evaluation, workspace
-authorization, asynchronous workers, and cloud infrastructure in later phases.
-Those components are not part of the current runtime.
+The planned system adds measured hybrid retrieval, workspace authorization,
+asynchronous workers, and cloud infrastructure in later phases.

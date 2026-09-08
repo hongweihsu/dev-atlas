@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -49,6 +50,7 @@ def test_post_document_returns_ready_provenance(
     assert body["filename"] == "notes.txt"
     assert body["status"] == "ready"
     assert body["chunk_count"] == 1
+    assert body["version_number"] == 1
     assert body["document_id"] == str(factory.committed_documents[0].id)
     assert body["version_id"] == str(factory.committed_documents[0].version.id)
     assert factory.committed_documents[0].title == "Architecture notes"
@@ -170,3 +172,56 @@ def test_post_document_maps_incompatible_embedding_response() -> None:
         "code": "invalid_embedding_response",
         "message": "invalid provider indices",
     }
+
+
+def test_post_document_version_returns_next_version(
+    ingestion_client: tuple[TestClient, FakeIngestionUnitOfWorkFactory],
+) -> None:
+    client, _ = ingestion_client
+    created = client.post(
+        "/documents",
+        data={"title": "Architecture notes"},
+        files={"file": ("notes.txt", b"first content", "text/plain")},
+    ).json()
+
+    response = client.post(
+        f"/documents/{created['document_id']}/versions",
+        files={"file": ("notes-v2.txt", b"changed content", "text/plain")},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["document_id"] == created["document_id"]
+    assert response.json()["version_number"] == 2
+
+
+def test_post_document_version_rejects_duplicate_content(
+    ingestion_client: tuple[TestClient, FakeIngestionUnitOfWorkFactory],
+) -> None:
+    client, _ = ingestion_client
+    created = client.post(
+        "/documents",
+        data={"title": "Architecture notes"},
+        files={"file": ("notes.txt", b"same content", "text/plain")},
+    ).json()
+
+    response = client.post(
+        f"/documents/{created['document_id']}/versions",
+        files={"file": ("notes-again.txt", b"same content", "text/plain")},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "duplicate_document_content"
+
+
+def test_post_document_version_rejects_unknown_document(
+    ingestion_client: tuple[TestClient, FakeIngestionUnitOfWorkFactory],
+) -> None:
+    client, _ = ingestion_client
+
+    response = client.post(
+        f"/documents/{uuid4()}/versions",
+        files={"file": ("notes.txt", b"content", "text/plain")},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "document_not_found"

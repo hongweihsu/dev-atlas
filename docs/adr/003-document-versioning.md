@@ -35,4 +35,7 @@ an explicitly deferred optimization.
 
 The Phase 1 schema enforces unique version numbers and content checksums within
 each document and permits at most one active version through a partial unique
-index. The application-level atomic version transition is not implemented yet.
+index. `POST /documents/{document_id}/versions` locks the parent document so
+concurrent updates serialize, rejects duplicate normalized content, calculates
+the next consecutive number, and performs the active-version transition in one
+transaction.

@@ -38,8 +38,9 @@ Key invariants:
 The implemented document tables enforce version-number and content-checksum
 uniqueness per document, at most one active version per document, ordered chunk
 identity per version, exact offset bounds, fixed 1,536-dimensional embeddings,
-and cascading ownership. Cross-table provenance and lifecycle transitions still
-require application and integration tests in the ingestion slice.
+and cascading ownership. Re-ingestion locks the logical document, rejects an
+existing normalized-content checksum, assigns the next version number, archives
+the old active version, and creates the new active version in one transaction.
 
 The remaining entities will receive concrete schemas, constraints, indexes, and
 security tests only in the phases that implement them.

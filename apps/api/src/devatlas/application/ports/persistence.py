@@ -38,11 +38,27 @@ class NewDocumentRecord:
     version: NewDocumentVersionRecord
 
 
+class DocumentNotFoundError(LookupError):
+    """Raised when a version targets a document that does not exist."""
+
+
+class DuplicateDocumentContentError(ValueError):
+    """Raised when a document already contains the normalized content."""
+
+
 class DocumentIngestionRepository(Protocol):
     """Persistence operations required by new-document ingestion."""
 
     async def add(self, document: NewDocumentRecord) -> None:
         """Stage a complete document aggregate in the current transaction."""
+        ...
+
+    async def add_version(
+        self,
+        document_id: UUID,
+        version: NewDocumentVersionRecord,
+    ) -> int:
+        """Stage the next active version and return its assigned number."""
         ...
 
 

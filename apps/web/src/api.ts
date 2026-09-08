@@ -13,6 +13,7 @@ export interface IngestDocumentResponse {
   filename: string
   checksum: string
   chunk_count: number
+  version_number: number
   status: 'ready'
 }
 

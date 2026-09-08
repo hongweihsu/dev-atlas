@@ -30,6 +30,7 @@ class IngestedDocument:
     version_id: UUID
     checksum: str
     chunk_count: int
+    version_number: int
 
 
 class InvalidDocumentTitleError(ValueError):
@@ -61,6 +62,44 @@ class IngestNewDocument:
         if len(title) > 255:
             raise InvalidDocumentTitleError("title must not exceed 255 characters")
 
+        document_id = uuid4()
+        record = await self._prepare_record(
+            command,
+            document_id=document_id,
+            title=title,
+        )
+        async with self._unit_of_work_factory() as unit_of_work:
+            await unit_of_work.documents.add(record)
+            await unit_of_work.commit()
+
+        return self._result(record, version_number=1)
+
+    async def execute_version(
+        self,
+        document_id: UUID,
+        command: IngestNewDocumentCommand,
+    ) -> IngestedDocument:
+        record = await self._prepare_record(
+            command,
+            document_id=document_id,
+            title="",
+        )
+        async with self._unit_of_work_factory() as unit_of_work:
+            version_number = await unit_of_work.documents.add_version(
+                document_id,
+                record.version,
+            )
+            await unit_of_work.commit()
+
+        return self._result(record, version_number=version_number)
+
+    async def _prepare_record(
+        self,
+        command: IngestNewDocumentCommand,
+        *,
+        document_id: UUID,
+        title: str,
+    ) -> NewDocumentRecord:
         prepared = prepare_text_document(
             content=command.content,
             source_filename=command.source_filename,
@@ -77,9 +116,8 @@ class IngestNewDocument:
         )
         frozen_embeddings = chunk_embeddings(embeddings)
 
-        document_id = uuid4()
         version_id = uuid4()
-        record = NewDocumentRecord(
+        return NewDocumentRecord(
             id=document_id,
             title=title,
             version=NewDocumentVersionRecord(
@@ -112,13 +150,16 @@ class IngestNewDocument:
             ),
         )
 
-        async with self._unit_of_work_factory() as unit_of_work:
-            await unit_of_work.documents.add(record)
-            await unit_of_work.commit()
-
+    @staticmethod
+    def _result(
+        record: NewDocumentRecord,
+        *,
+        version_number: int,
+    ) -> IngestedDocument:
         return IngestedDocument(
-            document_id=document_id,
-            version_id=version_id,
-            checksum=prepared.content_checksum,
-            chunk_count=len(chunks),
+            document_id=record.id,
+            version_id=record.version.id,
+            checksum=record.version.content_checksum,
+            chunk_count=len(record.version.chunks),
+            version_number=version_number,
         )

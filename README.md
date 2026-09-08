@@ -23,6 +23,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   migrated disposable PostgreSQL database
 - Typed `POST /documents` multipart boundary with bounded reads and stable
   validation errors, tested through dependency-injected offline adapters
+- Atomic `POST /documents/{document_id}/versions` re-ingestion: changed content
+  receives the next consecutive version, the previous version is archived, and
+  duplicate normalized content returns a stable conflict
 - OpenAI `text-embedding-3-small` adapter and FastAPI lifespan wiring, enabled
   only when `OPENAI_API_KEY` is configured
 - Controlled live upload verified document, active-version, chunk, model, and
@@ -31,15 +34,18 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   compatible chunks from active document versions
 - Typed `POST /search` endpoint with bounded input, stable provider errors, and
   source/version/chunk provenance; verified through one controlled live query
+- Bounded grounded-answer generation through `POST /answers`, with citations
+  mapped back to document versions, chunks, source text, and character offsets
+- React document workspace for text upload, questions, answer sufficiency, and
+  expandable citation provenance
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 
 ### Planned
 
-- Bounded answer generation with citations linked to retrieved chunks
 - Vector and lexical retrieval with measured evaluation
 - Workspace-scoped authorization and explicit search scope
-- Document versioning, asynchronous ingestion, and AWS deployment
+- Asynchronous ingestion and AWS deployment
 - Multimodal document understanding and bounded research workflows
 
 Planned capabilities are not implemented or benchmarked yet.
@@ -114,17 +120,16 @@ document ingestion; leave it empty to keep the endpoint safely unavailable.
 
 ## Future direction
 
-The next milestone will build a deliberately small document ingestion and
-vector-RAG pipeline. Retrieval sophistication, multi-user authorization,
-asynchronous processing, and cloud deployment come later and will be introduced
-only with tests, documented trade-offs, and measurements where applicable.
+The next milestone establishes a small reviewed retrieval baseline and makes
+one package-adoption decision before adding hybrid search. Multi-user
+authorization, asynchronous processing, and cloud deployment come later.
 
 ## Limitations
 
-- No user-facing RAG, LLM, authentication, or workspace features exist yet.
-- Document persistence, preparation, chunking, transactional ingestion, the
-  upload HTTP contract, and an OpenAI embedding adapter are implemented.
-  Ingestion requires an API key and incurs provider usage; no retrieval API
-  exists yet.
+- No authentication, workspace isolation, background ingestion, hybrid search,
+  or retrieval-quality benchmark exists yet.
+- Ingestion and grounded answers require an API key and incur provider usage.
+- Re-ingestion currently embeds content before transactional duplicate
+  detection, so a rejected duplicate may still incur embedding usage.
 - The health endpoint currently reports API liveness, not database readiness.
 - No performance or quality benchmark claims have been made.

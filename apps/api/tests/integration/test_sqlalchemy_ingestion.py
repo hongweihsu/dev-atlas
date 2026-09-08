@@ -9,6 +9,7 @@ from devatlas.application.ingest_document import (
     IngestNewDocument,
     IngestNewDocumentCommand,
 )
+from devatlas.application.ports.persistence import DuplicateDocumentContentError
 from devatlas.application.search_documents import (
     SearchDocuments,
     SearchDocumentsCommand,
@@ -143,5 +144,64 @@ async def test_retrieval_ranks_matching_active_chunk_first() -> None:
     finally:
         async with session_factory() as session:
             await session.execute(delete(Document).where(Document.title.in_(titles)))
+            await session.commit()
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_reingestion_archives_previous_version_and_rejects_duplicate() -> None:
+    assert TEST_DATABASE_URL is not None
+    engine = create_async_engine(TEST_DATABASE_URL)
+    session_factory = create_session_factory(engine)
+    ingestion = IngestNewDocument(
+        embedding_provider=DeterministicEmbeddingProvider(dimension=1536),
+        unit_of_work_factory=SqlAlchemyIngestionUnitOfWorkFactory(session_factory),
+    )
+    title = "Document version transition fixture"
+
+    try:
+        first = await ingestion.execute(
+            IngestNewDocumentCommand(
+                title=title,
+                source_filename="version-1.txt",
+                media_type="text/plain",
+                content=b"first version",
+            )
+        )
+        second = await ingestion.execute_version(
+            first.document_id,
+            IngestNewDocumentCommand(
+                title="",
+                source_filename="version-2.txt",
+                media_type="text/plain",
+                content=b"second version",
+            ),
+        )
+
+        assert second.version_number == 2
+        async with session_factory() as session:
+            versions = (
+                await session.scalars(
+                    select(DocumentVersion)
+                    .where(DocumentVersion.document_id == first.document_id)
+                    .order_by(DocumentVersion.version_number)
+                )
+            ).all()
+            assert [version.version_number for version in versions] == [1, 2]
+            assert [version.is_active for version in versions] == [False, True]
+
+        with pytest.raises(DuplicateDocumentContentError, match="same content"):
+            await ingestion.execute_version(
+                first.document_id,
+                IngestNewDocumentCommand(
+                    title="",
+                    source_filename="version-2-again.txt",
+                    media_type="text/plain",
+                    content=b"second version",
+                ),
+            )
+    finally:
+        async with session_factory() as session:
+            await session.execute(delete(Document).where(Document.title == title))
             await session.commit()
         await engine.dispose()
