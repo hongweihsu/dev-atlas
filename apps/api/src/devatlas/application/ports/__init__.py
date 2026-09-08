@@ -11,6 +11,7 @@ from devatlas.application.ports.generation import (
     AnswerGeneratorUnavailableError,
     EvidenceSource,
     GeneratedAnswer,
+    InvalidGeneratedAnswerError,
 )
 from devatlas.application.ports.persistence import (
     DocumentIngestionRepository,
@@ -29,6 +30,7 @@ __all__ = [
     "AnswerGeneratorUnavailableError",
     "EvidenceSource",
     "GeneratedAnswer",
+    "InvalidGeneratedAnswerError",
     "DocumentIngestionRepository",
     "IngestionUnitOfWork",
     "IngestionUnitOfWorkFactory",

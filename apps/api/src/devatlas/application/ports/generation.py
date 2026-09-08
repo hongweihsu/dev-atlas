@@ -30,6 +30,7 @@ class AnswerGenerationRequest:
 class GeneratedAnswer:
     text: str
     citation_ids: tuple[str, ...]
+    has_sufficient_evidence: bool
 
 
 class AnswerGenerator(Protocol):
@@ -40,3 +41,7 @@ class AnswerGenerator(Protocol):
 
 class AnswerGeneratorUnavailableError(RuntimeError):
     """Raised when an answer provider cannot complete a request."""
+
+
+class InvalidGeneratedAnswerError(ValueError):
+    """Raised when a provider returns an answer that violates the contract."""
