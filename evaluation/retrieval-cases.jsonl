@@ -1,0 +1,10 @@
+{"case_id":"tx-commit","query":"When does a Unit of Work commit its database transaction?","relevant_documents":["transactions"]}
+{"case_id":"tx-rollback","query":"How are partially saved documents prevented after a write fails?","relevant_documents":["transactions"]}
+{"case_id":"tx-race","query":"Why must duplicate content still be checked or constrained inside the transaction?","relevant_documents":["transactions"]}
+{"case_id":"vite-role","query":"What is Vite responsible for in the frontend?","relevant_documents":["vite-proxy"]}
+{"case_id":"vite-api-path","query":"How does a browser request using an /api path reach FastAPI locally?","relevant_documents":["vite-proxy"]}
+{"case_id":"vite-secrets","query":"Why must a VITE environment variable never contain a secret?","relevant_documents":["vite-proxy"]}
+{"case_id":"vector-ranking","query":"How does pgvector rank chunks for a query?","relevant_documents":["vector-search"]}
+{"case_id":"vector-model","query":"Why are the embedding model name and dimension stored?","relevant_documents":["vector-search"]}
+{"case_id":"vector-provenance","query":"Which identifiers let a search result trace evidence back to its source?","relevant_documents":["vector-search"]}
+{"case_id":"vector-evidence","query":"Does a high similarity score prove that a chunk answers the question?","relevant_documents":["vector-search"]}

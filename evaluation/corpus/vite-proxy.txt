@@ -1,0 +1,10 @@
+Vite is the frontend development and build tool used by the React application.
+During local development, the browser requests paths beginning with /api from the
+Vite development server. Vite proxies those requests to FastAPI, so frontend code
+can use a relative URL and does not need to know the backend host.
+
+The proxy is a development convenience, not a database connection. The browser
+still talks to FastAPI over HTTP, and FastAPI owns validation, application use
+cases, and database access. Environment variables exposed to browser code use the
+VITE_ prefix because they become part of the client bundle and must not contain
+secrets.

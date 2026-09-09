@@ -47,6 +47,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   replacement, questions, answer sufficiency, and expandable citation provenance
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
+- Phase 2 retrieval-evaluation scaffold with a controlled three-document corpus,
+  ten JSONL cases, and package-backed Recall@1, Recall@3, and MRR@5 metrics
 
 ### Planned
 
@@ -134,8 +136,9 @@ authorization, asynchronous processing, and cloud deployment come later.
 
 ## Limitations
 
-- No authentication, workspace isolation, background ingestion, hybrid search,
-  or retrieval-quality benchmark exists yet.
+- No authentication, workspace isolation, background ingestion, or hybrid search
+  exists yet. The retrieval benchmark scaffold exists, but no live baseline score
+  is claimed until its relevance judgments are reviewed and the run is recorded.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Re-ingestion currently embeds content before transactional duplicate
   detection, so a rejected duplicate may still incur embedding usage.

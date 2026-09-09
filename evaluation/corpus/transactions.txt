@@ -1,0 +1,10 @@
+Database transactions group related writes into one atomic unit. A Unit of Work
+opens a transaction, exposes repositories that share the same database session,
+and commits only after the complete application operation succeeds. If any write
+fails, rollback prevents a partially saved document, version, or chunk set.
+
+Checking for duplicate content before a transaction is useful for a fast failure,
+but it is not enough under concurrency. Another request can insert the same value
+between the first check and this request's insert. A database uniqueness constraint
+is the final authority, and the application translates that conflict into a stable
+domain or API error.
