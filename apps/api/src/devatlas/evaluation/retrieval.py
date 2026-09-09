@@ -11,6 +11,8 @@ import httpx
 import ir_measures
 from ir_measures import RR, Recall
 
+from devatlas.domain.text_processing import chunk_text, normalize_text
+
 ANSWER_CONTEXT_LIMIT = 5
 COLLECTION_LIMIT = 20
 
@@ -26,6 +28,7 @@ class CorpusLoadError(RuntimeError):
 @dataclass(frozen=True, slots=True)
 class RetrievalCase:
     case_id: str
+    category: str
     query: str
     relevant_documents: tuple[str, ...]
     relevant_passages: tuple[str, ...]
@@ -92,17 +95,21 @@ def validate_cases_against_corpus(
                 f"case {case.case_id!r} references unknown documents: "
                 f"{', '.join(sorted(unknown))}"
             )
-        relevant_text = _normalized_evidence_text(
-            "\n".join(corpus[key] for key in case.relevant_documents)
-        )
+        relevant_chunks = [
+            _normalized_evidence_text(chunk.text)
+            for key in case.relevant_documents
+            for chunk in chunk_text(normalize_text(corpus[key]))
+        ]
         missing = [
             passage
             for passage in case.relevant_passages
-            if _normalized_evidence_text(passage) not in relevant_text
+            if not any(
+                _normalized_evidence_text(passage) in chunk for chunk in relevant_chunks
+            )
         ]
         if missing:
             raise InvalidEvaluationDatasetError(
-                f"case {case.case_id!r} has evidence outside its relevant documents"
+                f"case {case.case_id!r} has evidence outside one retrievable chunk"
             )
 
 
@@ -255,6 +262,21 @@ def score_evidence_hits(
     }
 
 
+def score_by_category(
+    cases: Sequence[RetrievalCase],
+    candidates: Mapping[str, Sequence[RetrievedCandidate]],
+    rankings: Mapping[str, Sequence[RankedDocument]],
+) -> dict[str, dict[str, float]]:
+    return {
+        category: {
+            **score_document_rankings(category_cases, rankings),
+            **score_evidence_hits(category_cases, candidates),
+        }
+        for category in sorted({case.category for case in cases})
+        if (category_cases := [case for case in cases if case.category == category])
+    }
+
+
 def build_case_results(
     cases: Sequence[RetrievalCase],
     candidates: Mapping[str, Sequence[RetrievedCandidate]],
@@ -267,6 +289,7 @@ def build_case_results(
         results.append(
             {
                 "case_id": case.case_id,
+                "category": case.category,
                 "document_rank": _first_relevant_document_rank(case, case_rankings),
                 "evidence_rank": _first_evidence_rank(case, case_candidates),
                 "retrieved_documents": [
@@ -397,6 +420,7 @@ def _parse_case(value: Any, *, line_number: int) -> RetrievalCase:
     if not isinstance(value, dict):
         raise InvalidEvaluationDatasetError(f"line {line_number} must be an object")
     case_id = _non_empty_string(value.get("case_id"), line_number, "case_id")
+    category = _non_empty_string(value.get("category"), line_number, "category")
     query = _non_empty_string(value.get("query"), line_number, "query")
     documents = _non_empty_string_list(
         value.get("relevant_documents"), line_number, "relevant_documents"
@@ -404,7 +428,7 @@ def _parse_case(value: Any, *, line_number: int) -> RetrievalCase:
     passages = _non_empty_string_list(
         value.get("relevant_passages"), line_number, "relevant_passages"
     )
-    return RetrievalCase(case_id, query, documents, passages)
+    return RetrievalCase(case_id, category, query, documents, passages)
 
 
 def _non_empty_string(value: Any, line_number: int, field: str) -> str:
@@ -458,6 +482,7 @@ def main() -> None:
             **score_document_rankings(cases, rankings),
             **score_evidence_hits(cases, candidates),
         },
+        "metrics_by_category": score_by_category(cases, candidates, rankings),
         "cases": build_case_results(cases, candidates, rankings),
     }
     rendered_report = json.dumps(report, indent=2, sort_keys=True) + "\n"

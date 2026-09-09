@@ -1,0 +1,53 @@
+DevAtlas Operations Runbook
+
+Service readiness
+
+The API liveness endpoint confirms that the process can answer HTTP requests. It
+does not prove that PostgreSQL is reachable or that the embedding provider is
+available. During an incident, first check container health, then inspect the API
+logs and database connectivity independently. Avoid restarting every service at
+once because that destroys evidence about which dependency failed first.
+
+The public status page uses the service name DevAtlas API. Internal dashboards
+group request latency, database pool saturation, provider failures, and ingestion
+outcomes separately. An elevated response time without database contention may
+indicate provider latency rather than an API capacity problem.
+
+Ingestion validation
+
+Strict validation is controlled by the configuration key
+DEVATLAS_INGEST_MODE=strict. This setting rejects unsupported media types before
+text extraction and retains the original safe filename as source provenance. Do
+not place credentials in this variable; it is an operational mode, not a secret.
+
+If the API reports DVX-4827, the uploaded UTF-8 payload exceeded the configured
+byte boundary during the bounded read. Confirm the source file size, do not raise
+the global limit during an incident, and ask the user to split the source or wait
+for asynchronous ingestion support. The remediation owner is the ingestion
+service, not the vector index.
+
+Database recovery
+
+A migration must be applied before an empty database can accept document writes.
+If a new volume produces an undefined-table error, run Alembic upgrade to head and
+verify the current revision before retrying ingestion. Never create application
+tables manually because the resulting schema would not be represented in migration
+history.
+
+Incident INC-2048 tracks a provider retry storm caused by treating every timeout
+as immediately retryable. The containment action is to disable automatic retries,
+preserve the request correlation IDs, and verify provider status. Permanent work
+requires bounded exponential backoff, jitter, and a retry budget; repeated retries
+must not multiply paid embedding requests without an observable limit.
+
+Vector consistency
+
+Stored vectors must match both the configured model identity and dimensionality.
+A model name match alone is insufficient if a provider option changes vector size.
+Do not pad, truncate, or silently cast incompatible embeddings to make a write
+succeed. Reject the batch and keep the previous active document version intact.
+
+When cosine results appear duplicated, inspect logical document IDs and active
+versions before rebuilding the index. Historical test documents may contain equal
+text or equal embeddings. Removing user data solely to improve an evaluation score
+is prohibited; isolate the evaluation corpus or define an authorized search scope.

@@ -16,6 +16,7 @@ from devatlas.evaluation.retrieval import (
     document_rankings,
     load_cases,
     load_manifest,
+    score_by_category,
     score_document_rankings,
     score_evidence_hits,
     upload_corpus,
@@ -28,6 +29,7 @@ from devatlas.evaluation.retrieval import (
 def make_case() -> RetrievalCase:
     return RetrievalCase(
         case_id="transaction-boundary",
+        category="semantic",
         query="where does commit happen?",
         relevant_documents=("transactions",),
         relevant_passages=("commits after the operation succeeds",),
@@ -40,6 +42,7 @@ def test_load_cases_validates_and_normalizes_jsonl(tmp_path: Path) -> None:
         json.dumps(
             {
                 "case_id": " transaction-boundary ",
+                "category": " semantic ",
                 "query": " where does commit happen? ",
                 "relevant_documents": ["transactions"],
                 "relevant_passages": ["commits after the operation succeeds"],
@@ -55,11 +58,14 @@ def test_load_cases_validates_and_normalizes_jsonl(tmp_path: Path) -> None:
     "content",
     [
         "",
-        '{"case_id":"same","query":"q","relevant_documents":["A"],'
+        '{"case_id":"same","category":"semantic","query":"q",'
+        '"relevant_documents":["A"],'
         '"relevant_passages":["one"]}\n'
-        '{"case_id":"same","query":"q2","relevant_documents":["B"],'
+        '{"case_id":"same","category":"semantic","query":"q2",'
+        '"relevant_documents":["B"],'
         '"relevant_passages":["two"]}\n',
-        '{"case_id":"missing","query":"q","relevant_documents":[], '
+        '{"case_id":"missing","category":"semantic","query":"q",'
+        '"relevant_documents":[], '
         '"relevant_passages":[]}',
     ],
 )
@@ -166,8 +172,10 @@ def test_cases_must_reference_evidence_inside_their_corpus_document(
     )
     validate_cases_against_corpus([make_case()], tmp_path)
 
-    bad_case = RetrievalCase("bad", "q", ("transactions",), ("not present",))
-    with pytest.raises(InvalidEvaluationDatasetError, match="evidence outside"):
+    bad_case = RetrievalCase(
+        "bad", "semantic", "q", ("transactions",), ("not present",)
+    )
+    with pytest.raises(InvalidEvaluationDatasetError, match="retrievable chunk"):
         validate_cases_against_corpus([bad_case], tmp_path)
 
 
@@ -196,7 +204,7 @@ def test_document_rankings_use_manifest_ids_and_deduplicate_chunks() -> None:
 def test_standard_document_metrics_and_evidence_hits_are_separate() -> None:
     cases = [
         make_case(),
-        RetrievalCase("q2", "proxy", ("vite",), ("proxies to FastAPI",)),
+        RetrievalCase("q2", "identifier", "proxy", ("vite",), ("proxies to FastAPI",)),
     ]
     rankings = {
         "transaction-boundary": [RankedDocument("transactions", 0.9)],
@@ -222,10 +230,29 @@ def test_standard_document_metrics_and_evidence_hits_are_separate() -> None:
         "EvidenceHit@3": 1.0,
         "EvidenceHit@5": 1.0,
     }
+    assert score_by_category(cases, candidates, rankings) == {
+        "identifier": {
+            "DocumentMRR@5": 0.5,
+            "DocumentRecall@1": 0.0,
+            "DocumentRecall@3": 1.0,
+            "EvidenceHit@1": 1.0,
+            "EvidenceHit@3": 1.0,
+            "EvidenceHit@5": 1.0,
+        },
+        "semantic": {
+            "DocumentMRR@5": 1.0,
+            "DocumentRecall@1": 1.0,
+            "DocumentRecall@3": 1.0,
+            "EvidenceHit@1": 0.0,
+            "EvidenceHit@3": 1.0,
+            "EvidenceHit@5": 1.0,
+        },
+    }
 
     assert build_case_results(cases, candidates, rankings) == [
         {
             "case_id": "transaction-boundary",
+            "category": "semantic",
             "document_rank": 1,
             "evidence_rank": 2,
             "retrieved_documents": [
@@ -248,6 +275,7 @@ def test_standard_document_metrics_and_evidence_hits_are_separate() -> None:
         },
         {
             "case_id": "q2",
+            "category": "identifier",
             "document_rank": 2,
             "evidence_rank": 1,
             "retrieved_documents": [

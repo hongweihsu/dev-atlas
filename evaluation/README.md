@@ -9,17 +9,20 @@ judge generated answer quality.
 `retrieval-cases.jsonl` contains one JSON object per query:
 
 - `case_id`: unique stable identifier for the case
+- `category`: `semantic` or `identifier`, used for stratified reporting
 - `query`: text sent to `POST /search`
 - `relevant_documents`: one or more stable corpus keys
 - `relevant_passages`: one or more exact evidence excerpts that a retrieved
   chunk may contain
 
-The three files in `corpus/` form the controlled corpus. Their filename stems
-are stable corpus keys: `transactions`, `vite-proxy`, and `vector-search`.
+The files in `corpus/` form the controlled corpus. Their filename stems are
+stable corpus keys. Phase 3 adds two multi-chunk operational documents with
+error codes, configuration keys, incident IDs, headers, and migration references.
 
-The initial ten questions cover three concrete Phase 1 topics. They are small
-enough to review manually. Add a case only when a real requirement, bug, or
-retrieval failure justifies it.
+The first ten semantic questions cover three concrete Phase 1 topics. Six Phase
+3 identifier questions exercise exact-token retrieval. The complete 16-case set
+remains small enough to review manually. Add a case only when a real requirement,
+bug, or retrieval failure justifies it.
 
 ## Run the baseline
 
@@ -56,6 +59,8 @@ at least one retrieved chunk contains one of the reviewed evidence excerpts.
 The ignored JSON report also records each case's first relevant-document rank,
 first evidence-bearing chunk rank, and top-five candidates so aggregate changes
 can be traced back to concrete failures.
+Aggregate metrics are also grouped by category so an identifier improvement
+cannot hide a semantic regression.
 
 Use `--reuse-manifest` only after an initial corpus load. The runner first checks
 that every UUID, title, and active version still matches `GET /documents`; a

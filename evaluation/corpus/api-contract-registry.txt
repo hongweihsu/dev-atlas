@@ -1,0 +1,55 @@
+DevAtlas API Contract Registry
+
+Contract lifecycle
+
+Every public request and response has an explicit compatibility expectation.
+Clients may add fields they do not use, but the server must not silently change
+the meaning of an existing field. Validation failures return a stable machine code
+and a safe human-readable message. Internal stack traces and provider payloads are
+never part of the public contract.
+
+Contract DX-API-17 defines document ingestion over multipart form data. The `file`
+part is required and the optional `title` part is a display label. When title is
+blank, the server derives it from the safe filename stem. A successful create
+returns the logical document ID, active version ID, version number, checksum, chunk
+count, original filename, and ready status.
+
+Embedding compatibility
+
+Error code ERR_EMBED_DIM_1536 means the embedding response did not contain the
+1,536 floating-point values required by the current pgvector column. The request
+must fail before persistence; padding or truncating the response would make cosine
+comparisons meaningless. Operators should confirm the configured model and
+dimensions, then inspect provider response metadata without logging credentials.
+
+The embedding model name is persisted with each chunk so retrieval can exclude
+vectors created by an incompatible model. A future migration may support multiple
+dimensions, but the current schema deliberately enforces one dimension to keep the
+first vertical slice easy to reason about.
+
+Schema negotiation
+
+Clients participating in the September contract experiment send the header
+X-DevAtlas-Schema: 2026-09. This identifier selects the documented experimental
+response shape in test environments only. Production ignores unsupported schema
+headers and responds with the stable public representation rather than guessing a
+client capability.
+
+Migration reference MIG-2026-017 introduces source lifecycle status values for
+pending, ready, failed, and archived records. It must preserve existing ready
+documents during upgrade and restore the former constraint during downgrade. The
+migration reference belongs in deployment evidence and is not exposed as a user-
+editable document field.
+
+Search and answers
+
+Search accepts a bounded non-empty query and returns ranked chunks with document,
+version, chunk, ordinal, text, offsets, and similarity provenance. Answer generation
+uses only bounded retrieved context and returns citations that map to those stored
+identifiers. An empty retrieval result does not authorize sending an unsupported
+general-knowledge question directly to the model.
+
+The request correlation header X-Request-ID is operational metadata, not document
+identity. It may connect logs across API and provider boundaries, while document ID
+and version ID continue to represent persisted domain entities. Correlation values
+must be validated and must never be used to bypass workspace authorization.
