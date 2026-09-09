@@ -21,10 +21,17 @@ class RetrievedChunk:
 class ChunkSearchRepository(Protocol):
     async def search(
         self,
+        query: str,
         embedding: Sequence[float],
         *,
         model: str,
         limit: int,
     ) -> list[RetrievedChunk]:
         """Return compatible active-version chunks ordered by relevance."""
+        ...
+
+
+class LexicalChunkSearchRepository(Protocol):
+    async def search(self, query: str, *, limit: int) -> list[RetrievedChunk]:
+        """Return active-version chunks ordered by lexical relevance."""
         ...

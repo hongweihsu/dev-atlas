@@ -7,6 +7,7 @@ from openai import AsyncOpenAI
 
 from devatlas.api.router import api_router
 from devatlas.application.answer_documents import AnswerDocuments
+from devatlas.application.hybrid_retrieval import HybridChunkSearchRepository
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
 from devatlas.application.search_documents import SearchDocuments
@@ -18,6 +19,7 @@ from devatlas.infrastructure.database import (
 from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
 from devatlas.infrastructure.generation import OpenAIAnswerGenerator
 from devatlas.infrastructure.persistence import (
+    SqlAlchemyBm25ChunkSearchRepository,
     SqlAlchemyChunkSearchRepository,
     SqlAlchemyDocumentListRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
@@ -53,7 +55,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             search_documents = SearchDocuments(
                 embedding_provider=provider,
-                repository=SqlAlchemyChunkSearchRepository(session_factory),
+                repository=HybridChunkSearchRepository(
+                    vector=SqlAlchemyChunkSearchRepository(session_factory),
+                    lexical=SqlAlchemyBm25ChunkSearchRepository(session_factory),
+                ),
             )
             application.state.search_documents = search_documents
             application.state.answer_documents = AnswerDocuments(

@@ -41,7 +41,9 @@ async def test_search_embeds_normalized_query_and_returns_repository_results() -
 
     assert results == [expected]
     expected_embedding = (await provider.embed(["transaction"]))[0]
-    assert repository.calls == [(tuple(expected_embedding), "deterministic-test-v1", 5)]
+    assert repository.calls == [
+        ("transaction", tuple(expected_embedding), "deterministic-test-v1", 5)
+    ]
 
 
 @pytest.mark.asyncio

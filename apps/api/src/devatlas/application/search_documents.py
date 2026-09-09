@@ -50,6 +50,7 @@ class SearchDocuments:
             expected_dimension=self._embedding_provider.dimension,
         )
         return await self._repository.search(
+            query,
             embeddings[0],
             model=self._embedding_provider.model,
             limit=command.limit,

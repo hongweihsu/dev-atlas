@@ -74,10 +74,12 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   checksum lookup. Historical duplicate rows remain untouched.
 - **Retrieval application:** validates bounded queries, embeds each query once,
   and delegates ranking through a provider-independent search port.
-- **Retrieval adapter:** computes pgvector cosine distance only across active
-  versions with matching embedding model and dimension, orders the closest
-  chunks first with a stable UUID tie-break, and returns document, version,
-  chunk, text-offset, and similarity provenance.
+- **Retrieval adapters:** pgvector ranks compatible active-version chunks by
+  cosine distance while BM25S ranks a snapshot of current active chunks by
+  lexical relevance. Deterministic reciprocal-rank fusion combines candidate
+  positions by stable chunk UUID instead of adding incomparable raw scores.
+  The first bounded BM25 slice rebuilds its in-memory index per search; this is
+  explicit technical debt rather than a production-scale latency claim.
 - **Search API:** `POST /search` accepts a bounded JSON query and result limit,
   maps known embedding failures to stable `502`/`503` responses, and returns
   ranked chunk evidence with full provenance. A controlled live query retrieved
