@@ -63,7 +63,8 @@ React + Vite  --->  FastAPI  --->  PostgreSQL + pgvector
 The browser calls the API; the API owns access to persistent data. During local
 development, Vite proxies `/api` requests to FastAPI. See the
 [system overview](docs/architecture/system-overview.md) and
-[domain model](docs/architecture/domain-model.md).
+[domain model](docs/architecture/domain-model.md). Phase 1 verification is
+recorded in the [acceptance record](docs/verification/phase-1-acceptance.md).
 
 ## Local setup
 
