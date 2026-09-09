@@ -116,10 +116,16 @@ def validate_cases_against_corpus(
 def upload_corpus(
     client: httpx.Client, corpus_directory: Path
 ) -> dict[str, ManifestEntry]:
-    manifest: dict[str, ManifestEntry] = {}
     paths = sorted(corpus_directory.glob("*.txt"))
     if not paths:
         raise CorpusLoadError("corpus directory must contain at least one .txt file")
+    return _upload_paths(client, paths)
+
+
+def _upload_paths(
+    client: httpx.Client, paths: Sequence[Path]
+) -> dict[str, ManifestEntry]:
+    manifest: dict[str, ManifestEntry] = {}
     for path in paths:
         document_key = path.stem
         with path.open("rb") as source:
@@ -187,6 +193,29 @@ def validate_manifest(
             raise CorpusLoadError(
                 f"manifest entry {key!r} does not match an active database document"
             )
+
+
+def sync_manifest(
+    client: httpx.Client,
+    corpus_directory: Path,
+    manifest_path: Path,
+) -> dict[str, ManifestEntry]:
+    paths_by_key = {path.stem: path for path in sorted(corpus_directory.glob("*.txt"))}
+    if not paths_by_key:
+        raise CorpusLoadError("corpus directory must contain at least one .txt file")
+    manifest = load_manifest(manifest_path) if manifest_path.exists() else {}
+    if manifest:
+        validate_manifest(client, manifest)
+    extra_keys = manifest.keys() - paths_by_key.keys()
+    if extra_keys:
+        raise CorpusLoadError(
+            "manifest contains files absent from corpus: "
+            f"{', '.join(sorted(extra_keys))}"
+        )
+    missing_paths = [path for key, path in paths_by_key.items() if key not in manifest]
+    manifest.update(_upload_paths(client, missing_paths))
+    write_manifest(manifest_path, manifest)
+    return manifest
 
 
 def fetch_candidates(
@@ -459,7 +488,9 @@ def main() -> None:
     parser.add_argument("dataset", type=Path)
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--reuse-manifest", action="store_true")
+    manifest_mode = parser.add_mutually_exclusive_group()
+    manifest_mode.add_argument("--reuse-manifest", action="store_true")
+    manifest_mode.add_argument("--sync-manifest", action="store_true")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--base-url", default="http://localhost:8000")
     args = parser.parse_args()
@@ -469,6 +500,8 @@ def main() -> None:
         if args.reuse_manifest:
             manifest = load_manifest(args.manifest)
             validate_manifest(client, manifest)
+        elif args.sync_manifest:
+            manifest = sync_manifest(client, args.corpus, args.manifest)
         else:
             manifest = upload_corpus(client, args.corpus)
             write_manifest(args.manifest, manifest)

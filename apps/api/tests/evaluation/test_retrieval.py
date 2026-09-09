@@ -19,6 +19,7 @@ from devatlas.evaluation.retrieval import (
     score_by_category,
     score_document_rankings,
     score_evidence_hits,
+    sync_manifest,
     upload_corpus,
     validate_cases_against_corpus,
     validate_manifest,
@@ -156,6 +157,48 @@ def test_validate_manifest_rejects_stale_version() -> None:
                 client,
                 {"transactions": ManifestEntry("transactions", "doc-123", "old")},
             )
+
+
+def test_sync_manifest_uploads_only_missing_corpus_files(tmp_path: Path) -> None:
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    (corpus / "existing.txt").write_text("existing", encoding="utf-8")
+    (corpus / "new.txt").write_text("new", encoding="utf-8")
+    manifest_path = tmp_path / "manifest.json"
+    write_manifest(
+        manifest_path,
+        {"existing": ManifestEntry("existing", "doc-existing", "v-existing")},
+    )
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(f"{request.method} {request.url.path}")
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "document_id": "doc-existing",
+                        "title": "existing",
+                        "active_version_id": "v-existing",
+                    }
+                ],
+            )
+        return httpx.Response(
+            201,
+            json={"document_id": "doc-new", "version_id": "v-new"},
+        )
+
+    with httpx.Client(
+        base_url="http://test", transport=httpx.MockTransport(handler)
+    ) as client:
+        manifest = sync_manifest(client, corpus, manifest_path)
+
+    assert calls == ["GET /documents", "POST /documents"]
+    assert manifest == {
+        "existing": ManifestEntry("existing", "doc-existing", "v-existing"),
+        "new": ManifestEntry("new", "doc-new", "v-new"),
+    }
 
 
 def test_upload_corpus_rejects_empty_directory(tmp_path: Path) -> None:
