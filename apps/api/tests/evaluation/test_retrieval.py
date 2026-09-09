@@ -15,10 +15,12 @@ from devatlas.evaluation.retrieval import (
     build_case_results,
     document_rankings,
     load_cases,
+    load_manifest,
     score_document_rankings,
     score_evidence_hits,
     upload_corpus,
     validate_cases_against_corpus,
+    validate_manifest,
     write_manifest,
 )
 
@@ -102,6 +104,52 @@ def test_upload_corpus_returns_and_writes_runtime_id_manifest(tmp_path: Path) ->
             }
         }
     }
+    assert load_manifest(manifest_path) == manifest
+
+
+def test_validate_manifest_requires_matching_active_database_document() -> None:
+    entry = ManifestEntry("transactions", "doc-123", "version-456")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/documents"
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "document_id": "doc-123",
+                    "title": "transactions",
+                    "active_version_id": "version-456",
+                }
+            ],
+        )
+
+    with httpx.Client(
+        base_url="http://test", transport=httpx.MockTransport(handler)
+    ) as client:
+        validate_manifest(client, {"transactions": entry})
+
+
+def test_validate_manifest_rejects_stale_version() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "document_id": "doc-123",
+                    "title": "transactions",
+                    "active_version_id": "new-version",
+                }
+            ],
+        )
+
+    with httpx.Client(
+        base_url="http://test", transport=httpx.MockTransport(handler)
+    ) as client:
+        with pytest.raises(CorpusLoadError, match="does not match"):
+            validate_manifest(
+                client,
+                {"transactions": ManifestEntry("transactions", "doc-123", "old")},
+            )
 
 
 def test_upload_corpus_rejects_empty_directory(tmp_path: Path) -> None:

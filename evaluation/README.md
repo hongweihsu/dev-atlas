@@ -31,6 +31,7 @@ uv run --extra evaluation python -m devatlas.evaluation.retrieval \
   ../../evaluation/retrieval-cases.jsonl \
   --corpus ../../evaluation/corpus \
   --manifest ../../evaluation/runs/manifest.json \
+  --reuse-manifest \
   --report ../../evaluation/runs/latest-report.json
 ```
 
@@ -56,6 +57,11 @@ The ignored JSON report also records each case's first relevant-document rank,
 first evidence-bearing chunk rank, and top-five candidates so aggregate changes
 can be traced back to concrete failures.
 
+Use `--reuse-manifest` only after an initial corpus load. The runner first checks
+that every UUID, title, and active version still matches `GET /documents`; a
+stale manifest fails before any query embedding is requested. Omit the flag to
+upload a fresh corpus and replace the manifest.
+
 ## Package decision
 
 DevAtlas uses `ir-measures` for standard deterministic information-retrieval
@@ -68,4 +74,4 @@ have been reviewed and the command has completed against live retrieval.
 
 ## Recorded runs
 
-- [2026-09-10 vector baseline](reports/2026-09-10-vector-baseline.md)
+- [2026-09-10 mixed-index observation](reports/2026-09-10-mixed-index-observation.md)

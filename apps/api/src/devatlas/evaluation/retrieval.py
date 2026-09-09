@@ -146,6 +146,42 @@ def write_manifest(path: Path, manifest: Mapping[str, ManifestEntry]) -> None:
     )
 
 
+def load_manifest(path: Path) -> dict[str, ManifestEntry]:
+    try:
+        payload: Any = json.loads(path.read_text(encoding="utf-8"))
+        documents = payload["documents"]
+        return {
+            str(key): ManifestEntry(
+                document_key=str(value["document_key"]),
+                document_id=str(value["document_id"]),
+                version_id=str(value["version_id"]),
+            )
+            for key, value in documents.items()
+        }
+    except (KeyError, TypeError, AttributeError, json.JSONDecodeError) as error:
+        raise CorpusLoadError("manifest has an invalid structure") from error
+
+
+def validate_manifest(
+    client: httpx.Client, manifest: Mapping[str, ManifestEntry]
+) -> None:
+    response = client.get("/documents")
+    response.raise_for_status()
+    documents_by_id = {
+        str(document["document_id"]): document for document in response.json()
+    }
+    for key, entry in manifest.items():
+        document = documents_by_id.get(entry.document_id)
+        if (
+            document is None
+            or document["title"] != key
+            or document["active_version_id"] != entry.version_id
+        ):
+            raise CorpusLoadError(
+                f"manifest entry {key!r} does not match an active database document"
+            )
+
+
 def fetch_candidates(
     client: httpx.Client,
     cases: Iterable[RetrievalCase],
@@ -399,14 +435,19 @@ def main() -> None:
     parser.add_argument("dataset", type=Path)
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--reuse-manifest", action="store_true")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--base-url", default="http://localhost:8000")
     args = parser.parse_args()
     cases = load_cases(args.dataset)
     validate_cases_against_corpus(cases, args.corpus)
     with httpx.Client(base_url=args.base_url, timeout=30.0) as client:
-        manifest = upload_corpus(client, args.corpus)
-        write_manifest(args.manifest, manifest)
+        if args.reuse_manifest:
+            manifest = load_manifest(args.manifest)
+            validate_manifest(client, manifest)
+        else:
+            manifest = upload_corpus(client, args.corpus)
+            write_manifest(args.manifest, manifest)
         candidates = fetch_candidates(client, cases)
     rankings = document_rankings(candidates, manifest)
     report = {
