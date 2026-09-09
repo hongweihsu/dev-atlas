@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
@@ -11,11 +11,16 @@ import httpx
 import ir_measures
 from ir_measures import RR, Recall
 
-DEFAULT_SEARCH_LIMIT = 5
+ANSWER_CONTEXT_LIMIT = 5
+COLLECTION_LIMIT = 20
 
 
 class InvalidEvaluationDatasetError(ValueError):
     """Raised when a retrieval case cannot be evaluated safely."""
+
+
+class CorpusLoadError(RuntimeError):
+    """Raised when a controlled corpus cannot be mapped to the live database."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,18 +28,32 @@ class RetrievalCase:
     case_id: str
     query: str
     relevant_documents: tuple[str, ...]
+    relevant_passages: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ManifestEntry:
+    document_key: str
+    document_id: str
+    version_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class RetrievedCandidate:
+    document_id: str
+    text: str
+    score: float
 
 
 @dataclass(frozen=True, slots=True)
 class RankedDocument:
-    document_title: str
+    document_key: str
     score: float
 
 
 def load_cases(path: Path) -> list[RetrievalCase]:
     cases: list[RetrievalCase] = []
     seen_ids: set[str] = set()
-
     with path.open(encoding="utf-8") as dataset:
         for line_number, raw_line in enumerate(dataset, start=1):
             if not raw_line.strip():
@@ -52,110 +71,278 @@ def load_cases(path: Path) -> list[RetrievalCase]:
                 )
             seen_ids.add(case.case_id)
             cases.append(case)
-
     if not cases:
         raise InvalidEvaluationDatasetError("dataset must contain at least one case")
     return cases
 
 
-def score_rankings(
+def validate_cases_against_corpus(
+    cases: Sequence[RetrievalCase], corpus_directory: Path
+) -> None:
+    corpus = {
+        path.stem: path.read_text(encoding="utf-8")
+        for path in sorted(corpus_directory.glob("*.txt"))
+    }
+    if not corpus:
+        raise CorpusLoadError("corpus directory must contain at least one .txt file")
+    for case in cases:
+        unknown = set(case.relevant_documents) - corpus.keys()
+        if unknown:
+            raise InvalidEvaluationDatasetError(
+                f"case {case.case_id!r} references unknown documents: "
+                f"{', '.join(sorted(unknown))}"
+            )
+        relevant_text = _normalized_evidence_text(
+            "\n".join(corpus[key] for key in case.relevant_documents)
+        )
+        missing = [
+            passage
+            for passage in case.relevant_passages
+            if _normalized_evidence_text(passage) not in relevant_text
+        ]
+        if missing:
+            raise InvalidEvaluationDatasetError(
+                f"case {case.case_id!r} has evidence outside its relevant documents"
+            )
+
+
+def upload_corpus(
+    client: httpx.Client, corpus_directory: Path
+) -> dict[str, ManifestEntry]:
+    manifest: dict[str, ManifestEntry] = {}
+    paths = sorted(corpus_directory.glob("*.txt"))
+    if not paths:
+        raise CorpusLoadError("corpus directory must contain at least one .txt file")
+    for path in paths:
+        document_key = path.stem
+        with path.open("rb") as source:
+            response = client.post(
+                "/documents",
+                data={"title": document_key},
+                files={"file": (path.name, source, "text/plain")},
+            )
+        if response.status_code == 201:
+            payload = response.json()
+        elif response.status_code == 409:
+            payload = _resolve_existing_document(client, response, document_key)
+        else:
+            response.raise_for_status()
+            raise AssertionError("unreachable")
+        manifest[document_key] = ManifestEntry(
+            document_key=document_key,
+            document_id=str(payload["document_id"]),
+            version_id=str(payload["version_id"]),
+        )
+    return manifest
+
+
+def write_manifest(path: Path, manifest: Mapping[str, ManifestEntry]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "documents": {key: asdict(entry) for key, entry in sorted(manifest.items())}
+    }
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+def fetch_candidates(
+    client: httpx.Client,
+    cases: Iterable[RetrievalCase],
+) -> dict[str, list[RetrievedCandidate]]:
+    candidates: dict[str, list[RetrievedCandidate]] = {}
+    for case in cases:
+        response = client.post(
+            "/search", json={"query": case.query, "limit": COLLECTION_LIMIT}
+        )
+        response.raise_for_status()
+        candidates[case.case_id] = [
+            RetrievedCandidate(
+                document_id=str(row["document_id"]),
+                text=str(row["text"]),
+                score=float(row["similarity"]),
+            )
+            for row in response.json()["results"]
+        ]
+    return candidates
+
+
+def document_rankings(
+    candidates: Mapping[str, Sequence[RetrievedCandidate]],
+    manifest: Mapping[str, ManifestEntry],
+) -> dict[str, list[RankedDocument]]:
+    keys_by_id = {entry.document_id: key for key, entry in manifest.items()}
+    return {
+        case_id: _unique_documents(results, keys_by_id)
+        for case_id, results in candidates.items()
+    }
+
+
+def score_document_rankings(
     cases: Sequence[RetrievalCase],
     rankings: Mapping[str, Sequence[RankedDocument]],
 ) -> dict[str, float]:
     qrels = [
-        ir_measures.Qrel(case.case_id, title, 1)
+        ir_measures.Qrel(case.case_id, document_key, 1)
         for case in cases
-        for title in case.relevant_documents
+        for document_key in case.relevant_documents
     ]
     run = [
-        ir_measures.ScoredDoc(case.case_id, result.document_title, result.score)
+        ir_measures.ScoredDoc(case.case_id, result.document_key, result.score)
         for case in cases
-        for result in rankings.get(case.case_id, ())
+        for result in rankings.get(case.case_id, ())[:ANSWER_CONTEXT_LIMIT]
     ]
     recall_at_1 = Recall @ 1
     recall_at_3 = Recall @ 3
-    reciprocal_rank_at_5 = RR @ DEFAULT_SEARCH_LIMIT
+    reciprocal_rank_at_5 = RR @ ANSWER_CONTEXT_LIMIT
     measured = ir_measures.calc_aggregate(
         [recall_at_1, recall_at_3, reciprocal_rank_at_5], qrels, run
     )
     return {
-        "Recall@1": measured[recall_at_1],
-        "Recall@3": measured[recall_at_3],
-        "MRR@5": measured[reciprocal_rank_at_5],
+        "DocumentRecall@1": measured[recall_at_1],
+        "DocumentRecall@3": measured[recall_at_3],
+        "DocumentMRR@5": measured[reciprocal_rank_at_5],
     }
 
 
-def fetch_rankings(
-    cases: Iterable[RetrievalCase],
+def score_evidence_hits(
+    cases: Sequence[RetrievalCase],
+    candidates: Mapping[str, Sequence[RetrievedCandidate]],
+) -> dict[str, float]:
+    return {
+        f"EvidenceHit@{cutoff}": sum(
+            _has_evidence(case, candidates.get(case.case_id, ()), cutoff=cutoff)
+            for case in cases
+        )
+        / len(cases)
+        for cutoff in (1, 3, ANSWER_CONTEXT_LIMIT)
+    }
+
+
+def _has_evidence(
+    case: RetrievalCase,
+    candidates: Sequence[RetrievedCandidate],
     *,
-    base_url: str,
-    limit: int = DEFAULT_SEARCH_LIMIT,
-) -> dict[str, list[RankedDocument]]:
-    rankings: dict[str, list[RankedDocument]] = {}
-    with httpx.Client(base_url=base_url, timeout=30.0) as client:
-        for case in cases:
-            response = client.post(
-                "/search", json={"query": case.query, "limit": limit}
-            )
-            response.raise_for_status()
-            rows = response.json()["results"]
-            rankings[case.case_id] = _unique_documents(rows)
-    return rankings
+    cutoff: int,
+) -> bool:
+    passages = tuple(
+        _normalized_evidence_text(passage) for passage in case.relevant_passages
+    )
+    return any(
+        passage in _normalized_evidence_text(candidate.text)
+        for candidate in candidates[:cutoff]
+        for passage in passages
+    )
 
 
-def _unique_documents(rows: Iterable[dict[str, Any]]) -> list[RankedDocument]:
+def _normalized_evidence_text(value: str) -> str:
+    return " ".join(value.split()).casefold()
+
+
+def _unique_documents(
+    candidates: Iterable[RetrievedCandidate],
+    keys_by_id: Mapping[str, str],
+) -> list[RankedDocument]:
     results: list[RankedDocument] = []
-    seen_titles: set[str] = set()
-    for row in rows:
-        title = str(row["document_title"])
-        if title in seen_titles:
+    seen_ids: set[str] = set()
+    for candidate in candidates:
+        if candidate.document_id in seen_ids:
             continue
-        seen_titles.add(title)
-        results.append(RankedDocument(title, float(row["similarity"])))
+        seen_ids.add(candidate.document_id)
+        document_key = keys_by_id.get(
+            candidate.document_id, f"unjudged:{candidate.document_id}"
+        )
+        results.append(RankedDocument(document_key, candidate.score))
     return results
+
+
+def _resolve_existing_document(
+    client: httpx.Client,
+    conflict_response: httpx.Response,
+    document_key: str,
+) -> dict[str, Any]:
+    detail = conflict_response.json().get("detail", {})
+    document_id = detail.get("document_id")
+    if not document_id:
+        raise CorpusLoadError(
+            f"duplicate corpus file {document_key!r} did not identify its document"
+        )
+    response = client.get("/documents")
+    response.raise_for_status()
+    for document in response.json():
+        if document["document_id"] != document_id:
+            continue
+        if document["title"] != document_key:
+            raise CorpusLoadError(
+                f"corpus content for {document_key!r} already belongs to title "
+                f"{document['title']!r}; use an isolated evaluation database"
+            )
+        return {
+            "document_id": document_id,
+            "version_id": document["active_version_id"],
+        }
+    raise CorpusLoadError(f"existing document {document_id!r} was not listed")
 
 
 def _parse_case(value: Any, *, line_number: int) -> RetrievalCase:
     if not isinstance(value, dict):
         raise InvalidEvaluationDatasetError(f"line {line_number} must be an object")
-    case_id = value.get("case_id")
-    query = value.get("query")
-    relevant = value.get("relevant_documents")
-    if not isinstance(case_id, str) or not case_id.strip():
+    case_id = _non_empty_string(value.get("case_id"), line_number, "case_id")
+    query = _non_empty_string(value.get("query"), line_number, "query")
+    documents = _non_empty_string_list(
+        value.get("relevant_documents"), line_number, "relevant_documents"
+    )
+    passages = _non_empty_string_list(
+        value.get("relevant_passages"), line_number, "relevant_passages"
+    )
+    return RetrievalCase(case_id, query, documents, passages)
+
+
+def _non_empty_string(value: Any, line_number: int, field: str) -> str:
+    if not isinstance(value, str) or not value.strip():
         raise InvalidEvaluationDatasetError(
-            f"line {line_number} needs a non-empty case_id"
+            f"line {line_number} needs a non-empty {field}"
         )
-    if not isinstance(query, str) or not query.strip():
-        raise InvalidEvaluationDatasetError(
-            f"line {line_number} needs a non-empty query"
-        )
+    return value.strip()
+
+
+def _non_empty_string_list(value: Any, line_number: int, field: str) -> tuple[str, ...]:
     if (
-        not isinstance(relevant, list)
-        or not relevant
-        or any(not isinstance(title, str) or not title.strip() for title in relevant)
+        not isinstance(value, list)
+        or not value
+        or any(not isinstance(item, str) or not item.strip() for item in value)
     ):
         raise InvalidEvaluationDatasetError(
-            f"line {line_number} needs non-empty relevant_documents"
+            f"line {line_number} needs non-empty {field}"
         )
-    if len(set(relevant)) != len(relevant):
-        raise InvalidEvaluationDatasetError(
-            f"line {line_number} repeats a relevant document"
-        )
-    return RetrievalCase(case_id.strip(), query.strip(), tuple(relevant))
+    normalized = tuple(item.strip() for item in value)
+    if len(set(normalized)) != len(normalized):
+        raise InvalidEvaluationDatasetError(f"line {line_number} repeats {field}")
+    return normalized
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Measure live document retrieval")
     parser.add_argument("dataset", type=Path)
+    parser.add_argument("--corpus", type=Path, required=True)
+    parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--base-url", default="http://localhost:8000")
     args = parser.parse_args()
-
     cases = load_cases(args.dataset)
-    rankings = fetch_rankings(cases, base_url=args.base_url)
+    validate_cases_against_corpus(cases, args.corpus)
+    with httpx.Client(base_url=args.base_url, timeout=30.0) as client:
+        manifest = upload_corpus(client, args.corpus)
+        write_manifest(args.manifest, manifest)
+        candidates = fetch_candidates(client, cases)
+    rankings = document_rankings(candidates, manifest)
     report = {
         "case_count": len(cases),
-        "search_limit": DEFAULT_SEARCH_LIMIT,
-        "metrics": score_rankings(cases, rankings),
+        "chunk_collection_limit": COLLECTION_LIMIT,
+        "answer_context_limit": ANSWER_CONTEXT_LIMIT,
+        "metrics": {
+            **score_document_rankings(cases, rankings),
+            **score_evidence_hits(cases, candidates),
+        },
     }
     print(json.dumps(report, indent=2, sort_keys=True))
 

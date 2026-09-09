@@ -48,7 +48,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 - Phase 2 retrieval-evaluation scaffold with a controlled three-document corpus,
-  ten JSONL cases, and package-backed Recall@1, Recall@3, and MRR@5 metrics
+  ten document-and-passage judgments, runtime UUID manifest, package-backed
+  document metrics, and deterministic evidence-hit metrics
 
 ### Planned
 
