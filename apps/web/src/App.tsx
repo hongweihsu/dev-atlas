@@ -20,6 +20,7 @@ export default function App() {
   const [apiState, setApiState] = useState<ApiState>('checking')
   const [title, setTitle] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [fileInputKey, setFileInputKey] = useState(0)
   const [uploadState, setUploadState] = useState<RequestState>('idle')
   const [uploadResult, setUploadResult] = useState<IngestDocumentResponse | null>(null)
   const [uploadError, setUploadError] = useState('')
@@ -80,6 +81,8 @@ export default function App() {
       const result = await uploadDocument(file, title.trim())
       setUploadResult(result)
       await refreshDocuments(result.document_id)
+      setFile(null)
+      setFileInputKey((current) => current + 1)
       setVersionFile(null)
       setVersionError('')
       setVersionState('idle')
@@ -207,8 +210,8 @@ export default function App() {
       <section className="workspace" aria-label="Document research workspace">
         <article className="panel panel--upload">
           <PanelHeading step="01" kicker="Knowledge source" title="Index a document" />
-          <section className="catalog" aria-labelledby="documents-title">
-            <div className="catalog__heading">
+          <section className="document-list" aria-labelledby="documents-title">
+            <div className="document-list__heading">
               <h3 id="documents-title">Documents</h3>
               <div>
                 <label htmlFor="document-sort">Sort</label>
@@ -226,15 +229,15 @@ export default function App() {
               </div>
             </div>
             {documentList.length === 0 ? (
-              <p className="catalog__empty">No indexed documents yet.</p>
+              <p className="document-list__empty">No indexed documents yet.</p>
             ) : (
-              <div className="catalog__items">
+              <div className="document-list__items">
                 {visibleDocumentList.map((document) => (
                   <button
                     className={
                       document.document_id === selectedDocumentId
-                        ? 'catalog__item catalog__item--selected'
-                        : 'catalog__item'
+                        ? 'document-list__item document-list__item--selected'
+                        : 'document-list__item'
                     }
                     type="button"
                     key={document.document_id}
@@ -274,6 +277,7 @@ export default function App() {
             <label className="file-field">
               <span>Plain-text file</span>
               <input
+                key={fileInputKey}
                 type="file"
                 accept=".txt,text/plain"
                 onChange={(event) => setFile(event.target.files?.[0] ?? null)}

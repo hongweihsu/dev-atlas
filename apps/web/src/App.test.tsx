@@ -99,6 +99,8 @@ test('uploads a text document without a custom title', async () => {
   fireEvent.submit(uploadForm!)
 
   expect(await screen.findByText('2 chunk indexed and ready')).toBeInTheDocument()
+  expect(screen.getByText('Choose a .txt file')).toBeInTheDocument()
+  expect(screen.getByLabelText(/Plain-text file/)).toHaveValue('')
   const uploadCall = fetchMock.mock.calls.find(
     ([input, init]) => input === '/api/documents' && init?.method === 'POST',
   )
