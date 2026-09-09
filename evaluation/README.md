@@ -61,3 +61,7 @@ until generation evaluation has a concrete need and a reviewed rubric.
 
 No baseline score should be recorded until the relevance documents and passages
 have been reviewed and the command has completed against live retrieval.
+
+## Recorded runs
+
+- [2026-09-10 vector baseline](reports/2026-09-10-vector-baseline.md)
