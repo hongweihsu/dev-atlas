@@ -65,6 +65,12 @@ h2 { margin: 0.3rem 0 0; font-size: 1.45rem; font-weight: 600; letter-spacing: -
 .document-list__item:hover, .document-list__item--selected { border-color: #76d99e; background: rgba(118, 217, 158, 0.05); }
 .document-list__item strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .document-list__item span { overflow: hidden; color: #718079; font: 0.68rem ui-monospace, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.upload-tabs { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem; border-bottom: 1px solid #31423b; }
+.upload-tabs button { padding: 0.75rem 0.5rem; border: 0; border-bottom: 2px solid transparent; color: #718079; background: transparent; font-size: 0.78rem; font-weight: 700; }
+.upload-tabs button:hover { color: #b7c2be; }
+.upload-tabs button[aria-selected='true'] { border-bottom-color: #76d99e; color: #76d99e; background: rgba(118, 217, 158, 0.04); }
+.upload-tabs button:focus-visible { outline: 2px solid #76d99e; outline-offset: 2px; }
+.upload-tab-panel__empty { margin: 0; padding: 1rem; border-left: 2px solid #3c5148; color: #91a19b; background: #0a1512; font-size: 0.8rem; line-height: 1.5; }
 label { display: grid; gap: 0.55rem; color: #b7c2be; font-size: 0.82rem; font-weight: 600; }
 label > span small { margin-left: 0.35rem; color: #718079; font: 0.65rem ui-monospace, monospace; font-weight: 500; text-transform: uppercase; }
 input[type='text'], textarea { width: 100%; border: 1px solid #31423b; border-radius: 0; outline: none; color: #eef2f0; background: #0a1512; transition: border-color 160ms, box-shadow 160ms; }
@@ -74,7 +80,7 @@ input[type='text']:focus, textarea:focus { border-color: #76d99e; box-shadow: 0 
 
 .file-field input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .file-field__surface { min-height: 9rem; display: grid; place-items: center; align-content: center; gap: 0.35rem; padding: 1rem; border: 1px dashed #3c5148; color: #d9e1de; background: #0a1512; text-align: center; cursor: pointer; transition: border-color 160ms, background 160ms; }
-.file-field:hover .file-field__surface, .file-field input:focus + .file-field__surface { border-color: #76d99e; background: rgba(118, 217, 158, 0.04); }
+.file-field:hover .file-field__surface, .file-field input:focus + .file-field__surface, .file-field--dragging .file-field__surface { border-color: #76d99e; background: rgba(118, 217, 158, 0.08); }
 .file-field__icon { color: #76d99e; font-size: 1.5rem; line-height: 1; }
 .file-field small { color: #718079; font: 0.7rem ui-monospace, monospace; }
 
@@ -89,15 +95,13 @@ button[type='submit']:disabled { cursor: not-allowed; opacity: 0.42; }
 .notice { display: grid; gap: 0.25rem; margin: 1.25rem 0 0; padding: 1rem; border-left: 2px solid; color: #aebbb6; background: #0a1512; font-size: 0.82rem; }
 .notice--success { border-color: #76d99e; }
 .notice--error { border-color: #f08278; color: #ffc2bc; }
-.selected-document { display: grid; gap: 0.2rem; margin-top: 1.5rem; }
+.selected-document { display: grid; gap: 0.2rem; }
 .selected-document span { color: #718079; font: 0.68rem ui-monospace, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
 .selected-document strong { color: #dce5e1; font-size: 0.9rem; }
 .version-form { display: grid; gap: 1rem; margin-top: 1rem; padding-top: 1.25rem; border-top: 1px solid #2a3933; }
 .version-form > div { display: grid; gap: 0.2rem; }
 .version-form > div strong { color: #dce5e1; font-size: 0.86rem; }
 .version-form > div span { color: #718079; font-size: 0.76rem; }
-.version-form input[type='file'] { width: 100%; color: #91a19b; font: 0.72rem ui-monospace, monospace; }
-.version-form input[type='file']::file-selector-button { margin-right: 0.75rem; padding: 0.55rem 0.7rem; border: 1px solid #3c5148; color: #dce5e1; background: #0a1512; cursor: pointer; }
 
 .answer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #2a3933; }
 .answer__meta { display: flex; justify-content: space-between; gap: 1rem; color: #718079; font: 0.7rem ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em; }

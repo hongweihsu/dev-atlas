@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { DragEvent, FormEvent, useEffect, useState } from 'react'
 
 import {
   AnswerResponse,
@@ -15,6 +15,7 @@ import {
 type ApiState = 'checking' | 'healthy' | 'unavailable'
 type RequestState = 'idle' | 'submitting' | 'success' | 'error'
 type DocumentSort = 'updated' | 'name'
+type UploadTab = 'add' | 'update'
 
 export default function App() {
   const [apiState, setApiState] = useState<ApiState>('checking')
@@ -27,6 +28,7 @@ export default function App() {
   const [documentList, setDocumentList] = useState<DocumentSummary[]>([])
   const [documentListError, setDocumentListError] = useState('')
   const [documentSort, setDocumentSort] = useState<DocumentSort>('updated')
+  const [uploadTab, setUploadTab] = useState<UploadTab>('add')
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
   const [versionFile, setVersionFile] = useState<File | null>(null)
   const [versionState, setVersionState] = useState<RequestState>('idle')
@@ -244,6 +246,7 @@ export default function App() {
                     aria-pressed={document.document_id === selectedDocumentId}
                     onClick={() => {
                       setSelectedDocumentId(document.document_id)
+                      setUploadTab('update')
                       setUploadResult(null)
                       setVersionError('')
                     }}
@@ -262,56 +265,82 @@ export default function App() {
             )}
           </section>
 
-          <form onSubmit={handleUpload} className="form-stack">
-            <label>
-              <span>Display title <small>Optional</small></span>
-              <input
-                type="text"
-                value={title}
-                maxLength={255}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Defaults to the filename"
-              />
-            </label>
-
-            <label className="file-field">
-              <span>Plain-text file</span>
-              <input
-                key={fileInputKey}
-                type="file"
-                accept=".txt,text/plain"
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                required
-              />
-              <span className="file-field__surface">
-                <span className="file-field__icon" aria-hidden="true">↑</span>
-                <span>{file ? file.name : 'Choose a .txt file'}</span>
-                <small>UTF-8 · maximum 1 MiB</small>
-              </span>
-            </label>
-
+          <div className="upload-tabs" role="tablist" aria-label="Document action">
             <button
-              type="submit"
-              disabled={
-                apiState !== 'healthy' ||
-                !file ||
-                uploadState === 'submitting'
-              }
+              type="button"
+              role="tab"
+              aria-selected={uploadTab === 'add'}
+              aria-controls="add-document-panel"
+              id="add-document-tab"
+              onClick={() => setUploadTab('add')}
             >
-              {uploadState === 'submitting' ? 'Indexing…' : 'Index document'}
+              Add document
             </button>
-          </form>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={uploadTab === 'update'}
+              aria-controls="update-document-panel"
+              id="update-document-tab"
+              onClick={() => setUploadTab('update')}
+            >
+              Update document
+            </button>
+          </div>
 
-          {uploadResult && (
-            <div className="notice notice--success" role="status">
-              <strong>
-                Version {uploadResult.version_number}: {uploadResult.filename}
-              </strong>
-              <span>{uploadResult.chunk_count} chunk indexed and ready</span>
+          {uploadTab === 'add' && (
+            <div
+              className="upload-tab-panel"
+              role="tabpanel"
+              id="add-document-panel"
+              aria-labelledby="add-document-tab"
+            >
+              <form onSubmit={handleUpload} className="form-stack">
+                <label>
+                  <span>Display title <small>Optional</small></span>
+                  <input
+                    type="text"
+                    value={title}
+                    maxLength={255}
+                    onChange={(event) => setTitle(event.target.value)}
+                    placeholder="Defaults to the filename"
+                  />
+                </label>
+
+                <FileDropField
+                  inputKey={fileInputKey}
+                  label="Plain-text file"
+                  file={file}
+                  onFile={setFile}
+                />
+
+                <button
+                  type="submit"
+                  disabled={
+                    apiState !== 'healthy' ||
+                    !file ||
+                    uploadState === 'submitting'
+                  }
+                >
+                  {uploadState === 'submitting' ? 'Indexing…' : 'Index document'}
+                </button>
+              </form>
+              {uploadResult && <UploadSuccess result={uploadResult} />}
+              {uploadError && (
+                <p className="notice notice--error" role="alert">{uploadError}</p>
+              )}
             </div>
           )}
-          {selectedDocument && (
-            <>
+
+          {uploadTab === 'update' && (
+            <div
+              className="upload-tab-panel"
+              role="tabpanel"
+              id="update-document-panel"
+              aria-labelledby="update-document-tab"
+            >
+              {selectedDocument ? (
+                <>
               <div className="selected-document">
                 <span>Selected document</span>
                 <strong>{selectedDocument.title}</strong>
@@ -321,18 +350,12 @@ export default function App() {
                   <strong>Update this document</strong>
                   <span>Keep its identity and source history.</span>
                 </div>
-                <label>
-                  <span>New version file</span>
-                  <input
-                    key={selectedDocument.active_version_id}
-                    type="file"
-                    accept=".txt,text/plain"
-                    onChange={(event) =>
-                      setVersionFile(event.target.files?.[0] ?? null)
-                    }
-                    required
-                  />
-                </label>
+                <FileDropField
+                  inputKey={selectedDocument.active_version_id}
+                  label="New version file"
+                  file={versionFile}
+                  onFile={setVersionFile}
+                />
                 <button
                   type="submit"
                   disabled={
@@ -346,13 +369,19 @@ export default function App() {
                     : `Upload Version ${selectedDocument.active_version_number + 1}`}
                 </button>
               </form>
-            </>
-          )}
-          {uploadError && (
-            <p className="notice notice--error" role="alert">{uploadError}</p>
-          )}
-          {versionError && (
-            <p className="notice notice--error" role="alert">{versionError}</p>
+                  {uploadResult && <UploadSuccess result={uploadResult} />}
+                  {versionError && (
+                    <p className="notice notice--error" role="alert">
+                      {versionError}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="upload-tab-panel__empty">
+                  Select a document above before uploading a new version.
+                </p>
+              )}
+            </div>
           )}
         </article>
 
@@ -404,6 +433,59 @@ function PanelHeading(props: { step: string; kicker: string; title: string }) {
         <p className="kicker">{props.kicker}</p>
         <h2>{props.title}</h2>
       </div>
+    </div>
+  )
+}
+
+function FileDropField(props: {
+  inputKey: string | number
+  label: string
+  file: File | null
+  onFile: (file: File | null) => void
+}) {
+  const [isDragging, setIsDragging] = useState(false)
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    setIsDragging(false)
+    props.onFile(event.dataTransfer.files[0] ?? null)
+  }
+
+  return (
+    <label
+      className={isDragging ? 'file-field file-field--dragging' : 'file-field'}
+      onDragEnter={(event) => {
+        event.preventDefault()
+        setIsDragging(true)
+      }}
+      onDragOver={(event) => event.preventDefault()}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+    >
+      <span>{props.label}</span>
+      <input
+        key={props.inputKey}
+        type="file"
+        accept=".txt,text/plain"
+        onChange={(event) => props.onFile(event.target.files?.[0] ?? null)}
+        required
+      />
+      <span className="file-field__surface">
+        <span className="file-field__icon" aria-hidden="true">↑</span>
+        <span>{props.file ? props.file.name : 'Choose a .txt file'}</span>
+        <small>
+          {props.file ? 'Ready to upload' : 'or drop it here'} · UTF-8 · maximum 1 MiB
+        </small>
+      </span>
+    </label>
+  )
+}
+
+function UploadSuccess({ result }: { result: IngestDocumentResponse }) {
+  return (
+    <div className="notice notice--success" role="status">
+      <strong>Version {result.version_number}: {result.filename}</strong>
+      <span>{result.chunk_count} chunk indexed and ready</span>
     </div>
   )
 }

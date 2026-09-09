@@ -64,7 +64,7 @@ test('shows an unavailable banner and retries the health check', async () => {
   expect(fetchMock).toHaveBeenCalledTimes(3)
 })
 
-test('uploads a text document without a custom title', async () => {
+test('uploads a dropped text document without a custom title', async () => {
   let created = false
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
@@ -90,8 +90,9 @@ test('uploads a text document without a custom title', async () => {
   render(<App />)
   await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
 
-  fireEvent.change(screen.getByLabelText(/Plain-text file/), {
-    target: { files: [new File(['source'], 'notes.txt', { type: 'text/plain' })] },
+  const droppedFile = new File(['source'], 'notes.txt', { type: 'text/plain' })
+  fireEvent.drop(screen.getByText('Choose a .txt file').closest('label')!, {
+    dataTransfer: { files: [droppedFile] },
   })
   const uploadButton = screen.getByRole('button', { name: 'Index document' })
   const uploadForm = uploadButton.closest('form')
@@ -164,7 +165,9 @@ test('uploads a new version for the document that was just indexed', async () =>
   fireEvent.submit(createButton.closest('form')!)
   expect(await screen.findByText('Version 1: notes.txt')).toBeInTheDocument()
 
-  fireEvent.change(screen.getByLabelText('New version file'), {
+  fireEvent.click(screen.getByRole('tab', { name: 'Update document' }))
+
+  fireEvent.change(screen.getByLabelText(/New version file/), {
     target: {
       files: [new File(['second'], 'notes-v2.txt', { type: 'text/plain' })],
     },
@@ -227,7 +230,9 @@ test('shows a duplicate-content error when a version is rejected', async () => {
   fireEvent.submit(createButton.closest('form')!)
   await screen.findByText('Version 1: notes.txt')
 
-  fireEvent.change(screen.getByLabelText('New version file'), {
+  fireEvent.click(screen.getByRole('tab', { name: 'Update document' }))
+
+  fireEvent.change(screen.getByLabelText(/New version file/), {
     target: { files: [new File(['same'], 'notes-again.txt', { type: 'text/plain' })] },
   })
   const versionButton = screen.getByRole('button', { name: 'Upload Version 2' })
@@ -370,6 +375,7 @@ test('selects the existing document when a new upload duplicates its content', a
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'this content is already indexed',
   )
+  fireEvent.click(screen.getByRole('tab', { name: 'Update document' }))
   expect(screen.getByText('Selected document').nextSibling).toHaveTextContent(
     'Architecture notes',
   )
