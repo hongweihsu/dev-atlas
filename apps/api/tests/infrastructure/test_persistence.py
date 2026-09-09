@@ -50,6 +50,7 @@ def make_record() -> NewDocumentRecord:
 @pytest.mark.asyncio
 async def test_repository_maps_complete_document_aggregate() -> None:
     session = MagicMock(spec=AsyncSession)
+    session.scalar = AsyncMock(return_value=None)
     repository = SqlAlchemyDocumentIngestionRepository(session)
     record = make_record()
 

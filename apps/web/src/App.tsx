@@ -2,9 +2,12 @@ import { FormEvent, useEffect, useState } from 'react'
 
 import {
   AnswerResponse,
+  ApiRequestError,
+  DocumentSummary,
   IngestDocumentResponse,
   answerQuestion,
   checkHealth,
+  listDocuments,
   uploadDocument,
   uploadDocumentVersion,
 } from './api'
@@ -19,6 +22,9 @@ export default function App() {
   const [uploadState, setUploadState] = useState<RequestState>('idle')
   const [uploadResult, setUploadResult] = useState<IngestDocumentResponse | null>(null)
   const [uploadError, setUploadError] = useState('')
+  const [documents, setDocuments] = useState<DocumentSummary[]>([])
+  const [catalogError, setCatalogError] = useState('')
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
   const [versionFile, setVersionFile] = useState<File | null>(null)
   const [versionState, setVersionState] = useState<RequestState>('idle')
   const [versionError, setVersionError] = useState('')
@@ -30,7 +36,18 @@ export default function App() {
   useEffect(() => {
     const controller = new AbortController()
     void checkHealth(controller.signal)
-      .then(() => setApiState('healthy'))
+      .then(async () => {
+        setApiState('healthy')
+        try {
+          const loaded = await listDocuments()
+          setDocuments(loaded)
+          setSelectedDocumentId((current) => current ?? loaded[0]?.document_id ?? null)
+        } catch (error) {
+          setCatalogError(
+            error instanceof Error ? error.message : 'Document list failed',
+          )
+        }
+      })
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           setApiState('unavailable')
@@ -44,6 +61,7 @@ export default function App() {
     try {
       await checkHealth()
       setApiState('healthy')
+      await refreshDocuments()
     } catch {
       setApiState('unavailable')
     }
@@ -59,28 +77,37 @@ export default function App() {
     try {
       const result = await uploadDocument(file, title.trim())
       setUploadResult(result)
+      await refreshDocuments(result.document_id)
       setVersionFile(null)
       setVersionError('')
       setVersionState('idle')
       setUploadState('success')
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed')
+      if (
+        error instanceof ApiRequestError &&
+        error.code === 'duplicate_document_content' &&
+        error.documentId
+      ) {
+        await refreshDocuments(error.documentId)
+      }
       setUploadState('error')
     }
   }
 
   async function handleVersionUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!uploadResult || !versionFile) return
+    if (!selectedDocumentId || !versionFile) return
 
     setVersionState('submitting')
     setVersionError('')
     try {
       const result = await uploadDocumentVersion(
-        uploadResult.document_id,
+        selectedDocumentId,
         versionFile,
       )
       setUploadResult(result)
+      await refreshDocuments(result.document_id)
       setVersionFile(null)
       setVersionState('success')
     } catch (error) {
@@ -88,6 +115,26 @@ export default function App() {
       setVersionState('error')
     }
   }
+
+  async function refreshDocuments(preferredDocumentId?: string) {
+    try {
+      const loaded = await listDocuments()
+      setDocuments(loaded)
+      setCatalogError('')
+      setSelectedDocumentId((current) => {
+        const preferred = preferredDocumentId ?? current
+        return loaded.some((document) => document.document_id === preferred)
+          ? preferred ?? null
+          : loaded[0]?.document_id ?? null
+      })
+    } catch (error) {
+      setCatalogError(error instanceof Error ? error.message : 'Document list failed')
+    }
+  }
+
+  const selectedDocument = documents.find(
+    (document) => document.document_id === selectedDocumentId,
+  )
 
   async function handleQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -149,6 +196,43 @@ export default function App() {
       <section className="workspace" aria-label="Document research workspace">
         <article className="panel panel--upload">
           <PanelHeading step="01" kicker="Knowledge source" title="Index a document" />
+          <section className="catalog" aria-labelledby="documents-title">
+            <div className="catalog__heading">
+              <h3 id="documents-title">Documents</h3>
+              <span>{documents.length}</span>
+            </div>
+            {documents.length === 0 ? (
+              <p className="catalog__empty">No indexed documents yet.</p>
+            ) : (
+              <div className="catalog__items">
+                {documents.map((document) => (
+                  <button
+                    className={
+                      document.document_id === selectedDocumentId
+                        ? 'catalog__item catalog__item--selected'
+                        : 'catalog__item'
+                    }
+                    type="button"
+                    key={document.document_id}
+                    aria-pressed={document.document_id === selectedDocumentId}
+                    onClick={() => {
+                      setSelectedDocumentId(document.document_id)
+                      setUploadResult(null)
+                      setVersionError('')
+                    }}
+                  >
+                    <strong>{document.title}</strong>
+                    <span>
+                      Version {document.active_version_number} ·{' '}
+                      {document.source_filename}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {catalogError && <p className="notice notice--error">{catalogError}</p>}
+          </section>
+
           <form onSubmit={handleUpload} className="form-stack">
             <label>
               <span>Document title</span>
@@ -191,12 +275,18 @@ export default function App() {
           </form>
 
           {uploadResult && (
+            <div className="notice notice--success" role="status">
+              <strong>
+                Version {uploadResult.version_number}: {uploadResult.filename}
+              </strong>
+              <span>{uploadResult.chunk_count} chunk indexed and ready</span>
+            </div>
+          )}
+          {selectedDocument && (
             <>
-              <div className="notice notice--success" role="status">
-                <strong>
-                  Version {uploadResult.version_number}: {uploadResult.filename}
-                </strong>
-                <span>{uploadResult.chunk_count} chunk indexed and ready</span>
+              <div className="selected-document">
+                <span>Selected document</span>
+                <strong>{selectedDocument.title}</strong>
               </div>
               <form className="version-form" onSubmit={handleVersionUpload}>
                 <div>
@@ -206,7 +296,7 @@ export default function App() {
                 <label>
                   <span>New version file</span>
                   <input
-                    key={uploadResult.version_id}
+                    key={selectedDocument.active_version_id}
                     type="file"
                     accept=".txt,text/plain"
                     onChange={(event) =>
@@ -225,7 +315,7 @@ export default function App() {
                 >
                   {versionState === 'submitting'
                     ? 'Indexing new version…'
-                    : `Upload Version ${uploadResult.version_number + 1}`}
+                    : `Upload Version ${selectedDocument.active_version_number + 1}`}
                 </button>
               </form>
             </>

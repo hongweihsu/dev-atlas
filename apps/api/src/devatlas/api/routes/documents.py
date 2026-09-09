@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
@@ -18,6 +19,7 @@ from devatlas.application.ingest_document import (
     IngestNewDocumentCommand,
     InvalidDocumentTitleError,
 )
+from devatlas.application.list_documents import ListDocuments
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
@@ -43,6 +45,16 @@ class IngestDocumentResponse(BaseModel):
     status: Literal["ready"]
 
 
+class DocumentSummaryResponse(BaseModel):
+    document_id: str
+    title: str
+    active_version_id: str
+    active_version_number: int
+    source_filename: str
+    chunk_count: int
+    updated_at: datetime
+
+
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
@@ -63,12 +75,45 @@ def get_ingest_new_document(request: Request) -> IngestNewDocument:
 IngestionService = Annotated[IngestNewDocument, Depends(get_ingest_new_document)]
 
 
+def get_list_documents(request: Request) -> ListDocuments:
+    service = getattr(request.app.state, "list_documents", None)
+    if service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "document_catalog_unavailable",
+                "message": "document catalog is not configured",
+            },
+        )
+    return cast(ListDocuments, service)
+
+
+DocumentListService = Annotated[ListDocuments, Depends(get_list_documents)]
+
+
 def _validation_status(code: DocumentValidationCode) -> int:
     if code is DocumentValidationCode.UNSUPPORTED_TYPE:
         return status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
     if code is DocumentValidationCode.FILE_TOO_LARGE:
         return status.HTTP_413_CONTENT_TOO_LARGE
     return status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+@router.get("", response_model=list[DocumentSummaryResponse])
+async def list_documents(service: DocumentListService) -> list[DocumentSummaryResponse]:
+    documents = await service.execute()
+    return [
+        DocumentSummaryResponse(
+            document_id=str(document.document_id),
+            title=document.title,
+            active_version_id=str(document.active_version_id),
+            active_version_number=document.active_version_number,
+            source_filename=document.source_filename,
+            chunk_count=document.chunk_count,
+            updated_at=document.updated_at,
+        )
+        for document in documents
+    ]
 
 
 @router.post(
@@ -148,9 +193,15 @@ async def _ingest(
             detail={"code": "document_not_found", "message": str(error)},
         ) from error
     except DuplicateDocumentContentError as error:
+        detail: dict[str, str] = {
+            "code": "duplicate_document_content",
+            "message": str(error),
+        }
+        if error.document_id is not None:
+            detail["document_id"] = str(error.document_id)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"code": "duplicate_document_content", "message": str(error)},
+            detail=detail,
         ) from error
 
     return IngestDocumentResponse(

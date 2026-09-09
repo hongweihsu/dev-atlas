@@ -39,3 +39,12 @@ index. `POST /documents/{document_id}/versions` locks the parent document so
 concurrent updates serialize, rejects duplicate normalized content, calculates
 the next consecutive number, and performs the active-version transition in one
 transaction.
+
+New writes also treat a normalized checksum already stored under another
+document as duplicate content. Existing development data already contained
+historical cross-document duplicates, so this rule is enforced without a new
+global unique constraint: the persistence adapter takes a PostgreSQL
+transaction-level advisory lock derived from the checksum and then performs an
+exact checksum query. The lock serializes competing new writes; the exact query
+avoids relying on the advisory-lock hash as identity. The conflict returns the
+existing document ID so a client can select that logical document instead.

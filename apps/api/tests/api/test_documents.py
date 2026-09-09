@@ -5,8 +5,13 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.documents import get_ingest_new_document
+from devatlas.api.routes.documents import (
+    get_ingest_new_document,
+    get_list_documents,
+)
 from devatlas.application.ingest_document import IngestNewDocument
+from devatlas.application.list_documents import ListDocuments
+from devatlas.application.ports.catalog import DocumentSummary
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
@@ -54,6 +59,57 @@ def test_post_document_returns_ready_provenance(
     assert body["document_id"] == str(factory.committed_documents[0].id)
     assert body["version_id"] == str(factory.committed_documents[0].version.id)
     assert factory.committed_documents[0].title == "Architecture notes"
+
+
+def test_get_documents_returns_active_version_summaries() -> None:
+    from datetime import UTC, datetime
+
+    service = AsyncMock(spec=ListDocuments)
+    service.execute.return_value = [
+        DocumentSummary(
+            document_id=uuid4(),
+            title="Architecture notes",
+            active_version_id=uuid4(),
+            active_version_number=2,
+            source_filename="notes-v2.txt",
+            chunk_count=3,
+            updated_at=datetime(2026, 9, 9, tzinfo=UTC),
+        )
+    ]
+    app.dependency_overrides[get_list_documents] = lambda: service
+    try:
+        response = TestClient(app).get("/documents")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()[0]["title"] == "Architecture notes"
+    assert response.json()[0]["active_version_number"] == 2
+    assert response.json()[0]["chunk_count"] == 3
+
+
+def test_post_document_duplicate_returns_existing_document_id(
+    ingestion_client: tuple[TestClient, FakeIngestionUnitOfWorkFactory],
+) -> None:
+    client, _ = ingestion_client
+    first = client.post(
+        "/documents",
+        data={"title": "First title"},
+        files={"file": ("notes.txt", b"same content", "text/plain")},
+    )
+
+    duplicate = client.post(
+        "/documents",
+        data={"title": "Different title"},
+        files={"file": ("copy.txt", b"same content", "text/plain")},
+    )
+
+    assert duplicate.status_code == 409
+    assert duplicate.json()["detail"] == {
+        "code": "duplicate_document_content",
+        "message": "this content already exists in another document",
+        "document_id": first.json()["document_id"],
+    }
 
 
 @pytest.mark.parametrize(

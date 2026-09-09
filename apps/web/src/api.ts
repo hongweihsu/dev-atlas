@@ -1,5 +1,16 @@
 interface ApiErrorBody {
-  detail?: string | { message?: string }
+  detail?: string | { code?: string; message?: string; document_id?: string }
+}
+
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+    readonly documentId?: string,
+  ) {
+    super(message)
+    this.name = 'ApiRequestError'
+  }
 }
 
 interface HealthResponse {
@@ -15,6 +26,16 @@ export interface IngestDocumentResponse {
   chunk_count: number
   version_number: number
   status: 'ready'
+}
+
+export interface DocumentSummary {
+  document_id: string
+  title: string
+  active_version_id: string
+  active_version_number: number
+  source_filename: string
+  chunk_count: number
+  updated_at: string
 }
 
 export interface AnswerCitation {
@@ -40,16 +61,20 @@ async function parseResponse<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>
 
   let message = `Request failed (${response.status})`
+  let code: string | undefined
+  let documentId: string | undefined
   try {
     const body = (await response.json()) as ApiErrorBody
     if (typeof body.detail === 'string') message = body.detail
     if (typeof body.detail === 'object' && body.detail?.message) {
       message = body.detail.message
+      code = body.detail.code
+      documentId = body.detail.document_id
     }
   } catch {
     // Keep the status-based message when the response is not JSON.
   }
-  throw new Error(message)
+  throw new ApiRequestError(message, code, documentId)
 }
 
 export async function checkHealth(signal?: AbortSignal): Promise<HealthResponse> {
@@ -64,6 +89,10 @@ export async function uploadDocument(
   body.append('title', title)
   body.append('file', file)
   return parseResponse(await fetch('/api/documents', { method: 'POST', body }))
+}
+
+export async function listDocuments(): Promise<DocumentSummary[]> {
+  return parseResponse(await fetch('/api/documents'))
 }
 
 export async function uploadDocumentVersion(

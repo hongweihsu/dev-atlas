@@ -18,6 +18,7 @@ from devatlas.infrastructure.database import create_session_factory
 from devatlas.infrastructure.models import Document, DocumentVersion
 from devatlas.infrastructure.persistence import (
     SqlAlchemyChunkSearchRepository,
+    SqlAlchemyDocumentCatalogRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
 )
 from tests.fakes import DeterministicEmbeddingProvider
@@ -203,5 +204,55 @@ async def test_reingestion_archives_previous_version_and_rejects_duplicate() -> 
     finally:
         async with session_factory() as session:
             await session.execute(delete(Document).where(Document.title == title))
+            await session.commit()
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_catalog_and_global_duplicate_protection() -> None:
+    assert TEST_DATABASE_URL is not None
+    engine = create_async_engine(TEST_DATABASE_URL)
+    session_factory = create_session_factory(engine)
+    ingestion = IngestNewDocument(
+        embedding_provider=DeterministicEmbeddingProvider(dimension=1536),
+        unit_of_work_factory=SqlAlchemyIngestionUnitOfWorkFactory(session_factory),
+    )
+    catalog = SqlAlchemyDocumentCatalogRepository(session_factory)
+    titles = ["Catalog integration fixture", "Catalog duplicate fixture"]
+    content = b"catalog integration content unique to this test"
+
+    try:
+        created = await ingestion.execute(
+            IngestNewDocumentCommand(
+                title=titles[0],
+                source_filename="catalog.txt",
+                media_type="text/plain",
+                content=content,
+            )
+        )
+
+        summaries = await catalog.list_documents()
+        summary = next(
+            item for item in summaries if item.document_id == created.document_id
+        )
+        assert summary.title == titles[0]
+        assert summary.active_version_id == created.version_id
+        assert summary.active_version_number == 1
+        assert summary.source_filename == "catalog.txt"
+        assert summary.chunk_count == created.chunk_count
+
+        with pytest.raises(DuplicateDocumentContentError) as error:
+            await ingestion.execute(
+                IngestNewDocumentCommand(
+                    title=titles[1],
+                    source_filename="same-content.txt",
+                    media_type="text/plain",
+                    content=content,
+                )
+            )
+        assert error.value.document_id == created.document_id
+    finally:
+        async with session_factory() as session:
+            await session.execute(delete(Document).where(Document.title.in_(titles)))
             await session.commit()
         await engine.dispose()

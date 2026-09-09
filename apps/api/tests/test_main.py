@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 import devatlas.main as main_module
 from devatlas.application.answer_documents import AnswerDocuments
 from devatlas.application.ingest_document import IngestNewDocument
+from devatlas.application.list_documents import ListDocuments
 from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings
 
@@ -43,12 +44,14 @@ def test_lifespan_wires_and_releases_ingestion_dependencies(
             application.state.ingest_new_document,
             IngestNewDocument,
         )
+        assert isinstance(application.state.list_documents, ListDocuments)
         assert isinstance(application.state.search_documents, SearchDocuments)
         assert isinstance(application.state.answer_documents, AnswerDocuments)
 
     assert not hasattr(application.state, "ingest_new_document")
     assert not hasattr(application.state, "search_documents")
     assert not hasattr(application.state, "answer_documents")
+    assert not hasattr(application.state, "list_documents")
     client.close.assert_awaited_once()
     engine.dispose.assert_awaited_once()
 
@@ -57,6 +60,9 @@ def test_lifespan_leaves_ingestion_unconfigured_without_api_key() -> None:
     application = main_module.create_app(Settings(openai_api_key=None))
 
     with TestClient(application):
+        assert isinstance(application.state.list_documents, ListDocuments)
         assert not hasattr(application.state, "ingest_new_document")
         assert not hasattr(application.state, "search_documents")
         assert not hasattr(application.state, "answer_documents")
+
+    assert not hasattr(application.state, "list_documents")

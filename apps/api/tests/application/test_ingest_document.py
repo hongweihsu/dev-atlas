@@ -174,6 +174,23 @@ async def test_ingest_duplicate_content_is_rejected() -> None:
 
 
 @pytest.mark.asyncio
+async def test_new_document_rejects_content_that_already_exists_globally() -> None:
+    factory = FakeIngestionUnitOfWorkFactory()
+    use_case = IngestNewDocument(
+        embedding_provider=DeterministicEmbeddingProvider(dimension=8),
+        unit_of_work_factory=factory,
+        expected_embedding_dimension=8,
+    )
+    original = await use_case.execute(make_command(title="First title"))
+
+    with pytest.raises(DuplicateDocumentContentError) as caught:
+        await use_case.execute(make_command(title="Different title"))
+
+    assert caught.value.document_id == original.document_id
+    assert len(factory.committed_documents) == 1
+
+
+@pytest.mark.asyncio
 async def test_ingest_version_rejects_unknown_document() -> None:
     from uuid import uuid4
 

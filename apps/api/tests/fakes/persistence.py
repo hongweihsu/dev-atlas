@@ -15,6 +15,19 @@ class FakeDocumentIngestionRepository:
         self.staged: list[NewDocumentRecord] = []
 
     async def add(self, document: NewDocumentRecord) -> None:
+        duplicate = next(
+            (
+                item
+                for item in self._committed_documents
+                if item.version.content_checksum == document.version.content_checksum
+            ),
+            None,
+        )
+        if duplicate is not None:
+            raise DuplicateDocumentContentError(
+                "this content already exists in another document",
+                document_id=duplicate.id,
+            )
         self.staged.append(document)
 
     async def add_version(

@@ -26,6 +26,11 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Atomic `POST /documents/{document_id}/versions` re-ingestion: changed content
   receives the next consecutive version, the previous version is archived, and
   duplicate normalized content returns a stable conflict
+- Persistent `GET /documents` catalog with each document's active version,
+  filename, and chunk count; the React workspace can select any listed document
+  for a version update after a page reload
+- Global normalized-content duplicate protection for new writes, including
+  concurrent requests, while preserving pre-existing historical rows
 - OpenAI `text-embedding-3-small` adapter and FastAPI lifespan wiring, enabled
   only when `OPENAI_API_KEY` is configured
 - Controlled live upload verified document, active-version, chunk, model, and
@@ -36,8 +41,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   source/version/chunk provenance; verified through one controlled live query
 - Bounded grounded-answer generation through `POST /answers`, with citations
   mapped back to document versions, chunks, source text, and character offsets
-- React document workspace for text upload, consecutive version replacement,
-  questions, answer sufficiency, and expandable citation provenance
+- React document workspace for text upload, persistent document selection,
+  consecutive version replacement, questions, answer sufficiency, and
+  expandable citation provenance
 - Docker Compose workflow for web, API, and database services
 - Lightweight linting, formatting, type checking, and tests
 

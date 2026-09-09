@@ -19,6 +19,23 @@ class SqlAlchemyDocumentIngestionRepository:
         self._session = session
 
     async def add(self, record: NewDocumentRecord) -> None:
+        await self._session.execute(
+            select(
+                func.pg_advisory_xact_lock(
+                    func.hashtext(record.version.content_checksum)
+                )
+            )
+        )
+        duplicate_document_id = await self._session.scalar(
+            select(DocumentVersion.document_id).where(
+                DocumentVersion.content_checksum == record.version.content_checksum
+            )
+        )
+        if duplicate_document_id is not None:
+            raise DuplicateDocumentContentError(
+                "this content already exists in another document",
+                document_id=duplicate_document_id,
+            )
         version = self._map_version(record.version)
         document = Document(
             id=record.id,

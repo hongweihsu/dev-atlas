@@ -41,6 +41,11 @@ identity per version, exact offset bounds, fixed 1,536-dimensional embeddings,
 and cascading ownership. Re-ingestion locks the logical document, rejects an
 existing normalized-content checksum, assigns the next version number, archives
 the old active version, and creates the new active version in one transaction.
+For new writes, the application additionally rejects a checksum found under any
+logical document and returns that existing document's ID. This global policy is
+transactionally serialized with a PostgreSQL advisory lock so historical
+duplicates can remain without weakening concurrency protection for future
+writes.
 
 The remaining entities will receive concrete schemas, constraints, indexes, and
 security tests only in the phases that implement them.

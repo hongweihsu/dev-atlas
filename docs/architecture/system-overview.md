@@ -30,9 +30,9 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 
 ## Responsibilities
 
-- **Web:** document upload and replacement-version forms, questions, grounded
-  answers, expandable citation provenance, and actionable API availability
-  feedback.
+- **Web:** persistent document catalog and selection, document upload and
+  replacement-version forms, questions, grounded answers, expandable citation
+  provenance, and actionable API availability feedback.
 - **API:** HTTP contracts and the application/domain boundary.
 - **Database:** durable document/version/chunk metadata and vector storage.
 - **Alembic:** explicit, reviewable database schema evolution.
@@ -64,6 +64,14 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   content for a logical document. A row lock serializes concurrent updates;
   duplicate normalized content returns `409`, missing documents return `404`,
   and the old-active/new-active transition commits atomically.
+- **Catalog API:** `GET /documents` returns each logical document with its active
+  version ID and number, source filename, chunk count, and update time. It is
+  available whenever the database is configured and does not require an OpenAI
+  key.
+- **Duplicate-write policy:** all new document/version writes reject normalized
+  content already stored anywhere in the catalog. A checksum-derived PostgreSQL
+  advisory transaction lock serializes concurrent candidates before an exact
+  checksum lookup. Historical duplicate rows remain untouched.
 - **Retrieval application:** validates bounded queries, embeds each query once,
   and delegates ranking through a provider-independent search port.
 - **Retrieval adapter:** computes pgvector cosine distance only across active

@@ -45,6 +45,10 @@ class DocumentNotFoundError(LookupError):
 class DuplicateDocumentContentError(ValueError):
     """Raised when a document already contains the normalized content."""
 
+    def __init__(self, message: str, *, document_id: UUID | None = None) -> None:
+        super().__init__(message)
+        self.document_id = document_id
+
 
 class DocumentIngestionRepository(Protocol):
     """Persistence operations required by new-document ingestion."""

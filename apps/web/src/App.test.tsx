@@ -12,10 +12,29 @@ function jsonResponse(body: object, status = 200) {
   })
 }
 
+function documentSummary(versionNumber = 1, filename = 'notes.txt') {
+  return {
+    document_id: 'document-id',
+    title: 'Architecture notes',
+    active_version_id: `version-${versionNumber}-id`,
+    active_version_number: versionNumber,
+    source_filename: filename,
+    chunk_count: versionNumber,
+    updated_at: '2026-09-09T00:00:00Z',
+  }
+}
+
+function isDocumentListRequest(input: RequestInfo | URL, init?: RequestInit) {
+  return input === '/api/documents' && init?.method !== 'POST'
+}
+
 test('shows the product identity and hides healthy API status', async () => {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-    jsonResponse({ status: 'ok', service: 'devatlas-api' }),
-  )
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    return jsonResponse([])
+  })
 
   render(<App />)
 
@@ -32,6 +51,7 @@ test('shows an unavailable banner and retries the health check', async () => {
     .spyOn(globalThis, 'fetch')
     .mockRejectedValueOnce(new Error('offline'))
     .mockResolvedValueOnce(jsonResponse({ status: 'ok', service: 'devatlas-api' }))
+    .mockResolvedValueOnce(jsonResponse([]))
 
   render(<App />)
 
@@ -41,14 +61,19 @@ test('shows an unavailable banner and retries the health check', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Retry connection' }))
 
   await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
-  expect(fetchMock).toHaveBeenCalledTimes(2)
+  expect(fetchMock).toHaveBeenCalledTimes(3)
 })
 
 test('uploads a text document and reports the indexed chunk count', async () => {
-  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+  let created = false
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isDocumentListRequest(input, init)) {
+      return jsonResponse(created ? [documentSummary()] : [])
+    }
+    created = true
     return jsonResponse(
       {
         document_id: 'document-id',
@@ -77,17 +102,28 @@ test('uploads a text document and reports the indexed chunk count', async () => 
   fireEvent.submit(uploadForm!)
 
   expect(await screen.findByText('2 chunk indexed and ready')).toBeInTheDocument()
-  const uploadCall = fetchMock.mock.calls.find(([input]) => input === '/api/documents')
+  const uploadCall = fetchMock.mock.calls.find(
+    ([input, init]) => input === '/api/documents' && init?.method === 'POST',
+  )
   expect(uploadCall?.[1]?.method).toBe('POST')
   expect(uploadCall?.[1]?.body).toBeInstanceOf(FormData)
 })
 
 test('uploads a new version for the document that was just indexed', async () => {
-  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+  let activeVersion = 0
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
-    if (input === '/api/documents') {
+    if (isDocumentListRequest(input, init)) {
+      return jsonResponse(
+        activeVersion === 0
+          ? []
+          : [documentSummary(activeVersion, activeVersion === 1 ? 'notes.txt' : 'notes-v2.txt')],
+      )
+    }
+    if (input === '/api/documents' && init?.method === 'POST') {
+      activeVersion = 1
       return jsonResponse(
         {
           document_id: 'document-id',
@@ -101,6 +137,7 @@ test('uploads a new version for the document that was just indexed', async () =>
         201,
       )
     }
+    activeVersion = 2
     return jsonResponse(
       {
         document_id: 'document-id',
@@ -144,11 +181,16 @@ test('uploads a new version for the document that was just indexed', async () =>
 })
 
 test('shows a duplicate-content error when a version is rejected', async () => {
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+  let created = false
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
-    if (input === '/api/documents') {
+    if (isDocumentListRequest(input, init)) {
+      return jsonResponse(created ? [documentSummary()] : [])
+    }
+    if (input === '/api/documents' && init?.method === 'POST') {
+      created = true
       return jsonResponse(
         {
           document_id: 'document-id',
@@ -198,10 +240,11 @@ test('shows a duplicate-content error when a version is rejected', async () => {
 })
 
 test('asks a question and renders expandable citation provenance', async () => {
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isDocumentListRequest(input, init)) return jsonResponse([])
     return jsonResponse({
       answer: 'Offsets connect the chunk to normalized source text.',
       has_sufficient_evidence: true,
@@ -238,10 +281,11 @@ test('asks a question and renders expandable citation provenance', async () => {
 })
 
 test('shows the API error message without discarding the question', async () => {
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isDocumentListRequest(input, init)) return jsonResponse([])
     return jsonResponse({ detail: { message: 'answer provider request failed' } }, 503)
   })
   render(<App />)
@@ -255,4 +299,72 @@ test('shows the API error message without discarding the question', async () => 
     'answer provider request failed',
   )
   expect(question).toHaveValue('What happened?')
+})
+
+test('loads existing documents and lets the user select one for an update', async () => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    return jsonResponse([
+      documentSummary(),
+      {
+        ...documentSummary(3, 'database-v3.txt'),
+        document_id: 'database-document-id',
+        title: 'Database notes',
+      },
+    ])
+  })
+
+  render(<App />)
+
+  expect(
+    await screen.findByRole('button', { name: /Architecture notes/i }),
+  ).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Database notes/i }))
+  expect(screen.getByText('Selected document').nextSibling).toHaveTextContent(
+    'Database notes',
+  )
+  expect(screen.getByRole('button', { name: 'Upload Version 4' })).toBeDisabled()
+})
+
+test('selects the existing document when a new upload duplicates its content', async () => {
+  let duplicateRejected = false
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    if (isDocumentListRequest(input, init)) {
+      return jsonResponse(duplicateRejected ? [documentSummary()] : [])
+    }
+    duplicateRejected = true
+    return jsonResponse(
+      {
+        detail: {
+          code: 'duplicate_document_content',
+          message: 'this content is already indexed',
+          document_id: 'document-id',
+        },
+      },
+      409,
+    )
+  })
+
+  render(<App />)
+  await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
+  fireEvent.change(screen.getByLabelText('Document title'), {
+    target: { value: 'A duplicate title' },
+  })
+  fireEvent.change(screen.getByLabelText(/Plain-text file/), {
+    target: { files: [new File(['same'], 'duplicate.txt', { type: 'text/plain' })] },
+  })
+  const uploadButton = screen.getByRole('button', { name: 'Index document' })
+  fireEvent.submit(uploadButton.closest('form')!)
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'this content is already indexed',
+  )
+  expect(screen.getByText('Selected document').nextSibling).toHaveTextContent(
+    'Architecture notes',
+  )
 })
