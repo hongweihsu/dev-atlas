@@ -12,6 +12,7 @@ from devatlas.evaluation.retrieval import (
     RetrievalCase,
     RetrievedCandidate,
     _unique_documents,
+    build_case_results,
     document_rankings,
     load_cases,
     score_document_rankings,
@@ -173,3 +174,45 @@ def test_standard_document_metrics_and_evidence_hits_are_separate() -> None:
         "EvidenceHit@3": 1.0,
         "EvidenceHit@5": 1.0,
     }
+
+    assert build_case_results(cases, candidates, rankings) == [
+        {
+            "case_id": "transaction-boundary",
+            "document_rank": 1,
+            "evidence_rank": 2,
+            "retrieved_documents": [
+                {"rank": 1, "document_key": "transactions", "score": 0.9}
+            ],
+            "retrieved_chunks": [
+                {
+                    "rank": 1,
+                    "document_id": "doc-1",
+                    "score": 0.9,
+                    "contains_evidence": False,
+                },
+                {
+                    "rank": 2,
+                    "document_id": "doc-1",
+                    "score": 0.8,
+                    "contains_evidence": True,
+                },
+            ],
+        },
+        {
+            "case_id": "q2",
+            "document_rank": 2,
+            "evidence_rank": 1,
+            "retrieved_documents": [
+                {"rank": 1, "document_key": "other", "score": 0.9},
+                {"rank": 2, "document_key": "vite", "score": 0.8},
+            ],
+            "retrieved_chunks": [
+                {
+                    "rank": 1,
+                    "document_id": "doc-2",
+                    "score": 0.8,
+                    "contains_evidence": True,
+                }
+            ],
+        },
+    ]

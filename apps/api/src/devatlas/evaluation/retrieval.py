@@ -219,19 +219,92 @@ def score_evidence_hits(
     }
 
 
+def build_case_results(
+    cases: Sequence[RetrievalCase],
+    candidates: Mapping[str, Sequence[RetrievedCandidate]],
+    rankings: Mapping[str, Sequence[RankedDocument]],
+) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for case in cases:
+        case_candidates = candidates.get(case.case_id, ())
+        case_rankings = rankings.get(case.case_id, ())
+        results.append(
+            {
+                "case_id": case.case_id,
+                "document_rank": _first_relevant_document_rank(case, case_rankings),
+                "evidence_rank": _first_evidence_rank(case, case_candidates),
+                "retrieved_documents": [
+                    {
+                        "rank": rank,
+                        "document_key": result.document_key,
+                        "score": result.score,
+                    }
+                    for rank, result in enumerate(
+                        case_rankings[:ANSWER_CONTEXT_LIMIT], start=1
+                    )
+                ],
+                "retrieved_chunks": [
+                    {
+                        "rank": rank,
+                        "document_id": result.document_id,
+                        "score": result.score,
+                        "contains_evidence": _candidate_contains_evidence(case, result),
+                    }
+                    for rank, result in enumerate(
+                        case_candidates[:ANSWER_CONTEXT_LIMIT], start=1
+                    )
+                ],
+            }
+        )
+    return results
+
+
 def _has_evidence(
     case: RetrievalCase,
     candidates: Sequence[RetrievedCandidate],
     *,
     cutoff: int,
 ) -> bool:
-    passages = tuple(
-        _normalized_evidence_text(passage) for passage in case.relevant_passages
-    )
     return any(
-        passage in _normalized_evidence_text(candidate.text)
+        _candidate_contains_evidence(case, candidate)
         for candidate in candidates[:cutoff]
-        for passage in passages
+    )
+
+
+def _candidate_contains_evidence(
+    case: RetrievalCase, candidate: RetrievedCandidate
+) -> bool:
+    candidate_text = _normalized_evidence_text(candidate.text)
+    return any(
+        _normalized_evidence_text(passage) in candidate_text
+        for passage in case.relevant_passages
+    )
+
+
+def _first_relevant_document_rank(
+    case: RetrievalCase, rankings: Sequence[RankedDocument]
+) -> int | None:
+    relevant = set(case.relevant_documents)
+    return next(
+        (
+            rank
+            for rank, result in enumerate(rankings, start=1)
+            if result.document_key in relevant
+        ),
+        None,
+    )
+
+
+def _first_evidence_rank(
+    case: RetrievalCase, candidates: Sequence[RetrievedCandidate]
+) -> int | None:
+    return next(
+        (
+            rank
+            for rank, candidate in enumerate(candidates, start=1)
+            if _candidate_contains_evidence(case, candidate)
+        ),
+        None,
     )
 
 
@@ -326,6 +399,7 @@ def main() -> None:
     parser.add_argument("dataset", type=Path)
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--report", type=Path)
     parser.add_argument("--base-url", default="http://localhost:8000")
     args = parser.parse_args()
     cases = load_cases(args.dataset)
@@ -343,8 +417,13 @@ def main() -> None:
             **score_document_rankings(cases, rankings),
             **score_evidence_hits(cases, candidates),
         },
+        "cases": build_case_results(cases, candidates, rankings),
     }
-    print(json.dumps(report, indent=2, sort_keys=True))
+    rendered_report = json.dumps(report, indent=2, sort_keys=True) + "\n"
+    if args.report is not None:
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(rendered_report, encoding="utf-8")
+    print(rendered_report, end="")
 
 
 if __name__ == "__main__":

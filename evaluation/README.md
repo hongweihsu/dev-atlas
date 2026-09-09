@@ -30,7 +30,8 @@ cd apps/api
 uv run --extra evaluation python -m devatlas.evaluation.retrieval \
   ../../evaluation/retrieval-cases.jsonl \
   --corpus ../../evaluation/corpus \
-  --manifest ../../evaluation/runs/manifest.json
+  --manifest ../../evaluation/runs/manifest.json \
+  --report ../../evaluation/runs/latest-report.json
 ```
 
 Use `--base-url` if the API is not at `http://localhost:8000`.
@@ -51,6 +52,9 @@ documents with `DocumentRecall@1`, `DocumentRecall@3`, and `DocumentMRR@5`.
 It separately reports `EvidenceHit@1`, `EvidenceHit@3`, and `EvidenceHit@5` over
 the actual chunk order used to construct answer context. An evidence hit means
 at least one retrieved chunk contains one of the reviewed evidence excerpts.
+The ignored JSON report also records each case's first relevant-document rank,
+first evidence-bearing chunk rank, and top-five candidates so aggregate changes
+can be traced back to concrete failures.
 
 ## Package decision
 
