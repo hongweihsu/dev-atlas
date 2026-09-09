@@ -50,12 +50,12 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Retrieval-evaluation scaffold with a controlled five-document corpus,
   sixteen document-and-passage judgments, runtime UUID manifest, package-backed
   document metrics, and deterministic evidence-hit metrics
-- Recorded vector-search baseline over an isolated three-document corpus, with
-  per-case ranks and explicit limits on what the perfect controlled score means
+- Measured five-document hybrid comparison: overall Recall@1 improved from
+  0.875 to 0.938 while identifier Recall@1 remained 1.000
 
 ### Planned
 
-- Vector and lexical retrieval with measured evaluation
+- Persistent or cached lexical indexing after a representative latency benchmark
 - Workspace-scoped authorization and explicit search scope
 - Asynchronous ingestion and AWS deployment
 - Multimodal document understanding and bounded research workflows
@@ -133,17 +133,19 @@ document ingestion; leave it empty to keep the endpoint safely unavailable.
 
 ## Future direction
 
-The next milestone establishes a small reviewed retrieval baseline and makes
-one package-adoption decision before adding hybrid search. Multi-user
-authorization, asynchronous processing, and cloud deployment come later.
+The current milestone finishes Hybrid Retrieval by clarifying score semantics
+and measuring its bounded in-memory index cost. Reranking and context
+engineering follow; multi-user authorization, asynchronous processing, and
+cloud deployment come later.
 
 ## Limitations
 
-- No authentication, workspace isolation, background ingestion, or hybrid search
-  exists yet. The retrieval baseline covers only three one-chunk controlled
-  documents and must not be interpreted as general search accuracy.
+- No authentication, workspace isolation, or background ingestion exists yet.
+  The hybrid comparison covers only five controlled documents and must not be
+  interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Re-ingestion currently embeds content before transactional duplicate
   detection, so a rejected duplicate may still incur embedding usage.
 - The health endpoint currently reports API liveness, not database readiness.
-- No performance or quality benchmark claims have been made.
+- BM25 currently rebuilds an in-memory active-chunk index per search; its
+  performance has not yet been benchmarked at representative corpus sizes.
