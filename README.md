@@ -50,6 +50,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Phase 2 retrieval-evaluation scaffold with a controlled three-document corpus,
   ten document-and-passage judgments, runtime UUID manifest, package-backed
   document metrics, and deterministic evidence-hit metrics
+- Recorded vector-search baseline over an isolated three-document corpus, with
+  per-case ranks and explicit limits on what the perfect controlled score means
 
 ### Planned
 
@@ -138,8 +140,8 @@ authorization, asynchronous processing, and cloud deployment come later.
 ## Limitations
 
 - No authentication, workspace isolation, background ingestion, or hybrid search
-  exists yet. The retrieval benchmark scaffold exists, but no live baseline score
-  is claimed until its relevance judgments are reviewed and the run is recorded.
+  exists yet. The retrieval baseline covers only three one-chunk controlled
+  documents and must not be interpreted as general search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Re-ingestion currently embeds content before transactional duplicate
   detection, so a rejected duplicate may still incur embedding usage.

@@ -75,3 +75,4 @@ have been reviewed and the command has completed against live retrieval.
 ## Recorded runs
 
 - [2026-09-10 mixed-index observation](reports/2026-09-10-mixed-index-observation.md)
+- [2026-09-10 controlled vector baseline](reports/2026-09-10-controlled-vector-baseline.md)
