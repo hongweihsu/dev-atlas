@@ -27,8 +27,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   receives the next consecutive version, the previous version is archived, and
   duplicate normalized content returns a stable conflict
 - Persistent `GET /documents` catalog with each document's active version,
-  filename, and chunk count; the React workspace can select any listed document
-  for a version update after a page reload
+  filename, and chunk count; the React workspace can sort by recent update or
+  display name and select any listed document for a version update after reload
+- Optional document display titles that default to the uploaded filename stem
 - Global normalized-content duplicate protection for new writes, including
   concurrent requests, while preserving pre-existing historical rows
 - OpenAI `text-embedding-3-small` adapter and FastAPI lifespan wiring, enabled

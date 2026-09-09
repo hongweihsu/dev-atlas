@@ -64,7 +64,7 @@ test('shows an unavailable banner and retries the health check', async () => {
   expect(fetchMock).toHaveBeenCalledTimes(3)
 })
 
-test('uploads a text document and reports the indexed chunk count', async () => {
+test('uploads a text document without a custom title', async () => {
   let created = false
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
@@ -90,9 +90,6 @@ test('uploads a text document and reports the indexed chunk count', async () => 
   render(<App />)
   await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
 
-  fireEvent.change(screen.getByLabelText('Document title'), {
-    target: { value: 'Architecture notes' },
-  })
   fireEvent.change(screen.getByLabelText(/Plain-text file/), {
     target: { files: [new File(['source'], 'notes.txt', { type: 'text/plain' })] },
   })
@@ -107,6 +104,7 @@ test('uploads a text document and reports the indexed chunk count', async () => 
   )
   expect(uploadCall?.[1]?.method).toBe('POST')
   expect(uploadCall?.[1]?.body).toBeInstanceOf(FormData)
+  expect((uploadCall?.[1]?.body as FormData).get('title')).toBe('')
 })
 
 test('uploads a new version for the document that was just indexed', async () => {
@@ -154,7 +152,7 @@ test('uploads a new version for the document that was just indexed', async () =>
   render(<App />)
   await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
 
-  fireEvent.change(screen.getByLabelText('Document title'), {
+  fireEvent.change(screen.getByLabelText(/Display title/), {
     target: { value: 'Architecture notes' },
   })
   fireEvent.change(screen.getByLabelText(/Plain-text file/), {
@@ -217,7 +215,7 @@ test('shows a duplicate-content error when a version is rejected', async () => {
   render(<App />)
   await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
 
-  fireEvent.change(screen.getByLabelText('Document title'), {
+  fireEvent.change(screen.getByLabelText(/Display title/), {
     target: { value: 'Architecture notes' },
   })
   fireEvent.change(screen.getByLabelText(/Plain-text file/), {
@@ -307,12 +305,12 @@ test('loads existing documents and lets the user select one for an update', asyn
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
     return jsonResponse([
-      documentSummary(),
       {
         ...documentSummary(3, 'database-v3.txt'),
         document_id: 'database-document-id',
         title: 'Database notes',
       },
+      documentSummary(),
     ])
   })
 
@@ -321,11 +319,17 @@ test('loads existing documents and lets the user select one for an update', asyn
   expect(
     await screen.findByRole('button', { name: /Architecture notes/i }),
   ).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /Database notes/i }))
+  fireEvent.click(screen.getByRole('button', { name: /Architecture notes/i }))
   expect(screen.getByText('Selected document').nextSibling).toHaveTextContent(
-    'Database notes',
+    'Architecture notes',
   )
-  expect(screen.getByRole('button', { name: 'Upload Version 4' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Upload Version 2' })).toBeDisabled()
+
+  fireEvent.change(screen.getByLabelText('Sort'), { target: { value: 'name' } })
+  const documentButtons = screen.getAllByRole('button', {
+    name: /Architecture notes|Database notes/i,
+  })
+  expect(documentButtons[0]).toHaveAccessibleName(/Architecture notes/i)
 })
 
 test('selects the existing document when a new upload duplicates its content', async () => {
@@ -352,7 +356,7 @@ test('selects the existing document when a new upload duplicates its content', a
 
   render(<App />)
   await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
-  fireEvent.change(screen.getByLabelText('Document title'), {
+  fireEvent.change(screen.getByLabelText(/Display title/), {
     target: { value: 'A duplicate title' },
   })
   fireEvent.change(screen.getByLabelText(/Plain-text file/), {

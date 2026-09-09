@@ -11,7 +11,7 @@ from devatlas.api.routes.documents import (
 )
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
-from devatlas.application.ports.catalog import DocumentSummary
+from devatlas.application.ports.document_list import DocumentSummary
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
@@ -59,6 +59,20 @@ def test_post_document_returns_ready_provenance(
     assert body["document_id"] == str(factory.committed_documents[0].id)
     assert body["version_id"] == str(factory.committed_documents[0].version.id)
     assert factory.committed_documents[0].title == "Architecture notes"
+
+
+def test_post_document_defaults_blank_title_to_filename(
+    ingestion_client: tuple[TestClient, FakeIngestionUnitOfWorkFactory],
+) -> None:
+    client, factory = ingestion_client
+
+    response = client.post(
+        "/documents",
+        files={"file": ("architecture-notes.txt", b"content", "text/plain")},
+    )
+
+    assert response.status_code == 201
+    assert factory.committed_documents[0].title == "architecture-notes"
 
 
 def test_get_documents_returns_active_version_summaries() -> None:
@@ -148,7 +162,7 @@ def test_post_document_maps_safe_validation_errors(
     assert factory.committed_documents == []
 
 
-@pytest.mark.parametrize("title", ["", "   ", "a" * 256])
+@pytest.mark.parametrize("title", ["a" * 256])
 def test_post_document_rejects_invalid_title(
     ingestion_client: tuple[TestClient, FakeIngestionUnitOfWorkFactory],
     title: str,

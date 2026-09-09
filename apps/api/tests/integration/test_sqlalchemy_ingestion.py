@@ -18,7 +18,7 @@ from devatlas.infrastructure.database import create_session_factory
 from devatlas.infrastructure.models import Document, DocumentVersion
 from devatlas.infrastructure.persistence import (
     SqlAlchemyChunkSearchRepository,
-    SqlAlchemyDocumentCatalogRepository,
+    SqlAlchemyDocumentListRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
 )
 from tests.fakes import DeterministicEmbeddingProvider
@@ -217,7 +217,7 @@ async def test_catalog_and_global_duplicate_protection() -> None:
         embedding_provider=DeterministicEmbeddingProvider(dimension=1536),
         unit_of_work_factory=SqlAlchemyIngestionUnitOfWorkFactory(session_factory),
     )
-    catalog = SqlAlchemyDocumentCatalogRepository(session_factory)
+    document_list = SqlAlchemyDocumentListRepository(session_factory)
     titles = ["Catalog integration fixture", "Catalog duplicate fixture"]
     content = b"catalog integration content unique to this test"
 
@@ -231,7 +231,7 @@ async def test_catalog_and_global_duplicate_protection() -> None:
             )
         )
 
-        summaries = await catalog.list_documents()
+        summaries = await document_list.list_documents()
         summary = next(
             item for item in summaries if item.document_id == created.document_id
         )

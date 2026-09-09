@@ -10,12 +10,12 @@ from devatlas.infrastructure.persistence.unit_of_work import (
 )
 
 __all__ = [
-    "SqlAlchemyDocumentCatalogRepository",
+    "SqlAlchemyDocumentListRepository",
     "SqlAlchemyDocumentIngestionRepository",
     "SqlAlchemyChunkSearchRepository",
     "SqlAlchemyIngestionUnitOfWork",
     "SqlAlchemyIngestionUnitOfWorkFactory",
 ]
-from devatlas.infrastructure.persistence.catalog import (
-    SqlAlchemyDocumentCatalogRepository,
+from devatlas.infrastructure.persistence.document_list import (
+    SqlAlchemyDocumentListRepository,
 )

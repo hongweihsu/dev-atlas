@@ -155,10 +155,14 @@ async def _ingest(
     filename = file.filename or ""
     media_type = file.content_type or ""
     content = await file.read(DEFAULT_MAX_TEXT_BYTES + 1)
+    resolved_title = title
+    if document_id is None and not title.strip():
+        filename_without_path = filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+        resolved_title = filename_without_path.rsplit(".", 1)[0] or "Untitled document"
 
     try:
         command = IngestNewDocumentCommand(
-            title=title,
+            title=resolved_title,
             source_filename=filename,
             media_type=media_type,
             content=content,

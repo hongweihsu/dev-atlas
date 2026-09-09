@@ -15,7 +15,7 @@ class DocumentSummary:
     updated_at: datetime
 
 
-class DocumentCatalogRepository(Protocol):
+class DocumentListRepository(Protocol):
     async def list_documents(self) -> list[DocumentSummary]:
         """Return logical documents with their active version summaries."""
         ...

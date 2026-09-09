@@ -1,11 +1,11 @@
 from sqlalchemy import func, select
 
-from devatlas.application.ports.catalog import DocumentSummary
+from devatlas.application.ports.document_list import DocumentSummary
 from devatlas.infrastructure.models import Chunk, Document, DocumentVersion
 from devatlas.infrastructure.persistence.unit_of_work import SessionFactory
 
 
-class SqlAlchemyDocumentCatalogRepository:
+class SqlAlchemyDocumentListRepository:
     def __init__(self, session_factory: SessionFactory) -> None:
         self._session_factory = session_factory
 

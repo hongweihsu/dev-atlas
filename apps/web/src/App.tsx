@@ -14,6 +14,7 @@ import {
 
 type ApiState = 'checking' | 'healthy' | 'unavailable'
 type RequestState = 'idle' | 'submitting' | 'success' | 'error'
+type DocumentSort = 'updated' | 'name'
 
 export default function App() {
   const [apiState, setApiState] = useState<ApiState>('checking')
@@ -22,8 +23,9 @@ export default function App() {
   const [uploadState, setUploadState] = useState<RequestState>('idle')
   const [uploadResult, setUploadResult] = useState<IngestDocumentResponse | null>(null)
   const [uploadError, setUploadError] = useState('')
-  const [documents, setDocuments] = useState<DocumentSummary[]>([])
-  const [catalogError, setCatalogError] = useState('')
+  const [documentList, setDocumentList] = useState<DocumentSummary[]>([])
+  const [documentListError, setDocumentListError] = useState('')
+  const [documentSort, setDocumentSort] = useState<DocumentSort>('updated')
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
   const [versionFile, setVersionFile] = useState<File | null>(null)
   const [versionState, setVersionState] = useState<RequestState>('idle')
@@ -40,10 +42,10 @@ export default function App() {
         setApiState('healthy')
         try {
           const loaded = await listDocuments()
-          setDocuments(loaded)
+          setDocumentList(loaded)
           setSelectedDocumentId((current) => current ?? loaded[0]?.document_id ?? null)
         } catch (error) {
-          setCatalogError(
+          setDocumentListError(
             error instanceof Error ? error.message : 'Document list failed',
           )
         }
@@ -69,7 +71,7 @@ export default function App() {
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!file || !title.trim()) return
+    if (!file) return
 
     setUploadState('submitting')
     setUploadError('')
@@ -119,8 +121,8 @@ export default function App() {
   async function refreshDocuments(preferredDocumentId?: string) {
     try {
       const loaded = await listDocuments()
-      setDocuments(loaded)
-      setCatalogError('')
+      setDocumentList(loaded)
+      setDocumentListError('')
       setSelectedDocumentId((current) => {
         const preferred = preferredDocumentId ?? current
         return loaded.some((document) => document.document_id === preferred)
@@ -128,11 +130,20 @@ export default function App() {
           : loaded[0]?.document_id ?? null
       })
     } catch (error) {
-      setCatalogError(error instanceof Error ? error.message : 'Document list failed')
+      setDocumentListError(
+        error instanceof Error ? error.message : 'Document list failed',
+      )
     }
   }
 
-  const selectedDocument = documents.find(
+  const visibleDocumentList =
+    documentSort === 'name'
+      ? [...documentList].sort((left, right) =>
+          left.title.localeCompare(right.title, undefined, { sensitivity: 'base' }),
+        )
+      : documentList
+
+  const selectedDocument = documentList.find(
     (document) => document.document_id === selectedDocumentId,
   )
 
@@ -199,13 +210,26 @@ export default function App() {
           <section className="catalog" aria-labelledby="documents-title">
             <div className="catalog__heading">
               <h3 id="documents-title">Documents</h3>
-              <span>{documents.length}</span>
+              <div>
+                <label htmlFor="document-sort">Sort</label>
+                <select
+                  id="document-sort"
+                  value={documentSort}
+                  onChange={(event) =>
+                    setDocumentSort(event.target.value as DocumentSort)
+                  }
+                >
+                  <option value="updated">Recently updated</option>
+                  <option value="name">Name</option>
+                </select>
+                <span>{documentList.length}</span>
+              </div>
             </div>
-            {documents.length === 0 ? (
+            {documentList.length === 0 ? (
               <p className="catalog__empty">No indexed documents yet.</p>
             ) : (
               <div className="catalog__items">
-                {documents.map((document) => (
+                {visibleDocumentList.map((document) => (
                   <button
                     className={
                       document.document_id === selectedDocumentId
@@ -230,19 +254,20 @@ export default function App() {
                 ))}
               </div>
             )}
-            {catalogError && <p className="notice notice--error">{catalogError}</p>}
+            {documentListError && (
+              <p className="notice notice--error">{documentListError}</p>
+            )}
           </section>
 
           <form onSubmit={handleUpload} className="form-stack">
             <label>
-              <span>Document title</span>
+              <span>Display title <small>Optional</small></span>
               <input
                 type="text"
                 value={title}
                 maxLength={255}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder="e.g. Architecture notes"
-                required
+                placeholder="Defaults to the filename"
               />
             </label>
 
@@ -266,7 +291,6 @@ export default function App() {
               disabled={
                 apiState !== 'healthy' ||
                 !file ||
-                !title.trim() ||
                 uploadState === 'submitting'
               }
             >

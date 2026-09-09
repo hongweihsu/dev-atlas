@@ -19,7 +19,7 @@ from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
 from devatlas.infrastructure.generation import OpenAIAnswerGenerator
 from devatlas.infrastructure.persistence import (
     SqlAlchemyChunkSearchRepository,
-    SqlAlchemyDocumentCatalogRepository,
+    SqlAlchemyDocumentListRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
 )
 
@@ -32,7 +32,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         engine = create_database_engine(app_settings.database_url)
         session_factory = create_session_factory(engine)
         application.state.list_documents = ListDocuments(
-            SqlAlchemyDocumentCatalogRepository(session_factory)
+            SqlAlchemyDocumentListRepository(session_factory)
         )
         client: AsyncOpenAI | None = None
         if app_settings.openai_api_key is not None:
