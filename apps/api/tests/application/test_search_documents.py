@@ -23,7 +23,8 @@ def make_result() -> RetrievedChunk:
         text="transaction boundary",
         start_offset=0,
         end_offset=20,
-        similarity=0.9,
+        score=0.9,
+        scoring_method="cosine_similarity",
     )
 
 

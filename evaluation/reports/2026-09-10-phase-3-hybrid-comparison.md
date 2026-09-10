@@ -23,7 +23,7 @@ three strategies were rerun against the corrected judgment.
 | --- | ---: | ---: | ---: |
 | DocumentRecall@1 | 0.875 | 1.000 | 0.938 |
 | DocumentMRR@5 | 0.927 | 1.000 | 0.938 |
-| EvidenceHit@1 | 0.875 | 1.000 | 0.875 |
+| EvidenceHit@1 | 0.875 | 1.000 | 0.938 |
 | DocumentRecall@3 | 1.000 | 1.000 | 1.000 |
 | EvidenceHit@3 | 1.000 | 1.000 | 1.000 |
 | EvidenceHit@5 | 1.000 | 1.000 | 1.000 |
@@ -32,23 +32,23 @@ three strategies were rerun against the corrected judgment.
 | --- | ---: | ---: | ---: |
 | DocumentRecall@1 | 0.800 | 1.000 | 0.900 |
 | DocumentMRR@5 | 0.883 | 1.000 | 0.900 |
-| EvidenceHit@1 | 0.800 | 1.000 | 0.800 |
+| EvidenceHit@1 | 0.800 | 1.000 | 0.900 |
 
 All three strategies scored 1.000 on identifier rank-one metrics.
 
 ## Per-case changes
 
 - Vector-only placed `vector-model` third and `vector-provenance` second.
-- Hybrid placed both cases second.
+- Hybrid placed `vector-model` second and `vector-provenance` first.
 - BM25-only placed all sixteen judged documents and evidence passages first.
 - No strategy missed judged evidence within the top three.
 
-Hybrid improved document rank-one retrieval over vector-only and preserved
-identifier performance, but it did not outperform BM25-only on this corpus. Its
-EvidenceHit@1 also remained equal to vector-only. The current English dataset
-has substantial query/document vocabulary overlap and is therefore not strong
-evidence of semantic and lexical complementarity. Hybrid remains implemented as
-a product capability, but the measured claim must include this limitation.
+Hybrid improved both document and evidence rank-one retrieval over vector-only
+and preserved identifier performance, but it did not outperform BM25-only on
+this corpus. The current English dataset has substantial query/document
+vocabulary overlap and is therefore not strong evidence of semantic and lexical
+complementarity. Hybrid remains implemented as a product capability, but the
+measured claim must include this limitation.
 
 ## Implementation observations
 

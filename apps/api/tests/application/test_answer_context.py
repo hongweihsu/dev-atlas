@@ -21,7 +21,8 @@ def make_chunk(*, ordinal: int, text: str) -> RetrievedChunk:
         text=text,
         start_offset=ordinal * 100,
         end_offset=ordinal * 100 + len(text),
-        similarity=0.9 - ordinal / 100,
+        score=0.9 - ordinal / 100,
+        scoring_method="cosine_similarity",
     )
 
 

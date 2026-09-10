@@ -31,7 +31,8 @@ def make_chunk() -> RetrievedChunk:
         text="A unit of work defines a transaction boundary.",
         start_offset=100,
         end_offset=146,
-        similarity=0.91,
+        score=0.91,
+        scoring_method="cosine_similarity",
     )
 
 

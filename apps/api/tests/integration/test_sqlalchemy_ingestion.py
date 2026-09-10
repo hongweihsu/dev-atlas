@@ -127,7 +127,8 @@ async def test_retrieval_ranks_matching_active_chunk_first() -> None:
         assert results[0].version_number == 1
         assert results[0].ordinal == 0
         assert results[0].text == "transaction boundaries"
-        assert results[0].similarity == pytest.approx(1.0)
+        assert results[0].score == pytest.approx(1.0)
+        assert results[0].scoring_method == "cosine_similarity"
 
         async with session_factory() as session:
             await session.execute(

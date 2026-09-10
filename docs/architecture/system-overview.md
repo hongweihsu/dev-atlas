@@ -78,6 +78,8 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   cosine distance while BM25S ranks a snapshot of current active chunks by
   lexical relevance. Deterministic reciprocal-rank fusion combines candidate
   positions by stable chunk UUID instead of adding incomparable raw scores.
+  Search responses expose a generic `score` plus `scoring_method`; an RRF value
+  is never described as cosine similarity.
   The first bounded BM25 slice rebuilds its in-memory index per search; this is
   explicit technical debt rather than a production-scale latency claim.
 - **Search API:** `POST /search` accepts a bounded JSON query and result limit,

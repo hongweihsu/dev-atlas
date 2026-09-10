@@ -4,6 +4,7 @@ from typing import Literal, Protocol
 from uuid import UUID
 
 type RetrievalStrategy = Literal["vector", "lexical", "hybrid"]
+type ScoringMethod = Literal["cosine_similarity", "bm25", "rrf"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,7 +18,8 @@ class RetrievedChunk:
     text: str
     start_offset: int
     end_offset: int
-    similarity: float
+    score: float
+    scoring_method: ScoringMethod
 
 
 class ChunkSearchRepository(Protocol):

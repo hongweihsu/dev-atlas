@@ -71,7 +71,8 @@ class SqlAlchemyChunkSearchRepository:
                 text=row.text,
                 start_offset=row.start_offset,
                 end_offset=row.end_offset,
-                similarity=1.0 - float(row.cosine_distance),
+                score=1.0 - float(row.cosine_distance),
+                scoring_method="cosine_similarity",
             )
             for row in result
         ]
@@ -130,7 +131,8 @@ class SqlAlchemyBm25ChunkSearchRepository:
                 text=rows[int(index)].text,
                 start_offset=rows[int(index)].start_offset,
                 end_offset=rows[int(index)].end_offset,
-                similarity=float(score),
+                score=float(score),
+                scoring_method="bm25",
             )
             for index, score in zip(result.documents[0], result.scores[0], strict=True)
             if float(score) > 0.0

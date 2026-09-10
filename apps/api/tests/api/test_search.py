@@ -30,7 +30,8 @@ def search_client() -> Iterator[TestClient]:
                 text="transaction boundaries",
                 start_offset=0,
                 end_offset=22,
-                similarity=0.91,
+                score=0.91,
+                scoring_method="cosine_similarity",
             )
         ]
     )
@@ -62,7 +63,8 @@ def test_post_search_returns_ranked_chunk_provenance(
     assert result["text"] == "transaction boundaries"
     assert result["start_offset"] == 0
     assert result["end_offset"] == 22
-    assert result["similarity"] == 0.91
+    assert result["score"] == 0.91
+    assert result["scoring_method"] == "cosine_similarity"
 
 
 @pytest.mark.parametrize(

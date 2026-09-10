@@ -63,6 +63,10 @@ can be traced back to concrete failures.
 Aggregate metrics are also grouped by category so an identifier improvement
 cannot hide a semantic regression.
 
+Candidate parsing uses the API's generic `score` field. Interpret it together
+with `scoring_method`: vector uses cosine similarity, lexical uses BM25, and
+hybrid uses RRF. Scores from different methods must not be compared directly.
+
 Use `--strategy vector`, `--strategy lexical`, and `--strategy hybrid` to run a
 three-way ablation against the same corpus. Lexical mode deliberately skips the
 embedding provider, so a BM25-only run makes no query-embedding calls.

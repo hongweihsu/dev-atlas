@@ -21,7 +21,8 @@ def make_chunk(number: int) -> RetrievedChunk:
         text=f"chunk {number}",
         start_offset=0,
         end_offset=7,
-        similarity=0.5,
+        score=0.5,
+        scoring_method="cosine_similarity",
     )
 
 
@@ -39,7 +40,8 @@ def test_rrf_rewards_chunks_found_by_both_retrievers() -> None:
         first.chunk_id,
         third.chunk_id,
     ]
-    assert results[0].similarity == pytest.approx(2 / 62)
+    assert results[0].score == pytest.approx(2 / 62)
+    assert results[0].scoring_method == "rrf"
 
 
 def test_rrf_breaks_equal_rank_ties_by_stable_chunk_id() -> None:

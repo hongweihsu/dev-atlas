@@ -44,10 +44,11 @@ editable document field.
 Search and answers
 
 Search accepts a bounded non-empty query and returns ranked chunks with document,
-version, chunk, ordinal, text, offsets, and similarity provenance. Answer generation
-uses only bounded retrieved context and returns citations that map to those stored
-identifiers. An empty retrieval result does not authorize sending an unsupported
-general-knowledge question directly to the model.
+version, chunk, ordinal, text, offsets, score, and scoring-method provenance. Vector
+results use cosine similarity, lexical results use BM25, and hybrid results use RRF.
+Answer generation uses only bounded retrieved context and returns citations that map
+to those stored identifiers. An empty retrieval result does not authorize sending an
+unsupported general-knowledge question directly to the model.
 
 The request correlation header X-Request-ID is operational metadata, not document
 identity. It may connect logs across API and provider boundaries, while document ID

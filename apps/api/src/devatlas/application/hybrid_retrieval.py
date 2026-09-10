@@ -93,6 +93,10 @@ def reciprocal_rank_fusion(
         ),
     )
     return [
-        replace(chunks[chunk_id], similarity=scores[chunk_id])
+        replace(
+            chunks[chunk_id],
+            score=scores[chunk_id],
+            scoring_method="rrf",
+        )
         for chunk_id in ordered_ids[:limit]
     ]

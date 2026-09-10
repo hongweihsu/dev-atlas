@@ -239,7 +239,7 @@ def fetch_candidates(
             RetrievedCandidate(
                 document_id=str(row["document_id"]),
                 text=str(row["text"]),
-                score=float(row["similarity"]),
+                score=float(row["score"]),
             )
             for row in response.json()["results"]
         ]
