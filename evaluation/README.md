@@ -96,3 +96,4 @@ have been reviewed and the command has completed against live retrieval.
 - [2026-09-10 controlled vector baseline](reports/2026-09-10-controlled-vector-baseline.md)
 - [2026-09-10 Phase 3 stratified vector baseline](reports/2026-09-10-phase-3-vector-baseline.md)
 - [2026-09-10 Phase 3 hybrid comparison](reports/2026-09-10-phase-3-hybrid-comparison.md)
+- [2026-09-11 BM25S index lifecycle benchmark](reports/2026-09-11-bm25-index-benchmark.md)

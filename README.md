@@ -52,10 +52,12 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   document metrics, and deterministic evidence-hit metrics
 - Measured five-document ablation: vector, BM25, and hybrid Recall@1 were 0.875,
   1.000, and 0.938 respectively; the lexical-heavy corpus limitation is explicit
+- Reproducible BM25S lifecycle benchmark with an explicit cache-review gate at
+  1,000 active chunks or 25 ms measured rebuild p95
 
 ### Planned
 
-- Persistent or cached lexical indexing after a representative latency benchmark
+- Persistent or cached lexical indexing when its measured review gate is reached
 - Workspace-scoped authorization and explicit search scope
 - Asynchronous ingestion and AWS deployment
 - Multimodal document understanding and bounded research workflows
