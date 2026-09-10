@@ -1,4 +1,4 @@
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
@@ -17,6 +17,7 @@ from devatlas.application.search_documents import (
 class SearchRequest(BaseModel):
     query: str
     limit: int = 5
+    strategy: Literal["vector", "lexical", "hybrid"] = "hybrid"
 
 
 class SearchChunkResponse(BaseModel):
@@ -62,7 +63,11 @@ async def search_documents(
 ) -> SearchResponse:
     try:
         results = await service.execute(
-            SearchDocumentsCommand(query=request.query, limit=request.limit)
+            SearchDocumentsCommand(
+                query=request.query,
+                limit=request.limit,
+                strategy=request.strategy,
+            )
         )
     except InvalidSearchQueryError as error:
         raise HTTPException(

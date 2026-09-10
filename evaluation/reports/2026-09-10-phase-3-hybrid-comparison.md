@@ -11,34 +11,44 @@
 - Answer-context cutoff: top 5 fused chunks
 - Embedding: OpenAI `text-embedding-3-small`, 1,536 dimensions
 
-## Vector-only versus hybrid
+## Corrected three-way ablation
 
-| Scope and metric | Vector only | Hybrid | Change |
+An owner review found that the original `vector-model` passage stated which
+metadata was stored but did not answer why. The corpus now explicitly states
+that the metadata prevents comparison between incompatible vector
+configurations. The document was embedded as a new active version, and all
+three strategies were rerun against the corrected judgment.
+
+| Overall metric | Vector only | BM25 only | Hybrid RRF |
 | --- | ---: | ---: | ---: |
-| Overall DocumentRecall@1 | 0.875 | 0.938 | +0.063 |
-| Overall DocumentMRR@5 | 0.927 | 0.938 | +0.010 |
-| Overall EvidenceHit@1 | 0.875 | 0.938 | +0.063 |
-| Semantic DocumentRecall@1 | 0.800 | 0.900 | +0.100 |
-| Semantic DocumentMRR@5 | 0.883 | 0.900 | +0.017 |
-| Semantic EvidenceHit@1 | 0.800 | 0.900 | +0.100 |
-| Identifier DocumentRecall@1 | 1.000 | 1.000 | 0.000 |
-| Identifier DocumentMRR@5 | 1.000 | 1.000 | 0.000 |
-| Identifier EvidenceHit@1 | 1.000 | 1.000 | 0.000 |
+| DocumentRecall@1 | 0.875 | 1.000 | 0.938 |
+| DocumentMRR@5 | 0.927 | 1.000 | 0.938 |
+| EvidenceHit@1 | 0.875 | 1.000 | 0.875 |
+| DocumentRecall@3 | 1.000 | 1.000 | 1.000 |
+| EvidenceHit@3 | 1.000 | 1.000 | 1.000 |
+| EvidenceHit@5 | 1.000 | 1.000 | 1.000 |
 
-DocumentRecall@3 and EvidenceHit@3/@5 remained 1.000 in every scope.
+| Semantic metric | Vector only | BM25 only | Hybrid RRF |
+| --- | ---: | ---: | ---: |
+| DocumentRecall@1 | 0.800 | 1.000 | 0.900 |
+| DocumentMRR@5 | 0.883 | 1.000 | 0.900 |
+| EvidenceHit@1 | 0.800 | 1.000 | 0.800 |
+
+All three strategies scored 1.000 on identifier rank-one metrics.
 
 ## Per-case changes
 
-- `vector-model`: judged document and evidence improved from rank 3 to rank 2.
-- `vector-provenance`: judged document and evidence improved from rank 2 to
-  rank 1.
-- The other fourteen cases retained rank 1.
-- No identifier case regressed.
+- Vector-only placed `vector-model` third and `vector-provenance` second.
+- Hybrid placed both cases second.
+- BM25-only placed all sixteen judged documents and evidence passages first.
+- No strategy missed judged evidence within the top three.
 
-The result supports keeping hybrid retrieval for this controlled DevAtlas
-workload: lexical evidence improved the two previously weak semantic cases while
-preserving exact-token performance. It does not prove that the same improvement
-generalizes to a larger or multilingual corpus.
+Hybrid improved document rank-one retrieval over vector-only and preserved
+identifier performance, but it did not outperform BM25-only on this corpus. Its
+EvidenceHit@1 also remained equal to vector-only. The current English dataset
+has substantial query/document vocabulary overlap and is therefore not strong
+evidence of semantic and lexical complementarity. Hybrid remains implemented as
+a product capability, but the measured claim must include this limitation.
 
 ## Implementation observations
 

@@ -4,7 +4,11 @@ from devatlas.application.ports.embedding import (
     EmbeddingProvider,
     validate_embedding_batch,
 )
-from devatlas.application.ports.retrieval import ChunkSearchRepository, RetrievedChunk
+from devatlas.application.ports.retrieval import (
+    ChunkSearchRepository,
+    RetrievalStrategy,
+    RetrievedChunk,
+)
 
 MAX_QUERY_CHARACTERS = 2000
 MAX_SEARCH_LIMIT = 20
@@ -18,6 +22,7 @@ class InvalidSearchQueryError(ValueError):
 class SearchDocumentsCommand:
     query: str
     limit: int = 5
+    strategy: RetrievalStrategy = "hybrid"
 
 
 class SearchDocuments:
@@ -43,15 +48,19 @@ class SearchDocuments:
                 f"limit must be between 1 and {MAX_SEARCH_LIMIT}"
             )
 
-        embeddings = await self._embedding_provider.embed([query])
-        validate_embedding_batch(
-            embeddings,
-            expected_count=1,
-            expected_dimension=self._embedding_provider.dimension,
-        )
+        embedding = None
+        if command.strategy != "lexical":
+            embeddings = await self._embedding_provider.embed([query])
+            validate_embedding_batch(
+                embeddings,
+                expected_count=1,
+                expected_dimension=self._embedding_provider.dimension,
+            )
+            embedding = embeddings[0]
         return await self._repository.search(
             query,
-            embeddings[0],
+            embedding,
             model=self._embedding_provider.model,
             limit=command.limit,
+            strategy=command.strategy,
         )

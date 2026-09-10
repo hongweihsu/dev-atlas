@@ -1,7 +1,9 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
+
+type RetrievalStrategy = Literal["vector", "lexical", "hybrid"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,10 +24,11 @@ class ChunkSearchRepository(Protocol):
     async def search(
         self,
         query: str,
-        embedding: Sequence[float],
+        embedding: Sequence[float] | None,
         *,
         model: str,
         limit: int,
+        strategy: RetrievalStrategy = "hybrid",
     ) -> list[RetrievedChunk]:
         """Return compatible active-version chunks ordered by relevance."""
         ...

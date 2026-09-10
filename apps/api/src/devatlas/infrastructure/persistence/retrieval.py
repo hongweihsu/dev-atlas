@@ -5,7 +5,7 @@ import bm25s  # type: ignore[import-untyped]
 from sqlalchemy import select
 from sqlalchemy.engine import Result
 
-from devatlas.application.ports.retrieval import RetrievedChunk
+from devatlas.application.ports.retrieval import RetrievalStrategy, RetrievedChunk
 from devatlas.infrastructure.models import Chunk, Document, DocumentVersion
 from devatlas.infrastructure.persistence.unit_of_work import SessionFactory
 
@@ -19,12 +19,15 @@ class SqlAlchemyChunkSearchRepository:
     async def search(
         self,
         query: str,
-        embedding: Sequence[float],
+        embedding: Sequence[float] | None,
         *,
         model: str,
         limit: int,
+        strategy: RetrievalStrategy = "vector",
     ) -> list[RetrievedChunk]:
-        del query
+        del query, strategy
+        if embedding is None:
+            raise ValueError("vector search requires an embedding")
         distance = Chunk.embedding.cosine_distance(list(embedding)).label(
             "cosine_distance"
         )

@@ -221,11 +221,18 @@ def sync_manifest(
 def fetch_candidates(
     client: httpx.Client,
     cases: Iterable[RetrievalCase],
+    *,
+    strategy: str = "hybrid",
 ) -> dict[str, list[RetrievedCandidate]]:
     candidates: dict[str, list[RetrievedCandidate]] = {}
     for case in cases:
         response = client.post(
-            "/search", json={"query": case.query, "limit": COLLECTION_LIMIT}
+            "/search",
+            json={
+                "query": case.query,
+                "limit": COLLECTION_LIMIT,
+                "strategy": strategy,
+            },
         )
         response.raise_for_status()
         candidates[case.case_id] = [
@@ -492,6 +499,11 @@ def main() -> None:
     manifest_mode.add_argument("--reuse-manifest", action="store_true")
     manifest_mode.add_argument("--sync-manifest", action="store_true")
     parser.add_argument("--report", type=Path)
+    parser.add_argument(
+        "--strategy",
+        choices=("vector", "lexical", "hybrid"),
+        default="hybrid",
+    )
     parser.add_argument("--base-url", default="http://localhost:8000")
     args = parser.parse_args()
     cases = load_cases(args.dataset)
@@ -505,12 +517,13 @@ def main() -> None:
         else:
             manifest = upload_corpus(client, args.corpus)
             write_manifest(args.manifest, manifest)
-        candidates = fetch_candidates(client, cases)
+        candidates = fetch_candidates(client, cases, strategy=args.strategy)
     rankings = document_rankings(candidates, manifest)
     report = {
         "case_count": len(cases),
         "chunk_collection_limit": COLLECTION_LIMIT,
         "answer_context_limit": ANSWER_CONTEXT_LIMIT,
+        "strategy": args.strategy,
         "metrics": {
             **score_document_rankings(cases, rankings),
             **score_evidence_hits(cases, candidates),

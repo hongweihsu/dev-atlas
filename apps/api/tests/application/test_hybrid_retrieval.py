@@ -7,7 +7,7 @@ from devatlas.application.hybrid_retrieval import (
     HybridChunkSearchRepository,
     reciprocal_rank_fusion,
 )
-from devatlas.application.ports.retrieval import RetrievedChunk
+from devatlas.application.ports.retrieval import RetrievalStrategy, RetrievedChunk
 
 
 def make_chunk(number: int) -> RetrievedChunk:
@@ -65,11 +65,13 @@ class VectorStub:
     async def search(
         self,
         query: str,
-        embedding: Sequence[float],
+        embedding: Sequence[float] | None,
         *,
         model: str,
         limit: int,
+        strategy: RetrievalStrategy = "hybrid",
     ) -> list[RetrievedChunk]:
+        assert embedding is not None
         self.calls.append((query, tuple(embedding), model, limit))
         return self.results[:limit]
 

@@ -6,6 +6,7 @@ from uuid import UUID
 from devatlas.application.ports.retrieval import (
     ChunkSearchRepository,
     LexicalChunkSearchRepository,
+    RetrievalStrategy,
     RetrievedChunk,
 )
 
@@ -28,14 +29,35 @@ class HybridChunkSearchRepository:
     async def search(
         self,
         query: str,
-        embedding: Sequence[float],
+        embedding: Sequence[float] | None,
         *,
         model: str,
         limit: int,
+        strategy: RetrievalStrategy = "hybrid",
     ) -> list[RetrievedChunk]:
         candidate_limit = min(MAX_CANDIDATE_LIMIT, max(limit * 4, limit))
+        if strategy == "lexical":
+            return (await self._lexical.search(query, limit=candidate_limit))[:limit]
+        if embedding is None:
+            raise ValueError("vector and hybrid search require an embedding")
+        if strategy == "vector":
+            return (
+                await self._vector.search(
+                    query,
+                    embedding,
+                    model=model,
+                    limit=candidate_limit,
+                    strategy="vector",
+                )
+            )[:limit]
         vector_results, lexical_results = await asyncio.gather(
-            self._vector.search(query, embedding, model=model, limit=candidate_limit),
+            self._vector.search(
+                query,
+                embedding,
+                model=model,
+                limit=candidate_limit,
+                strategy="vector",
+            ),
             self._lexical.search(query, limit=candidate_limit),
         )
         return reciprocal_rank_fusion(

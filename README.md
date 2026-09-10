@@ -50,8 +50,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Retrieval-evaluation scaffold with a controlled five-document corpus,
   sixteen document-and-passage judgments, runtime UUID manifest, package-backed
   document metrics, and deterministic evidence-hit metrics
-- Measured five-document hybrid comparison: overall Recall@1 improved from
-  0.875 to 0.938 while identifier Recall@1 remained 1.000
+- Measured five-document ablation: vector, BM25, and hybrid Recall@1 were 0.875,
+  1.000, and 0.938 respectively; the lexical-heavy corpus limitation is explicit
 
 ### Planned
 

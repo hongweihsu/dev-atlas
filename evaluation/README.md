@@ -35,6 +35,7 @@ uv run --extra evaluation python -m devatlas.evaluation.retrieval \
   --corpus ../../evaluation/corpus \
   --manifest ../../evaluation/runs/manifest.json \
   --reuse-manifest \
+  --strategy hybrid \
   --report ../../evaluation/runs/latest-report.json
 ```
 
@@ -61,6 +62,10 @@ first evidence-bearing chunk rank, and top-five candidates so aggregate changes
 can be traced back to concrete failures.
 Aggregate metrics are also grouped by category so an identifier improvement
 cannot hide a semantic regression.
+
+Use `--strategy vector`, `--strategy lexical`, and `--strategy hybrid` to run a
+three-way ablation against the same corpus. Lexical mode deliberately skips the
+embedding provider, so a BM25-only run makes no query-embedding calls.
 
 Use `--reuse-manifest` only after an initial corpus load. The runner first checks
 that every UUID, title, and active version still matches `GET /documents`; a

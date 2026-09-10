@@ -42,7 +42,33 @@ async def test_search_embeds_normalized_query_and_returns_repository_results() -
     assert results == [expected]
     expected_embedding = (await provider.embed(["transaction"]))[0]
     assert repository.calls == [
-        ("transaction", tuple(expected_embedding), "deterministic-test-v1", 5)
+        (
+            "transaction",
+            tuple(expected_embedding),
+            "deterministic-test-v1",
+            5,
+            "hybrid",
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_lexical_search_skips_embedding_provider() -> None:
+    expected = make_result()
+    repository = FakeChunkSearchRepository([expected])
+    provider = DeterministicEmbeddingProvider(dimension=8)
+    use_case = SearchDocuments(
+        embedding_provider=provider,
+        repository=repository,
+    )
+
+    results = await use_case.execute(
+        SearchDocumentsCommand(query="DVX-4827", strategy="lexical")
+    )
+
+    assert results == [expected]
+    assert repository.calls == [
+        ("DVX-4827", None, "deterministic-test-v1", 5, "lexical")
     ]
 
 

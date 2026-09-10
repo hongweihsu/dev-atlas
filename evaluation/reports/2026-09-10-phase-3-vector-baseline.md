@@ -1,5 +1,10 @@
 # Phase 3 stratified vector baseline — 2026-09-10
 
+> The corrected three-way rerun is authoritative. See the
+> [Phase 3 hybrid comparison](2026-09-10-phase-3-hybrid-comparison.md); an owner
+> review strengthened the `vector-model` evidence so it explicitly answers
+> “why.”
+
 ## Scope
 
 - Database: isolated local PostgreSQL corpus created for retrieval evaluation
