@@ -32,6 +32,9 @@ evaluation = [
   "httpx>=0.28,<1",
   "ir-measures>=0.4.3,<1",
 ]
+benchmark = [
+  "mteb>=2.20.11,<3",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/devatlas"]

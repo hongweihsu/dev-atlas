@@ -135,3 +135,12 @@ uv run --extra evaluation python -m devatlas.evaluation.retrieval \
 Phase 5 uses a time-boxed three-task NanoBEIR slice. The task rationale,
 standard-versus-end-to-end result boundary, current corpus size, and provider
 cost gate are documented in [the NanoBEIR plan](nanobeir-plan.md).
+
+The metadata-only inspection command is covered by offline tests and does not
+download corpus text or call OpenAI:
+
+```bash
+cd apps/api
+uv run --extra benchmark python -m devatlas.evaluation.nanobeir_inspection \
+  --report ../../evaluation/runs/nanobeir-inspection.json
+```

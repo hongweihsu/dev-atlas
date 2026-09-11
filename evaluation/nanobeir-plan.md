@@ -1,7 +1,7 @@
 # Phase 5 NanoBEIR evaluation plan
 
-**Status:** task selection and cost gate; no dataset downloaded and no provider
-calls made.
+**Status:** metadata inspection implemented and verified; no dataset downloaded
+and no provider calls made.
 
 ## Selected tasks
 
@@ -80,3 +80,20 @@ batching and cache paths, and present the final estimate.
 
 Official package metadata:
 [MTEB pyproject](https://github.com/embeddings-benchmark/mteb/blob/main/pyproject.toml).
+
+## Metadata inspection
+
+Run the benchmark-only command without downloading corpus text or calling a
+model provider:
+
+```bash
+cd apps/api
+uv run --extra benchmark python -m devatlas.evaluation.nanobeir_inspection \
+  --report ../../evaluation/runs/nanobeir-inspection.json
+```
+
+The ignored JSON output records the installed MTEB version and per-task plus
+aggregate documents, queries, relevance judgments, characters, average document
+length, and average relevant documents per query. MTEB currently emits a torch
+`FutureWarning` during import on this environment; it does not change the
+inspection result and is not suppressed by DevAtlas.
