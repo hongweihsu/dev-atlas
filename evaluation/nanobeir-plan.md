@@ -1,7 +1,7 @@
 # Phase 5 NanoBEIR evaluation plan
 
-**Status:** metadata inspection implemented and verified; no dataset downloaded
-and no provider calls made.
+**Status:** all three selected datasets downloaded locally and exact tokenizer
+counts recorded; no provider calls made.
 
 ## Selected tasks
 
@@ -60,9 +60,11 @@ tokenization variance; query embeddings are negligible at this scale.
 Official pricing source:
 [text-embedding-3-small](https://developers.openai.com/api/docs/models/text-embedding-3-small).
 
-This estimate is not execution approval. Before the paid run, load only dataset
-metadata/text locally, count exact tokens with the model tokenizer, verify
-batching and cache paths, and present the final estimate.
+The local `text-embedding-3-small` tokenizer count is 2,280,805 document tokens
+plus 2,233 query tokens. At the same list price, one uncached embedding pass is
+approximately USD $0.0457. This remains an estimate rather than execution
+approval because provider billing is authoritative and retries could add input.
+The paid run remains gated on verifying batching and the reusable cache path.
 
 ## Implementation gate
 
@@ -71,7 +73,7 @@ batching and cache paths, and present the final estimate.
    sentence-transformers, transformers, torch, scikit-learn, scipy, and polars;
    it must not become a production API dependency.
 2. Implement a deterministic dataset-inspection command that downloads the
-   selected tasks and records exact counts without calling OpenAI.
+   selected tasks and records exact counts without calling OpenAI. **Complete.**
 3. Add cached, batched embedding adapters so vector and hybrid runs reuse the
    same vectors.
 4. Run BM25 first, then request approval for the exact paid embedding run.
@@ -97,3 +99,26 @@ aggregate documents, queries, relevance judgments, characters, average document
 length, and average relevant documents per query. MTEB currently emits a torch
 `FutureWarning` during import on this environment; it does not change the
 inspection result and is not suppressed by DevAtlas.
+
+## Exact token inspection
+
+Download/cache the selected public corpus text and count it with the embedding
+model tokenizer, without calling OpenAI:
+
+```bash
+cd apps/api
+uv run --extra benchmark python -m devatlas.evaluation.nanobeir_tokens \
+  --report ../../evaluation/runs/nanobeir-tokens.json
+```
+
+| Task | Document tokens | Query tokens | Largest document |
+| --- | ---: | ---: | ---: |
+| NanoSciFactRetrieval | 895,976 | 985 | 1,881 |
+| NanoNFCorpusRetrieval | 965,977 | 267 | 2,252 |
+| NanoHotpotQARetrieval | 418,852 | 981 | 429 |
+| **Total** | **2,280,805** | **2,233** | **2,252** |
+
+The ignored JSON report also records deterministic SHA-256 fingerprints over
+sorted official IDs and normalized title/text payloads. These fingerprints will
+be part of the embedding-cache identity so changed corpus content cannot
+silently reuse stale vectors.

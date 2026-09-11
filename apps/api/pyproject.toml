@@ -34,6 +34,7 @@ evaluation = [
 ]
 benchmark = [
   "mteb>=2.20.11,<3",
+  "tiktoken>=0.8,<1",
 ]
 
 [tool.hatch.build.targets.wheel]

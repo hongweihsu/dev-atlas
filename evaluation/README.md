@@ -144,3 +144,16 @@ cd apps/api
 uv run --extra benchmark python -m devatlas.evaluation.nanobeir_inspection \
   --report ../../evaluation/runs/nanobeir-inspection.json
 ```
+
+The token-inspection command downloads/caches the three selected public corpora
+and uses the local embedding tokenizer; it still makes no OpenAI request:
+
+```bash
+cd apps/api
+uv run --extra benchmark python -m devatlas.evaluation.nanobeir_tokens \
+  --report ../../evaluation/runs/nanobeir-tokens.json
+```
+
+The measured input is 2,280,805 document tokens and 2,233 query tokens. The
+report is ignored because it is reproducible local run output; stable counts and
+the command are recorded in `nanobeir-plan.md`.
