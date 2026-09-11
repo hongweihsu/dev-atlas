@@ -43,6 +43,13 @@ SciFact and completed the remaining caches; a final all-strategy run reported
 cache hits for all six corpus/query entries and reproduced every score without
 new embedding requests.
 
+NFCorpus Recall@10 needs additional context: its fifty queries average 50.36
+relevant documents, and 34 queries have more than ten. Because a top-ten result
+cannot retrieve more than ten documents, even perfect ordering has a mean
+Recall@10 ceiling of 0.5342 on this slice. Its dense Recall@10 of 0.1699 still
+leaves improvement room, but it must not be compared directly with a task that
+has only one or two relevant documents per query.
+
 ## Limits
 
 - Three NanoBEIR tasks and 150 queries do not represent every search workload.
