@@ -10,7 +10,13 @@ def test_document_model_exposes_expected_database_contract() -> None:
     table = cast(Table, Document.__table__)
 
     assert table.name == "documents"
-    assert set(table.columns.keys()) == {"id", "title", "created_at", "updated_at"}
+    assert set(table.columns.keys()) == {
+        "id",
+        "title",
+        "created_at",
+        "updated_at",
+        "archived_at",
+    }
     assert list(table.primary_key.columns.keys()) == ["id"]
     assert table.columns.title.nullable is False
     assert cast(String, table.columns.title.type).length == 255

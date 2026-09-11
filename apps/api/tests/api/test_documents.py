@@ -8,14 +8,17 @@ from fastapi.testclient import TestClient
 from devatlas.api.routes.documents import (
     get_ingest_new_document,
     get_list_documents,
+    get_manage_document_lifecycle,
 )
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
+from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
 from devatlas.application.ports.document_list import DocumentSummary
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
 )
+from devatlas.application.ports.persistence import DocumentNotFoundError
 from devatlas.domain.document_ingestion import DEFAULT_MAX_TEXT_BYTES
 from devatlas.main import app
 from tests.fakes import (
@@ -100,6 +103,27 @@ def test_get_documents_returns_active_version_summaries() -> None:
     assert response.json()[0]["title"] == "Architecture notes"
     assert response.json()[0]["active_version_number"] == 2
     assert response.json()[0]["chunk_count"] == 3
+
+
+def test_document_lifecycle_routes_archive_restore_and_map_missing() -> None:
+    document_id = uuid4()
+    service = AsyncMock(spec=ManageDocumentLifecycle)
+    app.dependency_overrides[get_manage_document_lifecycle] = lambda: service
+    try:
+        client = TestClient(app)
+        archived = client.delete(f"/documents/{document_id}")
+        restored = client.post(f"/documents/{document_id}/restore")
+        service.archive.side_effect = DocumentNotFoundError("document was not found")
+        missing = client.delete(f"/documents/{uuid4()}")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert archived.status_code == 204
+    assert restored.status_code == 204
+    service.archive.assert_awaited()
+    service.restore.assert_awaited_once_with(document_id)
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "document_not_found"
 
 
 def test_post_document_duplicate_returns_existing_document_id(

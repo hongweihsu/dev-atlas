@@ -49,3 +49,9 @@ writes.
 
 The remaining entities will receive concrete schemas, constraints, indexes, and
 security tests only in the phases that implement them.
+
+Phase 6 adds a reversible lifecycle boundary to the logical document.
+`archived_at` is null while a document participates in default lists and
+retrieval. Archiving sets the timestamp but preserves all versions, chunks,
+embeddings, and citation provenance; restoring clears it. Permanent cascading
+deletion is intentionally a separate, higher-risk operation.

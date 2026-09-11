@@ -45,6 +45,9 @@ class Document(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     versions: Mapped[list["DocumentVersion"]] = relationship(
         back_populates="document",
         cascade="all, delete-orphan",

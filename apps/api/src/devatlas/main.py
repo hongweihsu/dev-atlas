@@ -10,6 +10,7 @@ from devatlas.application.answer_documents import AnswerDocuments
 from devatlas.application.hybrid_retrieval import HybridChunkSearchRepository
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
+from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
 from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
 from devatlas.infrastructure.database import (
@@ -21,6 +22,7 @@ from devatlas.infrastructure.generation import OpenAIAnswerGenerator
 from devatlas.infrastructure.persistence import (
     SqlAlchemyBm25ChunkSearchRepository,
     SqlAlchemyChunkSearchRepository,
+    SqlAlchemyDocumentLifecycleRepository,
     SqlAlchemyDocumentListRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
 )
@@ -35,6 +37,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session_factory = create_session_factory(engine)
         application.state.list_documents = ListDocuments(
             SqlAlchemyDocumentListRepository(session_factory)
+        )
+        application.state.manage_document_lifecycle = ManageDocumentLifecycle(
+            SqlAlchemyDocumentLifecycleRepository(session_factory)
         )
         client: AsyncOpenAI | None = None
         if app_settings.openai_api_key is not None:
@@ -72,6 +77,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             yield
         finally:
             del application.state.list_documents
+            del application.state.manage_document_lifecycle
             if client is not None:
                 del application.state.answer_documents
                 del application.state.search_documents
@@ -88,7 +94,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=app_settings.cors_origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST"],
+        allow_methods=["DELETE", "GET", "POST"],
         allow_headers=["*"],
     )
     application.include_router(api_router)

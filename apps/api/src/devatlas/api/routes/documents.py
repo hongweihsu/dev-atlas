@@ -20,6 +20,7 @@ from devatlas.application.ingest_document import (
     InvalidDocumentTitleError,
 )
 from devatlas.application.list_documents import ListDocuments
+from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
@@ -91,6 +92,24 @@ def get_list_documents(request: Request) -> ListDocuments:
 DocumentListService = Annotated[ListDocuments, Depends(get_list_documents)]
 
 
+def get_manage_document_lifecycle(request: Request) -> ManageDocumentLifecycle:
+    service = getattr(request.app.state, "manage_document_lifecycle", None)
+    if service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "document_lifecycle_unavailable",
+                "message": "document lifecycle management is not configured",
+            },
+        )
+    return cast(ManageDocumentLifecycle, service)
+
+
+DocumentLifecycleService = Annotated[
+    ManageDocumentLifecycle, Depends(get_manage_document_lifecycle)
+]
+
+
 def _validation_status(code: DocumentValidationCode) -> int:
     if code is DocumentValidationCode.UNSUPPORTED_TYPE:
         return status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
@@ -114,6 +133,32 @@ async def list_documents(service: DocumentListService) -> list[DocumentSummaryRe
         )
         for document in documents
     ]
+
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def archive_document(
+    document_id: UUID, service: DocumentLifecycleService
+) -> None:
+    try:
+        await service.archive(document_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "document_not_found", "message": str(error)},
+        ) from error
+
+
+@router.post("/{document_id}/restore", status_code=status.HTTP_204_NO_CONTENT)
+async def restore_document(
+    document_id: UUID, service: DocumentLifecycleService
+) -> None:
+    try:
+        await service.restore(document_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "document_not_found", "message": str(error)},
+        ) from error
 
 
 @router.post(

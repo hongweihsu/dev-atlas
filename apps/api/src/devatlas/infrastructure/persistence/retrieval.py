@@ -47,6 +47,7 @@ class SqlAlchemyChunkSearchRepository:
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
             .join(Chunk, Chunk.document_version_id == DocumentVersion.id)
             .where(
+                Document.archived_at.is_(None),
                 DocumentVersion.is_active.is_(True),
                 DocumentVersion.embedding_model == model,
                 DocumentVersion.embedding_dimension == len(embedding),
@@ -99,7 +100,10 @@ class SqlAlchemyBm25ChunkSearchRepository:
             )
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
             .join(Chunk, Chunk.document_version_id == DocumentVersion.id)
-            .where(DocumentVersion.is_active.is_(True))
+            .where(
+                Document.archived_at.is_(None),
+                DocumentVersion.is_active.is_(True),
+            )
             .order_by(Chunk.id)
         )
         async with self._session_factory() as session:

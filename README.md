@@ -29,6 +29,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Persistent `GET /documents` catalog with each document's active version,
   filename, and chunk count; the React workspace can sort by recent update or
   display name and select any listed document for a version update after reload
+- Reversible `DELETE /documents/{document_id}` archival plus
+  `POST /documents/{document_id}/restore`; archived documents are excluded from
+  default lists and retrieval without deleting version or citation history
 - Optional document display titles that default to the uploaded filename stem
 - Global normalized-content duplicate protection for new writes, including
   concurrent requests, while preserving pre-existing historical rows

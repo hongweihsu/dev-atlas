@@ -9,3 +9,4 @@ of every library choice.
 - [ADR-001: PostgreSQL with pgvector](001-postgresql-pgvector.md)
 - [ADR-002: Workspace-scoped authorization](002-workspace-authorization-model.md)
 - [ADR-003: Version documents explicitly](003-document-versioning.md)
+- [ADR-005: Reversible document archival](005-reversible-document-archival.md)

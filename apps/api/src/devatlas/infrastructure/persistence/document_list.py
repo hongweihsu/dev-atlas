@@ -22,7 +22,10 @@ class SqlAlchemyDocumentListRepository:
             )
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
             .join(Chunk, Chunk.document_version_id == DocumentVersion.id)
-            .where(DocumentVersion.is_active.is_(True))
+            .where(
+                Document.archived_at.is_(None),
+                DocumentVersion.is_active.is_(True),
+            )
             .group_by(Document.id, DocumentVersion.id)
             .order_by(Document.updated_at.desc(), Document.id)
         )
