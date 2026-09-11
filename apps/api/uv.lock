@@ -391,6 +391,7 @@ dependencies = [
 
 [package.optional-dependencies]
 benchmark = [
+    { name = "ir-measures" },
     { name = "mteb" },
     { name = "numpy" },
     { name = "tiktoken" },
@@ -415,6 +416,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115,<1" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28,<1" },
     { name = "httpx", marker = "extra == 'evaluation'", specifier = ">=0.28,<1" },
+    { name = "ir-measures", marker = "extra == 'benchmark'", specifier = ">=0.4.3,<1" },
     { name = "ir-measures", marker = "extra == 'evaluation'", specifier = ">=0.4.3,<1" },
     { name = "mteb", marker = "extra == 'benchmark'", specifier = ">=2.20.11,<3" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14,<2" },

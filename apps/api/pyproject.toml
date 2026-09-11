@@ -33,6 +33,7 @@ evaluation = [
   "ir-measures>=0.4.3,<1",
 ]
 benchmark = [
+  "ir-measures>=0.4.3,<1",
   "mteb>=2.20.11,<3",
   "numpy>=1.26,<3",
   "tiktoken>=0.8,<1",

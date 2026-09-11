@@ -1,8 +1,7 @@
 # Phase 5 NanoBEIR evaluation plan
 
-**Status:** all three selected datasets downloaded locally, exact tokenizer
-counts recorded, and the reusable batched embedding cache verified; no provider
-calls made.
+**Status:** three-strategy baseline completed and reproduced from cache; BM25,
+dense, and fixed-RRF hybrid results are recorded for all selected tasks.
 
 ## Selected tasks
 
@@ -78,6 +77,7 @@ The paid run remains gated on verifying batching and the reusable cache path.
 3. Add cached, batched embedding adapters so vector and hybrid runs reuse the
    same vectors. **Cache and batching foundation complete.**
 4. Run BM25 first, then request approval for the exact paid embedding run.
+   **Complete.**
 5. Reopen reranker selection only if hybrid has a repeatable per-task failure or
    meaningful nDCG/Recall headroom.
 
@@ -138,3 +138,11 @@ fail closed instead of silently triggering a paid replacement. This makes
 cache damage visible and prevents an unnoticed provider call. Offline tests
 verify deterministic batching, repeat-run reuse, fingerprint invalidation, and
 incomplete-entry rejection.
+
+## Baseline result
+
+The dated [three-task report](reports/2026-09-11-nanobeir-three-task-baseline.md)
+records the standard nDCG@10 and Recall@10 comparison. Dense retrieval wins on
+SciFact and NFCorpus, while fixed-RRF hybrid wins on HotpotQA. This supports a
+portfolio claim that the system measures strategy trade-offs; it does not
+support claiming hybrid is always more accurate.

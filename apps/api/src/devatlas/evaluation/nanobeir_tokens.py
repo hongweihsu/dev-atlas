@@ -42,12 +42,9 @@ def inspect_task_tokens(
     encode: TokenEncoder,
 ) -> TaskTokenInspection:
     document_texts = {
-        document_id: _document_text(record)
-        for document_id, record in corpus.items()
+        document_id: document_text(record) for document_id, record in corpus.items()
     }
-    document_token_counts = [
-        len(encode(text)) for text in document_texts.values()
-    ]
+    document_token_counts = [len(encode(text)) for text in document_texts.values()]
     query_token_counts = [len(encode(text)) for text in queries.values()]
     return TaskTokenInspection(
         task_name=task_name,
@@ -57,8 +54,8 @@ def inspect_task_tokens(
         document_tokens=sum(document_token_counts),
         query_tokens=sum(query_token_counts),
         maximum_document_tokens=max(document_token_counts, default=0),
-        corpus_sha256=_fingerprint(document_texts),
-        queries_sha256=_fingerprint(queries),
+        corpus_sha256=fingerprint_records(document_texts),
+        queries_sha256=fingerprint_records(queries),
     )
 
 
@@ -116,12 +113,12 @@ def load_selected_token_inspections(
     return results
 
 
-def _document_text(record: Mapping[str, str]) -> str:
+def document_text(record: Mapping[str, str]) -> str:
     parts = [record.get(field, "").strip() for field in ("title", "text")]
     return "\n".join(part for part in parts if part)
 
 
-def _fingerprint(records: Mapping[str, str]) -> str:
+def fingerprint_records(records: Mapping[str, str]) -> str:
     digest = sha256()
     for record_id, text in sorted(records.items()):
         for value in (record_id, text):
