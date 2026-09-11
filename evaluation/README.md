@@ -129,3 +129,9 @@ uv run --extra evaluation python -m devatlas.evaluation.retrieval \
 - [2026-09-11 BM25S index lifecycle benchmark](reports/2026-09-11-bm25-index-benchmark.md)
 - [2026-09-11 Phase 4 adversarial context lexical baseline](reports/2026-09-11-phase-4-context-lexical-baseline.md)
 - [2026-09-11 Phase 4 adversarial context hybrid comparison](reports/2026-09-11-phase-4-context-hybrid-comparison.md)
+
+## Planned public benchmark
+
+Phase 5 uses a time-boxed three-task NanoBEIR slice. The task rationale,
+standard-versus-end-to-end result boundary, current corpus size, and provider
+cost gate are documented in [the NanoBEIR plan](nanobeir-plan.md).
