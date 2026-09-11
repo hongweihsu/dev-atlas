@@ -16,17 +16,17 @@ methods rather than the complete product pipeline.
 
 ## Results
 
-| Task | Strategy | nDCG@10 | Recall@10 |
-| --- | --- | ---: | ---: |
-| NanoSciFact | BM25 | 0.7033 | 0.8300 |
-|  | Dense | **0.7647** | **0.9000** |
-|  | Hybrid RRF | 0.7635 | 0.8500 |
-| NanoNFCorpus | BM25 | 0.3180 | 0.1135 |
-|  | Dense | **0.3869** | **0.1699** |
-|  | Hybrid RRF | 0.3774 | 0.1520 |
-| NanoHotpotQA | BM25 | 0.8098 | 0.8800 |
-|  | Dense | 0.7898 | 0.8200 |
-|  | Hybrid RRF | **0.8444** | **0.9000** |
+| Task | Strategy | nDCG@10 | Recall@10 | Recall@100 |
+| --- | --- | ---: | ---: | ---: |
+| NanoSciFact | BM25 | 0.7033 | 0.8300 | 0.9000 |
+|  | Dense | **0.7647** | **0.9000** | 0.9600 |
+|  | Hybrid RRF | 0.7635 | 0.8500 | **0.9800** |
+| NanoNFCorpus | BM25 | 0.3180 | 0.1135 | 0.2069 |
+|  | Dense | **0.3869** | **0.1699** | **0.3501** |
+|  | Hybrid RRF | 0.3774 | 0.1520 | 0.3157 |
+| NanoHotpotQA | BM25 | 0.8098 | 0.8800 | **0.9500** |
+|  | Dense | 0.7898 | 0.8200 | 0.9400 |
+|  | Hybrid RRF | **0.8444** | **0.9000** | **0.9500** |
 
 ## Decision
 
@@ -49,6 +49,13 @@ cannot retrieve more than ten documents, even perfect ordering has a mean
 Recall@10 ceiling of 0.5342 on this slice. Its dense Recall@10 of 0.1699 still
 leaves improvement room, but it must not be compared directly with a task that
 has only one or two relevant documents per query.
+
+At depth 100, NFCorpus dense recall rises to 0.3501 (versus a 0.9481 mean
+theoretical ceiling). This shows that deeper candidate collection recovers more
+relevant material, while also confirming a real domain-retrieval gap. Because
+dense remains better than both BM25 and fixed RRF at depths 10 and 100, the
+bounded decision is to avoid global RRF tuning solely for NFCorpus and continue
+the product roadmap. Future domain-specific work can reopen this result.
 
 ## Limits
 

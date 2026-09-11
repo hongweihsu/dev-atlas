@@ -28,7 +28,7 @@ and [NanoHotpotQARetrieval](https://huggingface.co/datasets/mteb/NanoHotpotQARet
 - Load official corpus, queries, and qrels through MTEB.
 - Preserve official IDs and splits.
 - Batch embeddings without sending documents through `POST /documents`.
-- Report standard per-task nDCG@10 and Recall@10.
+- Report standard per-task nDCG@10, Recall@10, and diagnostic Recall@100.
 - Compare BM25, dense retrieval, and RRF hybrid using the same cached document
   and query embeddings.
 - Treat this as the closest result to the public benchmark protocol.

@@ -40,6 +40,7 @@ class LoadedRetrievalTask(Protocol):
 class StrategyMetrics:
     ndcg_at_10: float
     recall_at_10: float
+    recall_at_100: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,10 +110,13 @@ def calculate_metrics(
         }
         for query_id, ranking in rankings.items()
     }
-    results = ir_measures.calc_aggregate([nDCG @ 10, Recall @ 10], dict(qrels), run)
+    results = ir_measures.calc_aggregate(
+        [nDCG @ 10, Recall @ 10, Recall @ 100], dict(qrels), run
+    )
     return StrategyMetrics(
         ndcg_at_10=float(results[nDCG @ 10]),
         recall_at_10=float(results[Recall @ 10]),
+        recall_at_100=float(results[Recall @ 100]),
     )
 
 
@@ -239,7 +243,7 @@ async def run_task(
         assert lexical is not None and dense is not None
         hybrid = {
             query_id: reciprocal_rank_fusion_ids(
-                dense[query_id], lexical[query_id], limit=METRIC_DEPTH
+                dense[query_id], lexical[query_id], limit=FUSION_CANDIDATES
             )
             for query_id in queries
         }

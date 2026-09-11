@@ -158,3 +158,20 @@ uv run --extra benchmark python -m devatlas.evaluation.nanobeir_tokens \
 The measured input is 2,280,805 document tokens and 2,233 query tokens. The
 report is ignored because it is reproducible local run output; stable counts and
 the command are recorded in `nanobeir-plan.md`.
+
+### Metric and task glossary
+
+`nDCG@10` measures how well relevant documents are ordered in the first ten
+results. Higher ranks receive more credit, and the score is normalized against
+the ideal ordering for each query; 1.0 is ideal. `Recall@k` instead measures the
+fraction of all judged-relevant documents found in the first `k` results.
+
+- NanoSciFact retrieves scientific papers that contain evidence for short
+  scientific claims.
+- NanoNFCorpus retrieves health and nutrition documents for natural-language
+  questions, often with many relevant documents per query.
+- NanoHotpotQA retrieves multiple complementary Wikipedia documents for
+  multi-hop questions.
+
+These are fifty-query NanoBEIR subsets, so they support quick reproducible
+comparisons rather than universal quality claims.
