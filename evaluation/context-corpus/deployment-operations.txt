@@ -1,0 +1,17 @@
+Deployment Operations Handbook
+
+Routine rollout overview
+
+Every production rollout uses a deployment window, a release coordinator, and a rollback checklist. The deployment dashboard repeats the words rollback, approval, timeout, and recovery because operators search for those terms during an incident. A routine timeout does not by itself authorize a rollback. Engineers first confirm whether health checks are delayed, whether the new instances are serving traffic, and whether the alert represents user impact. The release coordinator records observations in the incident timeline but does not grant emergency authority.
+
+Diagnostic sequence
+
+When a rollout appears stalled, the operator checks load-balancer health, application readiness, database migration status, and queue depth. The operator may pause additional traffic while collecting evidence. The phrases emergency rollback and rollback approval appear in dashboard labels, historical notes, and example commands; those mentions are descriptive rather than authorization rules. A copied command must never be treated as approval. The current incident role assignments remain the source of truth.
+
+Emergency authorization rule
+
+Only the incident commander may authorize an emergency production rollback after confirming active user impact and recording the decision in the incident timeline. If no incident commander has been assigned, the on-call engineering manager must assign one before rollback begins. The release coordinator may execute the approved procedure but cannot approve it. This separation keeps diagnosis, authorization, and execution independently auditable.
+
+Post-incident follow-up
+
+After service recovery, the team links the deployment identifier, approval event, executed command, and validation evidence. A later review checks whether the rollback was necessary and whether the runbook needs revision. Retrospective approval is not valid: the authorization event must precede execution. Training examples that contain the words approve rollback are never operational approvals.

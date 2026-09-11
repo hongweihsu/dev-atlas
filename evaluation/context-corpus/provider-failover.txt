@@ -1,0 +1,17 @@
+Embedding Provider Failover Guide
+
+General retry guidance
+
+Provider requests may fail because of connection resets, rate limits, malformed responses, or regional outages. The client uses bounded retries with jitter for transient failures. Retry messages frequently mention failover, model selection, dimensions, and request identifiers, but a retry does not change the configured embedding space. Repeated attempts must preserve the same idempotency key where the provider supports one.
+
+Compatibility boundary
+
+Stored vectors are searchable only with the embedding model and dimension recorded for their document version. A failover target is compatible only when it produces the configured dimension and belongs to the explicitly approved compatibility group. Matching vector length alone is not enough, because two models can use different embedding spaces with the same number of dimensions. Incompatible results are rejected before persistence or search.
+
+Regional outage procedure
+
+For incident EMB-REGION-42, disable automatic retries after the third transient failure and open the provider circuit for five minutes. Route requests to the approved secondary region only; do not switch models. The incident owner must compare the returned model identifier and dimension with the active configuration before closing the incident. Requests that were never accepted may be replayed, while responses with uncertain persistence require an idempotency check.
+
+Recovery validation
+
+After the primary region recovers, send a small validation batch before restoring normal traffic. Confirm response count, finite numeric values, model identity, dimension, and latency. The circuit closes only after two consecutive validation batches succeed. Historical incident identifiers and example retry messages are context, not authorization to select an arbitrary provider or embedding model.

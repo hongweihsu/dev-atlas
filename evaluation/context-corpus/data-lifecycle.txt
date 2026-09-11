@@ -1,0 +1,17 @@
+Data Lifecycle and Recovery Policy
+
+Retention overview
+
+Uploaded source versions remain available while they are active and may be superseded by a newer version. Retention is different from backup recovery: retention determines how long governed records must remain available, while recovery describes how operators restore service after accidental loss. Search results must use only active versions even when older versions remain stored for audit purposes.
+
+Deletion workflow
+
+A user deletion request first marks the document pending deletion and removes it from search. The storage worker then removes derived chunks and embeddings before deleting the source payload. The audit event keeps the document identifier, request time, actor, and outcome but not the deleted document text. Failed deletion jobs are retried idempotently, and an operator can inspect their state without restoring the document to search.
+
+Recovery exception
+
+During a declared recovery exercise, backup operators may restore encrypted database snapshots into an isolated recovery environment. Restored documents must remain unavailable to normal search until ownership and active-version status are verified. Recovery access does not cancel an existing deletion request. If deleted content appears in a restored snapshot, the deletion workflow must be replayed before the environment can be promoted.
+
+Required proof before promotion
+
+Promotion requires two independent checks: the database restore manifest must match the expected snapshot checksum, and the search verification report must show that pending-deletion documents return no candidates. The recovery lead records both artifacts under the same exercise identifier. A successful database restore without the search verification report is insufficient evidence for promotion.
