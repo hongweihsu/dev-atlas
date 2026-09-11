@@ -128,3 +128,4 @@ uv run --extra evaluation python -m devatlas.evaluation.retrieval \
 - [2026-09-10 Phase 3 hybrid comparison](reports/2026-09-10-phase-3-hybrid-comparison.md)
 - [2026-09-11 BM25S index lifecycle benchmark](reports/2026-09-11-bm25-index-benchmark.md)
 - [2026-09-11 Phase 4 adversarial context lexical baseline](reports/2026-09-11-phase-4-context-lexical-baseline.md)
+- [2026-09-11 Phase 4 adversarial context hybrid comparison](reports/2026-09-11-phase-4-context-hybrid-comparison.md)
