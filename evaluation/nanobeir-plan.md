@@ -1,7 +1,8 @@
 # Phase 5 NanoBEIR evaluation plan
 
-**Status:** all three selected datasets downloaded locally and exact tokenizer
-counts recorded; no provider calls made.
+**Status:** all three selected datasets downloaded locally, exact tokenizer
+counts recorded, and the reusable batched embedding cache verified; no provider
+calls made.
 
 ## Selected tasks
 
@@ -75,7 +76,7 @@ The paid run remains gated on verifying batching and the reusable cache path.
 2. Implement a deterministic dataset-inspection command that downloads the
    selected tasks and records exact counts without calling OpenAI. **Complete.**
 3. Add cached, batched embedding adapters so vector and hybrid runs reuse the
-   same vectors.
+   same vectors. **Cache and batching foundation complete.**
 4. Run BM25 first, then request approval for the exact paid embedding run.
 5. Reopen reranker selection only if hybrid has a repeatable per-task failure or
    meaningful nDCG/Recall headroom.
@@ -122,3 +123,18 @@ The ignored JSON report also records deterministic SHA-256 fingerprints over
 sorted official IDs and normalized title/text payloads. These fingerprints will
 be part of the embedding-cache identity so changed corpus content cannot
 silently reuse stale vectors.
+
+## Embedding cache contract
+
+`nanobeir_cache.py` orders records by official ID, embeds only on a cache miss,
+validates every returned batch, converts vectors to compact float32 NumPy
+arrays, and writes the manifest last. A cache identity includes task, split,
+record kind, model, dimension, and content fingerprint. Cache hits therefore
+cannot cross models, dimensions, datasets, corpus revisions, or corpus/query
+boundaries.
+
+Incomplete, incorrectly ordered, wrongly shaped, or non-finite cache entries
+fail closed instead of silently triggering a paid replacement. This makes
+cache damage visible and prevents an unnoticed provider call. Offline tests
+verify deterministic batching, repeat-run reuse, fingerprint invalidation, and
+incomplete-entry rejection.

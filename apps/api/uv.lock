@@ -392,6 +392,7 @@ dependencies = [
 [package.optional-dependencies]
 benchmark = [
     { name = "mteb" },
+    { name = "numpy" },
     { name = "tiktoken" },
 ]
 dev = [
@@ -417,6 +418,7 @@ requires-dist = [
     { name = "ir-measures", marker = "extra == 'evaluation'", specifier = ">=0.4.3,<1" },
     { name = "mteb", marker = "extra == 'benchmark'", specifier = ">=2.20.11,<3" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14,<2" },
+    { name = "numpy", marker = "extra == 'benchmark'", specifier = ">=1.26,<3" },
     { name = "openai", specifier = ">=2,<3" },
     { name = "pgvector", specifier = ">=0.3,<1" },
     { name = "pydantic-settings", specifier = ">=2.7,<3" },
