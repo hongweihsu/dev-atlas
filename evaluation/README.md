@@ -67,6 +67,13 @@ Candidate parsing uses the API's generic `score` field. Interpret it together
 with `scoring_method`: vector uses cosine similarity, lexical uses BM25, and
 hybrid uses RRF. Scores from different methods must not be compared directly.
 
+Every new report also measures the exact five-chunk prefix passed through the
+production context builder. Per-case diagnostics include serialized character
+count, budget utilization, represented-document count, maximum same-document
+share, overlapping neighboring source offsets, and candidates excluded by the
+character budget. These are observations, not relevance improvements by
+themselves.
+
 Use `--strategy vector`, `--strategy lexical`, and `--strategy hybrid` to run a
 three-way ablation against the same corpus. Lexical mode deliberately skips the
 embedding provider, so a BM25-only run makes no query-embedding calls.
@@ -89,6 +96,29 @@ until generation evaluation has a concrete need and a reviewed rubric.
 
 No baseline score should be recorded until the relevance documents and passages
 have been reviewed and the command has completed against live retrieval.
+
+## Phase 4 adversarial context suite
+
+`context-cases.jsonl` and `context-corpus/` are a separate, reviewed diagnostic
+suite. They test specific ranking and context failure hypotheses and must not be
+combined with the Phase 2–3 regression metrics. See `context-suite.md` for the
+scope and interpretation rules.
+
+Use a separate ignored manifest. The first live run uploads three documents
+containing seven chunks; because ingestion always creates embeddings, this is a
+provider-backed operation even when the selected query strategy is lexical.
+After explicit cost approval, the BM25-only query run is:
+
+```bash
+cd apps/api
+uv run --extra evaluation python -m devatlas.evaluation.retrieval \
+  ../../evaluation/context-cases.jsonl \
+  --corpus ../../evaluation/context-corpus \
+  --manifest ../../evaluation/runs/context-manifest.json \
+  --sync-manifest \
+  --strategy lexical \
+  --report ../../evaluation/runs/phase-4-context-lexical.json
+```
 
 ## Recorded runs
 

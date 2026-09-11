@@ -5,12 +5,19 @@ import json
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from statistics import fmean
+from typing import Any, cast
+from uuid import UUID
 
 import httpx
 import ir_measures
 from ir_measures import RR, Recall
 
+from devatlas.application.answer_context import (
+    ContextDiagnostics,
+    diagnose_bounded_context,
+)
+from devatlas.application.ports.retrieval import RetrievedChunk, ScoringMethod
 from devatlas.domain.text_processing import chunk_text, normalize_text
 
 ANSWER_CONTEXT_LIMIT = 5
@@ -46,6 +53,14 @@ class RetrievedCandidate:
     document_id: str
     text: str
     score: float
+    document_title: str = ""
+    version_id: str | None = None
+    version_number: int = 1
+    chunk_id: str | None = None
+    ordinal: int = 0
+    start_offset: int = 0
+    end_offset: int = 0
+    scoring_method: ScoringMethod = "rrf"
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,6 +255,14 @@ def fetch_candidates(
                 document_id=str(row["document_id"]),
                 text=str(row["text"]),
                 score=float(row["score"]),
+                document_title=str(row["document_title"]),
+                version_id=str(row["version_id"]),
+                version_number=int(row["version_number"]),
+                chunk_id=str(row["chunk_id"]),
+                ordinal=int(row["ordinal"]),
+                start_offset=int(row["start_offset"]),
+                end_offset=int(row["end_offset"]),
+                scoring_method=cast(ScoringMethod, row["scoring_method"]),
             )
             for row in response.json()["results"]
         ]
@@ -313,44 +336,89 @@ def score_by_category(
     }
 
 
+def build_context_diagnostics(
+    candidates: Mapping[str, Sequence[RetrievedCandidate]],
+) -> dict[str, ContextDiagnostics]:
+    return {
+        case_id: diagnose_bounded_context(
+            [
+                _to_retrieved_chunk(candidate)
+                for candidate in results[:ANSWER_CONTEXT_LIMIT]
+            ]
+        )
+        for case_id, results in candidates.items()
+    }
+
+
+def summarize_context_diagnostics(
+    diagnostics: Mapping[str, ContextDiagnostics],
+) -> dict[str, float]:
+    if not diagnostics:
+        return {}
+    values = tuple(diagnostics.values())
+    return {
+        "mean_selected_chunks": fmean(item.selected_count for item in values),
+        "mean_budget_utilization": fmean(
+            item.budget_utilization for item in values
+        ),
+        "mean_documents_represented": fmean(
+            item.represented_document_count for item in values
+        ),
+        "mean_max_document_share": fmean(
+            item.max_document_share for item in values
+        ),
+        "mean_overlapping_characters": fmean(
+            item.overlapping_characters for item in values
+        ),
+        "cases_with_budget_exclusions": sum(
+            item.candidates_excluded_by_budget > 0 for item in values
+        )
+        / len(values),
+    }
+
+
 def build_case_results(
     cases: Sequence[RetrievalCase],
     candidates: Mapping[str, Sequence[RetrievedCandidate]],
     rankings: Mapping[str, Sequence[RankedDocument]],
+    context_diagnostics: Mapping[str, ContextDiagnostics] | None = None,
 ) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for case in cases:
         case_candidates = candidates.get(case.case_id, ())
         case_rankings = rankings.get(case.case_id, ())
-        results.append(
-            {
-                "case_id": case.case_id,
-                "category": case.category,
-                "document_rank": _first_relevant_document_rank(case, case_rankings),
-                "evidence_rank": _first_evidence_rank(case, case_candidates),
-                "retrieved_documents": [
-                    {
-                        "rank": rank,
-                        "document_key": result.document_key,
-                        "score": result.score,
-                    }
-                    for rank, result in enumerate(
-                        case_rankings[:ANSWER_CONTEXT_LIMIT], start=1
-                    )
-                ],
-                "retrieved_chunks": [
-                    {
-                        "rank": rank,
-                        "document_id": result.document_id,
-                        "score": result.score,
-                        "contains_evidence": _candidate_contains_evidence(case, result),
-                    }
-                    for rank, result in enumerate(
-                        case_candidates[:ANSWER_CONTEXT_LIMIT], start=1
-                    )
-                ],
-            }
-        )
+        result: dict[str, Any] = {
+            "case_id": case.case_id,
+            "category": case.category,
+            "document_rank": _first_relevant_document_rank(case, case_rankings),
+            "evidence_rank": _first_evidence_rank(case, case_candidates),
+            "retrieved_documents": [
+                {
+                    "rank": rank,
+                    "document_key": result.document_key,
+                    "score": result.score,
+                }
+                for rank, result in enumerate(
+                    case_rankings[:ANSWER_CONTEXT_LIMIT], start=1
+                )
+            ],
+            "retrieved_chunks": [
+                {
+                    "rank": rank,
+                    "document_id": result.document_id,
+                    "score": result.score,
+                    "contains_evidence": _candidate_contains_evidence(case, result),
+                }
+                for rank, result in enumerate(
+                    case_candidates[:ANSWER_CONTEXT_LIMIT], start=1
+                )
+            ],
+        }
+        if context_diagnostics is not None:
+            result["context_diagnostics"] = asdict(
+                context_diagnostics[case.case_id]
+            )
+        results.append(result)
     return results
 
 
@@ -405,6 +473,26 @@ def _first_evidence_rank(
 
 def _normalized_evidence_text(value: str) -> str:
     return " ".join(value.split()).casefold()
+
+
+def _to_retrieved_chunk(candidate: RetrievedCandidate) -> RetrievedChunk:
+    if candidate.version_id is None or candidate.chunk_id is None:
+        raise InvalidEvaluationDatasetError(
+            "context diagnostics require version_id and chunk_id metadata"
+        )
+    return RetrievedChunk(
+        document_id=UUID(candidate.document_id),
+        document_title=candidate.document_title,
+        version_id=UUID(candidate.version_id),
+        version_number=candidate.version_number,
+        chunk_id=UUID(candidate.chunk_id),
+        ordinal=candidate.ordinal,
+        text=candidate.text,
+        start_offset=candidate.start_offset,
+        end_offset=candidate.end_offset,
+        score=candidate.score,
+        scoring_method=candidate.scoring_method,
+    )
 
 
 def _unique_documents(
@@ -519,6 +607,7 @@ def main() -> None:
             write_manifest(args.manifest, manifest)
         candidates = fetch_candidates(client, cases, strategy=args.strategy)
     rankings = document_rankings(candidates, manifest)
+    context_diagnostics = build_context_diagnostics(candidates)
     report = {
         "case_count": len(cases),
         "chunk_collection_limit": COLLECTION_LIMIT,
@@ -529,7 +618,13 @@ def main() -> None:
             **score_evidence_hits(cases, candidates),
         },
         "metrics_by_category": score_by_category(cases, candidates, rankings),
-        "cases": build_case_results(cases, candidates, rankings),
+        "context_metrics": summarize_context_diagnostics(context_diagnostics),
+        "cases": build_case_results(
+            cases,
+            candidates,
+            rankings,
+            context_diagnostics,
+        ),
     }
     rendered_report = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.report is not None:

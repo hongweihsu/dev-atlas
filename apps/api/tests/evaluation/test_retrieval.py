@@ -13,12 +13,14 @@ from devatlas.evaluation.retrieval import (
     RetrievedCandidate,
     _unique_documents,
     build_case_results,
+    build_context_diagnostics,
     document_rankings,
     load_cases,
     load_manifest,
     score_by_category,
     score_document_rankings,
     score_evidence_hits,
+    summarize_context_diagnostics,
     sync_manifest,
     upload_corpus,
     validate_cases_against_corpus,
@@ -242,6 +244,40 @@ def test_document_rankings_use_manifest_ids_and_deduplicate_chunks() -> None:
         RankedDocument("transactions", 0.95),
         RankedDocument("unjudged:doc-2", 0.80),
     ]
+
+
+def test_context_diagnostics_use_top_five_api_candidates_and_source_offsets() -> None:
+    document_id = "00000000-0000-0000-0000-000000000001"
+    version_id = "00000000-0000-0000-0000-000000000002"
+    candidates = {
+        "q1": [
+            RetrievedCandidate(
+                document_id=document_id,
+                text="a" * 100,
+                score=0.9,
+                document_title="Operations",
+                version_id=version_id,
+                chunk_id=f"00000000-0000-0000-0000-00000000000{index + 3}",
+                ordinal=index,
+                start_offset=index * 80,
+                end_offset=index * 80 + 100,
+            )
+            for index in range(6)
+        ]
+    }
+
+    diagnostics = build_context_diagnostics(candidates)
+    summary = summarize_context_diagnostics(diagnostics)
+
+    assert diagnostics["q1"].candidate_count == 5
+    assert diagnostics["q1"].selected_count == 5
+    assert diagnostics["q1"].represented_document_count == 1
+    assert diagnostics["q1"].max_document_share == 1.0
+    assert diagnostics["q1"].overlapping_neighbor_pairs == 4
+    assert diagnostics["q1"].overlapping_characters == 80
+    assert summary["mean_selected_chunks"] == 5.0
+    assert summary["mean_max_document_share"] == 1.0
+    assert summary["cases_with_budget_exclusions"] == 0.0
 
 
 def test_standard_document_metrics_and_evidence_hits_are_separate() -> None:
