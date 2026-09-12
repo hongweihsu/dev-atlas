@@ -1,5 +1,6 @@
 import jwt
-from jwt.exceptions import InvalidTokenError
+from jwt import PyJWK, PyJWKClient
+from jwt.exceptions import PyJWTError
 
 from devatlas.application.ports.authentication import (
     AuthenticatedPrincipal,
@@ -27,7 +28,46 @@ class PyJwtTokenVerifier:
                 audience=self._audience,
                 options={"require": ["exp", "iss", "sub", "aud"]},
             )
-        except InvalidTokenError as error:
+        except PyJWTError as error:
+            raise InvalidCredentialError(
+                "bearer token is invalid or expired"
+            ) from error
+
+        subject = claims.get("sub")
+        if not isinstance(subject, str) or not subject:
+            raise InvalidCredentialError("bearer token subject is invalid")
+        return AuthenticatedPrincipal(issuer=self._issuer, subject=subject)
+
+
+class OidcJwksTokenVerifier:
+    """Verify provider-issued access tokens against a cached remote JWKS."""
+
+    def __init__(
+        self,
+        *,
+        jwks_url: str,
+        issuer: str,
+        audience: str,
+        jwks_client: PyJWKClient | None = None,
+    ) -> None:
+        if not jwks_url.startswith("https://"):
+            raise ValueError("OIDC JWKS URL must use HTTPS")
+        self._jwks_client = jwks_client or PyJWKClient(jwks_url)
+        self._issuer = issuer
+        self._audience = audience
+
+    def verify(self, token: str) -> AuthenticatedPrincipal:
+        try:
+            signing_key: PyJWK = self._jwks_client.get_signing_key_from_jwt(token)
+            claims = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["RS256"],
+                issuer=self._issuer,
+                audience=self._audience,
+                options={"require": ["exp", "iss", "sub", "aud"]},
+            )
+        except PyJWTError as error:
             raise InvalidCredentialError(
                 "bearer token is invalid or expired"
             ) from error

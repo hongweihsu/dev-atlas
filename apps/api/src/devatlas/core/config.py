@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     embedding_dimension: int = 1536
     answer_model: str = "gpt-4.1-mini"
     auth_jwt_secret: SecretStr | None = None
+    auth_jwks_url: str | None = None
     auth_jwt_issuer: str = "devatlas-local"
     auth_jwt_audience: str = "devatlas-api"
     auth_development_mode: bool = False
@@ -44,6 +45,14 @@ class Settings(BaseSettings):
     def development_auth_requires_signing_secret(self) -> "Settings":
         if self.auth_development_mode and self.auth_jwt_secret is None:
             raise ValueError("auth_jwt_secret is required in development auth mode")
+        if self.auth_jwt_secret is not None and self.auth_jwks_url is not None:
+            raise ValueError(
+                "configure either auth_jwt_secret or auth_jwks_url, not both"
+            )
+        if self.auth_jwks_url is not None and not self.auth_jwks_url.startswith(
+            "https://"
+        ):
+            raise ValueError("auth_jwks_url must use HTTPS")
         return self
 
 

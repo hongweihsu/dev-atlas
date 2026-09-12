@@ -39,6 +39,13 @@ database membership remains the authority for workspace access and role. The
 local symmetric verifier is an adapter boundary that can later be replaced by
 an external OIDC/JWKS verifier without changing workspace policy.
 
+The production verification boundary is provider-neutral: an HTTPS JWKS URL,
+exact issuer, and API audience configure a PyJWT `PyJWKClient`. The verifier
+selects the provider key by `kid`, accepts only server-pinned RS256, and still
+requires signature, issuer, audience, expiry, and subject. PyJWT manages JWKS
+caching and refresh when a key ID is not present. Local HS256 and external JWKS
+configuration are mutually exclusive, preventing an ambiguous trust mode.
+
 For local development only, an explicitly enabled endpoint issues an eight-hour
 token for the migrated personal-workspace owner. The React client keeps this
 token in memory and sends both the Bearer credential and selected workspace ID.

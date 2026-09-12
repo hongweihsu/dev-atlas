@@ -24,6 +24,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   may mutate documents
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
+- A provider-neutral RS256/JWKS verifier can validate externally issued access
+  tokens with pinned issuer, audience, algorithm, expiry, and subject checks
 - The React header displays the workspace name and role resolved by the server,
   making the active authorization context visible to the user
 - Viewer sessions enter an explained read-only UI while the API independently
@@ -81,7 +83,7 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- Production OIDC/JWKS authentication and explicit authorized search scope
+- External OIDC login UX and explicit authorized search scope
 - Asynchronous ingestion and AWS deployment
 - Multimodal document understanding and bounded research workflows
 
@@ -158,7 +160,9 @@ document ingestion; leave it empty to keep the endpoint safely unavailable.
 Docker Compose enables a local development-session issuer by default. That
 issuer uses an in-memory browser token and a development signing secret; disable
 `AUTH_DEVELOPMENT_MODE` and configure a production identity adapter before any
-deployment.
+deployment. For an external provider, configure its HTTPS `AUTH_JWKS_URL`, exact
+`AUTH_JWT_ISSUER`, and API `AUTH_JWT_AUDIENCE`, leaving the local signing secret
+unset.
 
 ## Future direction
 
@@ -168,8 +172,8 @@ asynchronous processing and cloud deployment come later.
 
 ## Limitations
 
-- Local authentication is development-only; production OIDC/JWKS integration,
-  membership administration, and background ingestion do not exist yet. The
+- Local token issuance is development-only; external login UX, membership
+  administration, and background ingestion do not exist yet. The
   hybrid comparison covers only five controlled documents and must not be
   interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.

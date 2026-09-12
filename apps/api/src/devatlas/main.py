@@ -17,6 +17,7 @@ from devatlas.core.config import Settings, get_settings
 from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.authentication import (
     DevelopmentSessionIssuer,
+    OidcJwksTokenVerifier,
     PyJwtTokenVerifier,
 )
 from devatlas.infrastructure.database import (
@@ -70,6 +71,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     subject="personal-owner",
                     workspace_id=LEGACY_WORKSPACE_ID,
                 )
+        elif app_settings.auth_jwks_url is not None:
+            application.state.token_verifier = OidcJwksTokenVerifier(
+                jwks_url=app_settings.auth_jwks_url,
+                issuer=app_settings.auth_jwt_issuer,
+                audience=app_settings.auth_jwt_audience,
+            )
         client: AsyncOpenAI | None = None
         if app_settings.openai_api_key is not None:
             client = AsyncOpenAI(
@@ -109,7 +116,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             del application.state.manage_document_lifecycle
             del application.state.manage_document_versions
             del application.state.workspace_access_repository
-            if app_settings.auth_jwt_secret is not None:
+            if (
+                app_settings.auth_jwt_secret is not None
+                or app_settings.auth_jwks_url is not None
+            ):
                 del application.state.token_verifier
                 if app_settings.auth_development_mode:
                     del application.state.development_session_issuer
