@@ -214,6 +214,12 @@ export default function App() {
   const selectedDocument = documentList.find(
     (document) => document.document_id === selectedDocumentId,
   )
+  const nextVersionNumber = selectedDocument
+    ? Math.max(
+        selectedDocument.active_version_number,
+        ...versionHistory.map((version) => version.version_number),
+      ) + 1
+    : 1
 
   async function handleArchive(document: DocumentSummary) {
     const confirmed = window.confirm(
@@ -395,6 +401,7 @@ export default function App() {
                         aria-pressed={document.document_id === selectedDocumentId}
                         onClick={() => {
                           setSelectedDocumentId(document.document_id)
+                          setVersionHistory([])
                           setUploadTab('update')
                           setUploadResult(null)
                           setVersionError('')
@@ -561,7 +568,7 @@ export default function App() {
                 >
                   {versionState === 'submitting'
                     ? 'Indexing new version…'
-                    : `Upload Version ${selectedDocument.active_version_number + 1}`}
+                    : `Upload Version ${nextVersionNumber}`}
                 </button>
               </form>
                   <section className="version-history" aria-labelledby="version-history-title">

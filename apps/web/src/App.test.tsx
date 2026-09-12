@@ -257,6 +257,7 @@ test('shows immutable history and makes an older version current', async () => {
   await waitFor(() =>
     expect(screen.getAllByText('Current')).toHaveLength(1),
   )
+  expect(screen.getByRole('button', { name: 'Upload Version 3' })).toBeDisabled()
 })
 
 test('shows a duplicate-content error when a version is rejected', async () => {
