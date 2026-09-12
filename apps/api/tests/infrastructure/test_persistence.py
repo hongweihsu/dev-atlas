@@ -51,7 +51,8 @@ def make_record() -> NewDocumentRecord:
 @pytest.mark.asyncio
 async def test_repository_maps_complete_document_aggregate() -> None:
     session = MagicMock(spec=AsyncSession)
-    session.scalar = AsyncMock(return_value=None)
+    knowledge_base_id = uuid4()
+    session.scalar = AsyncMock(return_value=knowledge_base_id)
     duplicate_result = MagicMock()
     duplicate_result.first.return_value = None
     session.execute = AsyncMock(side_effect=[MagicMock(), duplicate_result])
@@ -63,6 +64,8 @@ async def test_repository_maps_complete_document_aggregate() -> None:
     document = session.add.call_args.args[0]
     assert isinstance(document, Document)
     assert document.id == record.id
+    assert document.workspace_id == LEGACY_WORKSPACE_ID
+    assert document.knowledge_base_id == knowledge_base_id
     assert document.title == record.title
     assert len(document.versions) == 1
     assert document.versions[0].id == record.version.id

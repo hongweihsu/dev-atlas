@@ -19,7 +19,12 @@ from devatlas.application.search_documents import (
 )
 from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.database import create_session_factory
-from devatlas.infrastructure.models import Document, DocumentVersion, Workspace
+from devatlas.infrastructure.models import (
+    Document,
+    DocumentVersion,
+    KnowledgeBase,
+    Workspace,
+)
 from devatlas.infrastructure.persistence import (
     SqlAlchemyChunkSearchRepository,
     SqlAlchemyDocumentLifecycleRepository,
@@ -315,10 +320,23 @@ async def test_workspace_scope_blocks_cross_tenant_reads_and_mutations() -> None
     )
     first_workspace = Workspace(name="Isolation workspace A")
     second_workspace = Workspace(name="Isolation workspace B")
+    first_knowledge_base = KnowledgeBase(
+        workspace=first_workspace, name="General", is_default=True
+    )
+    second_knowledge_base = KnowledgeBase(
+        workspace=second_workspace, name="General", is_default=True
+    )
 
     try:
         async with session_factory() as session:
-            session.add_all([first_workspace, second_workspace])
+            session.add_all(
+                [
+                    first_workspace,
+                    second_workspace,
+                    first_knowledge_base,
+                    second_knowledge_base,
+                ]
+            )
             await session.commit()
 
         first = await ingestion.execute(
@@ -364,6 +382,13 @@ async def test_workspace_scope_blocks_cross_tenant_reads_and_mutations() -> None
             await session.execute(
                 delete(Document).where(
                     Document.workspace_id.in_([first_workspace.id, second_workspace.id])
+                )
+            )
+            await session.execute(
+                delete(KnowledgeBase).where(
+                    KnowledgeBase.workspace_id.in_(
+                        [first_workspace.id, second_workspace.id]
+                    )
                 )
             )
             await session.execute(

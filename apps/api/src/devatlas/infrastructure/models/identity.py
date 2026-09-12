@@ -3,13 +3,16 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     String,
     UniqueConstraint,
     Uuid,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -69,6 +72,54 @@ class Workspace(Base):
         back_populates="workspace", cascade="all, delete-orphan", passive_deletes=True
     )
     documents: Mapped[list["Document"]] = relationship(back_populates="workspace")
+    knowledge_bases: Mapped[list["KnowledgeBase"]] = relationship(
+        back_populates="workspace"
+    )
+
+
+class KnowledgeBase(Base):
+    """A selectable retrieval scope owned by exactly one workspace."""
+
+    __tablename__ = "knowledge_bases"
+    __table_args__ = (
+        UniqueConstraint(
+            "workspace_id",
+            "id",
+            name="uq_knowledge_bases_workspace_id_id",
+        ),
+        UniqueConstraint(
+            "workspace_id",
+            "name",
+            name="uq_knowledge_bases_workspace_name",
+        ),
+        CheckConstraint(
+            "char_length(name) > 0",
+            name="ck_knowledge_bases_name_not_empty",
+        ),
+        Index(
+            "uq_knowledge_bases_one_default_per_workspace",
+            "workspace_id",
+            unique=True,
+            postgresql_where=text("is_default = true"),
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    workspace_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey(
+            "workspaces.id",
+            name="fk_knowledge_bases_workspace_id_workspaces",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    workspace: Mapped[Workspace] = relationship(back_populates="knowledge_bases")
 
 
 class WorkspaceMembership(Base):

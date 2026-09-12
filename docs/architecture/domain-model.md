@@ -4,8 +4,8 @@
 
 The document/version/chunk persistence slice and the Phase 7 user, workspace,
 membership, authentication, and query-level document isolation are implemented.
-Knowledge-base scope and production identity-provider integration remain
-planned work.
+The Phase 8 persistence foundation now assigns every document to a
+workspace-owned KnowledgeBase; selectable API search scope remains in progress.
 
 DevAtlas will use the following conceptual ownership model unless a later ADR
 changes it:
@@ -53,13 +53,17 @@ credential and database membership. Reads allow all membership roles; writes
 allow Owner and Editor. The browser-provided workspace ID selects a desired
 scope but cannot grant access by itself.
 
+Phase 8 keeps `documents.workspace_id` as the explicit tenant filter and adds
+non-null `documents.knowledge_base_id` as the retrieval scope. A composite
+foreign key guarantees the selected KnowledgeBase belongs to the same workspace.
+Each migrated workspace receives one default `General` scope, preserving all
+existing data and upload behavior before explicit selection reaches the API.
+
 Phase 7 stores external identity as `(identity_issuer, identity_subject)`, models
 workspace membership with one of `owner`, `editor`, or `viewer`, and requires
 every document to reference a workspace. The migration assigns all pre-workspace
 documents to a deterministic legacy personal workspace so no existing content
-becomes ownerless. Documents currently attach directly to workspaces; the
-KnowledgeBase relationship in the conceptual model remains a Phase 8 search-
-scope concern.
+becomes ownerless.
 
 Phase 6 adds a reversible lifecycle boundary to the logical document.
 `archived_at` is null while a document participates in default lists and

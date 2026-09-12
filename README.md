@@ -22,6 +22,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Server-enforced workspace isolation across ingestion, lists, lifecycle,
   versions, retrieval, and answers; Viewer is read-only while Editor and Owner
   may mutate documents
+- Phase 8 KnowledgeBase persistence gives every document a workspace-consistent
+  retrieval scope, with existing data migrated into a default `General` base
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - A provider-neutral RS256/JWKS verifier can validate externally issued access

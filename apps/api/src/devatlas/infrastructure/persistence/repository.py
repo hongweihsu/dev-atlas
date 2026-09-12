@@ -10,7 +10,12 @@ from devatlas.application.ports.persistence import (
     NewDocumentRecord,
     NewDocumentVersionRecord,
 )
-from devatlas.infrastructure.models import Chunk, Document, DocumentVersion
+from devatlas.infrastructure.models import (
+    Chunk,
+    Document,
+    DocumentVersion,
+    KnowledgeBase,
+)
 
 
 class SqlAlchemyDocumentIngestionRepository:
@@ -43,10 +48,19 @@ class SqlAlchemyDocumentIngestionRepository:
                 document_id=duplicate.document_id,
                 document_archived=duplicate.archived_at is not None,
             )
+        knowledge_base_id = await self._session.scalar(
+            select(KnowledgeBase.id).where(
+                KnowledgeBase.workspace_id == workspace_id,
+                KnowledgeBase.is_default.is_(True),
+            )
+        )
+        if knowledge_base_id is None:
+            raise RuntimeError("workspace has no default knowledge base")
         version = self._map_version(record.version)
         document = Document(
             id=record.id,
             workspace_id=workspace_id,
+            knowledge_base_id=knowledge_base_id,
             title=record.title,
             versions=[version],
         )

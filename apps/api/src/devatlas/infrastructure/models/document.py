@@ -8,6 +8,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -34,6 +35,12 @@ class Document(Base):
             "char_length(title) > 0",
             name="ck_documents_title_not_empty",
         ),
+        ForeignKeyConstraint(
+            ["workspace_id", "knowledge_base_id"],
+            ["knowledge_bases.workspace_id", "knowledge_bases.id"],
+            name="fk_documents_workspace_knowledge_base",
+            ondelete="RESTRICT",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
@@ -46,6 +53,7 @@ class Document(Base):
         ),
         nullable=False,
     )
+    knowledge_base_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

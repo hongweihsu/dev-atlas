@@ -1,12 +1,19 @@
 from typing import cast
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import CheckConstraint, String, Table, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKeyConstraint,
+    String,
+    Table,
+    UniqueConstraint,
+)
 
 from devatlas.infrastructure.models import (
     Chunk,
     Document,
     DocumentVersion,
+    KnowledgeBase,
     User,
     Workspace,
     WorkspaceMembership,
@@ -20,6 +27,7 @@ def test_document_model_exposes_expected_database_contract() -> None:
     assert set(table.columns.keys()) == {
         "id",
         "workspace_id",
+        "knowledge_base_id",
         "title",
         "created_at",
         "updated_at",
@@ -35,9 +43,19 @@ def test_document_model_exposes_expected_database_contract() -> None:
         if isinstance(constraint, CheckConstraint)
     }
     assert check_names == {"ck_documents_title_not_empty"}
-    workspace_key = next(iter(table.columns.workspace_id.foreign_keys))
+    workspace_key = next(
+        key
+        for key in table.columns.workspace_id.foreign_keys
+        if key.target_fullname == "workspaces.id"
+    )
     assert workspace_key.target_fullname == "workspaces.id"
     assert workspace_key.ondelete == "RESTRICT"
+    scope_key = next(
+        constraint
+        for constraint in table.constraints
+        if constraint.name == "fk_documents_workspace_knowledge_base"
+    )
+    assert isinstance(scope_key, ForeignKeyConstraint)
 
 
 def test_workspace_models_enforce_identity_and_membership_contract() -> None:
@@ -63,6 +81,30 @@ def test_workspace_models_enforce_identity_and_membership_contract() -> None:
         if constraint.name == "ck_workspace_memberships_role_valid"
     )
     assert isinstance(role_check, CheckConstraint)
+
+
+def test_knowledge_base_model_enforces_workspace_scope_contract() -> None:
+    table = cast(Table, KnowledgeBase.__table__)
+
+    assert set(table.columns.keys()) == {
+        "id",
+        "workspace_id",
+        "name",
+        "is_default",
+        "created_at",
+    }
+    constraint_names = {constraint.name for constraint in table.constraints}
+    assert constraint_names >= {
+        "uq_knowledge_bases_workspace_id_id",
+        "uq_knowledge_bases_workspace_name",
+        "ck_knowledge_bases_name_not_empty",
+    }
+    default_index = next(
+        index
+        for index in table.indexes
+        if index.name == "uq_knowledge_bases_one_default_per_workspace"
+    )
+    assert default_index.unique is True
 
 
 def test_document_version_model_enforces_identity_and_lifecycle_contract() -> None:
