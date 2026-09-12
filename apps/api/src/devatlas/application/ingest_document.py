@@ -55,7 +55,9 @@ class IngestNewDocument:
         self._embedding_provider = embedding_provider
         self._unit_of_work_factory = unit_of_work_factory
 
-    async def execute(self, command: IngestNewDocumentCommand) -> IngestedDocument:
+    async def execute(
+        self, workspace_id: UUID, command: IngestNewDocumentCommand
+    ) -> IngestedDocument:
         title = command.title.strip()
         if not title:
             raise InvalidDocumentTitleError("title must not be empty")
@@ -69,18 +71,21 @@ class IngestNewDocument:
             title=title,
         )
         async with self._unit_of_work_factory() as unit_of_work:
-            await unit_of_work.documents.add(record)
+            await unit_of_work.documents.add(workspace_id, record)
             await unit_of_work.commit()
 
         return self._result(record, version_number=1)
 
     async def execute_version(
         self,
+        workspace_id: UUID,
         document_id: UUID,
         command: IngestNewDocumentCommand,
     ) -> IngestedDocument:
         async with self._unit_of_work_factory() as unit_of_work:
-            await unit_of_work.documents.ensure_version_target(document_id)
+            await unit_of_work.documents.ensure_version_target(
+                workspace_id, document_id
+            )
         record = await self._prepare_record(
             command,
             document_id=document_id,
@@ -88,6 +93,7 @@ class IngestNewDocument:
         )
         async with self._unit_of_work_factory() as unit_of_work:
             version_number = await unit_of_work.documents.add_version(
+                workspace_id,
                 document_id,
                 record.version,
             )

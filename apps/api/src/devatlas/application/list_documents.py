@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from devatlas.application.ports.document_list import (
     DocumentListRepository,
     DocumentListStatus,
@@ -10,6 +12,8 @@ class ListDocuments:
         self._repository = repository
 
     async def execute(
-        self, *, status: DocumentListStatus = "active"
+        self, *, workspace_id: UUID, status: DocumentListStatus = "active"
     ) -> list[DocumentSummary]:
-        return await self._repository.list_documents(status=status)
+        return await self._repository.list_documents(
+            workspace_id=workspace_id, status=status
+        )

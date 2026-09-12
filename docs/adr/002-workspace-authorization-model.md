@@ -1,6 +1,6 @@
 # ADR-002: Use workspace-scoped authorization in V1
 
-- **Status:** Accepted; ownership schema implemented, authorization enforcement in progress
+- **Status:** Accepted and implemented for document operations
 - **Date:** 2026-08-19
 
 ## Context
@@ -29,8 +29,8 @@ email is mutable and need not be unique across identity providers.
 
 Existing single-user documents migrate into a deterministic personal workspace
 owned by a legacy local identity. This is a compatibility bridge, not the final
-request authentication mechanism. The runtime must not claim tenant isolation
-until every read and mutation is scoped from an authenticated membership.
+request authentication mechanism. Every document read and mutation is now
+scoped from an authenticated membership.
 
 The first authentication adapter uses FastAPI's HTTP Bearer dependency and
 PyJWT with a server-pinned HS256 algorithm, configured secret, issuer, audience,
@@ -38,6 +38,17 @@ required expiry, and required subject. Tokens establish identity only; the
 database membership remains the authority for workspace access and role. The
 local symmetric verifier is an adapter boundary that can later be replaced by
 an external OIDC/JWKS verifier without changing workspace policy.
+
+For local development only, an explicitly enabled endpoint issues an eight-hour
+token for the migrated personal-workspace owner. The React client keeps this
+token in memory and sends both the Bearer credential and selected workspace ID.
+This preserves the real authorization path during development, but it is not a
+production login mechanism and is disabled by default in application settings.
+
+Document reads require membership. Document mutations additionally require the
+Owner or Editor role; Viewer is read-only. Repository queries include the
+authorized workspace ID, so guessing a document UUID from another workspace
+produces the same not-found result as an unknown UUID.
 
 ## Alternatives considered
 
@@ -53,5 +64,6 @@ knowledge bases within one shared workspace.
 
 ## Consequences
 
-Future retrieval queries must validate selected scope against memberships and
-roles. Security tests must prove cross-workspace isolation and role enforcement.
+Future resource types must follow the same rule: validate selected scope against
+membership before querying. Integration coverage proves cross-workspace list,
+search, version, and lifecycle denial; API coverage proves Viewer write denial.

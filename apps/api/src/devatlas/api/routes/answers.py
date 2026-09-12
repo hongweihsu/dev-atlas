@@ -3,6 +3,7 @@ from typing import Annotated, cast
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
+from devatlas.api.dependencies.authentication import CurrentWorkspace
 from devatlas.application.answer_documents import (
     AnswerDocuments,
     AnswerDocumentsCommand,
@@ -65,10 +66,15 @@ AnswerService = Annotated[AnswerDocuments, Depends(get_answer_documents)]
 async def answer_documents(
     request: AnswerRequest,
     service: AnswerService,
+    workspace: CurrentWorkspace,
 ) -> AnswerResponse:
     try:
         result = await service.execute(
-            AnswerDocumentsCommand(question=request.question, limit=request.limit)
+            AnswerDocumentsCommand(
+                question=request.question,
+                workspace_id=workspace.workspace_id,
+                limit=request.limit,
+            )
         )
     except InvalidSearchQueryError as error:
         raise HTTPException(

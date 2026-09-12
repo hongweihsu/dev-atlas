@@ -14,7 +14,11 @@ from devatlas.application.manage_document_lifecycle import ManageDocumentLifecyc
 from devatlas.application.manage_document_versions import ManageDocumentVersions
 from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
-from devatlas.infrastructure.authentication import PyJwtTokenVerifier
+from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
+from devatlas.infrastructure.authentication import (
+    DevelopmentSessionIssuer,
+    PyJwtTokenVerifier,
+)
 from devatlas.infrastructure.database import (
     create_database_engine,
     create_session_factory,
@@ -52,11 +56,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             SqlAlchemyWorkspaceAccessRepository(session_factory)
         )
         if app_settings.auth_jwt_secret is not None:
+            jwt_secret = app_settings.auth_jwt_secret.get_secret_value()
             application.state.token_verifier = PyJwtTokenVerifier(
-                secret=app_settings.auth_jwt_secret.get_secret_value(),
+                secret=jwt_secret,
                 issuer=app_settings.auth_jwt_issuer,
                 audience=app_settings.auth_jwt_audience,
             )
+            if app_settings.auth_development_mode:
+                application.state.development_session_issuer = DevelopmentSessionIssuer(
+                    secret=jwt_secret,
+                    issuer=app_settings.auth_jwt_issuer,
+                    audience=app_settings.auth_jwt_audience,
+                    subject="personal-owner",
+                    workspace_id=LEGACY_WORKSPACE_ID,
+                )
         client: AsyncOpenAI | None = None
         if app_settings.openai_api_key is not None:
             client = AsyncOpenAI(
@@ -98,6 +111,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             del application.state.workspace_access_repository
             if app_settings.auth_jwt_secret is not None:
                 del application.state.token_verifier
+                if app_settings.auth_development_mode:
+                    del application.state.development_session_issuer
             if client is not None:
                 del application.state.answer_documents
                 del application.state.search_documents

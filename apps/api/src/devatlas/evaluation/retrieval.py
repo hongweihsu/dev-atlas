@@ -358,15 +358,11 @@ def summarize_context_diagnostics(
     values = tuple(diagnostics.values())
     return {
         "mean_selected_chunks": fmean(item.selected_count for item in values),
-        "mean_budget_utilization": fmean(
-            item.budget_utilization for item in values
-        ),
+        "mean_budget_utilization": fmean(item.budget_utilization for item in values),
         "mean_documents_represented": fmean(
             item.represented_document_count for item in values
         ),
-        "mean_max_document_share": fmean(
-            item.max_document_share for item in values
-        ),
+        "mean_max_document_share": fmean(item.max_document_share for item in values),
         "mean_overlapping_characters": fmean(
             item.overlapping_characters for item in values
         ),
@@ -415,9 +411,7 @@ def build_case_results(
             ],
         }
         if context_diagnostics is not None:
-            result["context_diagnostics"] = asdict(
-                context_diagnostics[case.case_id]
-            )
+            result["context_diagnostics"] = asdict(context_diagnostics[case.case_id])
         results.append(result)
     return results
 

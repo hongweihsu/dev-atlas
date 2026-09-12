@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import SecretStr, field_validator
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     auth_jwt_secret: SecretStr | None = None
     auth_jwt_issuer: str = "devatlas-local"
     auth_jwt_audience: str = "devatlas-api"
+    auth_development_mode: bool = False
 
     @field_validator("openai_api_key", mode="before")
     @classmethod
@@ -38,6 +39,12 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @model_validator(mode="after")
+    def development_auth_requires_signing_secret(self) -> "Settings":
+        if self.auth_development_mode and self.auth_jwt_secret is None:
+            raise ValueError("auth_jwt_secret is required in development auth mode")
+        return self
 
 
 @lru_cache

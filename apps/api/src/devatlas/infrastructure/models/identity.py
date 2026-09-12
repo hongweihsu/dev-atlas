@@ -57,9 +57,7 @@ class Workspace(Base):
 
     __tablename__ = "workspaces"
     __table_args__ = (
-        CheckConstraint(
-            "char_length(name) > 0", name="ck_workspaces_name_not_empty"
-        ),
+        CheckConstraint("char_length(name) > 0", name="ck_workspaces_name_not_empty"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)

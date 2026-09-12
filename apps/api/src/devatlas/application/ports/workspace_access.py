@@ -20,5 +20,4 @@ class WorkspaceAccessRepository(Protocol):
         self,
         principal: AuthenticatedPrincipal,
         workspace_id: UUID,
-    ) -> AuthorizedWorkspace | None:
-        ...
+    ) -> AuthorizedWorkspace | None: ...

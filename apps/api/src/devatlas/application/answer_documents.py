@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 from devatlas.application.answer_context import build_bounded_context
 from devatlas.application.ports.generation import (
@@ -18,6 +19,7 @@ NO_EVIDENCE_ANSWER = "I don't have enough evidence in the indexed documents."
 @dataclass(frozen=True, slots=True)
 class AnswerDocumentsCommand:
     question: str
+    workspace_id: UUID
     limit: int = 5
 
 
@@ -40,7 +42,11 @@ class AnswerDocuments:
 
     async def execute(self, command: AnswerDocumentsCommand) -> AnswerDocumentsResult:
         chunks = await self._search_documents.execute(
-            SearchDocumentsCommand(query=command.question, limit=command.limit)
+            SearchDocumentsCommand(
+                query=command.question,
+                workspace_id=command.workspace_id,
+                limit=command.limit,
+            )
         )
         context, sources = build_bounded_context(chunks)
         if not sources:

@@ -15,6 +15,10 @@ from fastapi import (
 )
 from pydantic import BaseModel
 
+from devatlas.api.dependencies.authentication import (
+    CurrentWorkspace,
+    WritableWorkspace,
+)
 from devatlas.application.ingest_document import (
     IngestNewDocument,
     IngestNewDocumentCommand,
@@ -158,11 +162,14 @@ def _validation_status(code: DocumentValidationCode) -> int:
 @router.get("", response_model=list[DocumentSummaryResponse])
 async def list_documents(
     service: DocumentListService,
+    workspace: CurrentWorkspace,
     status_filter: Annotated[
         Literal["active", "archived"], Query(alias="status")
     ] = "active",
 ) -> list[DocumentSummaryResponse]:
-    documents = await service.execute(status=status_filter)
+    documents = await service.execute(
+        workspace_id=workspace.workspace_id, status=status_filter
+    )
     return [
         DocumentSummaryResponse(
             document_id=str(document.document_id),
@@ -180,10 +187,12 @@ async def list_documents(
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def archive_document(
-    document_id: UUID, service: DocumentLifecycleService
+    document_id: UUID,
+    service: DocumentLifecycleService,
+    workspace: WritableWorkspace,
 ) -> None:
     try:
-        await service.archive(document_id)
+        await service.archive(workspace.workspace_id, document_id)
     except DocumentNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -193,10 +202,12 @@ async def archive_document(
 
 @router.post("/{document_id}/restore", status_code=status.HTTP_204_NO_CONTENT)
 async def restore_document(
-    document_id: UUID, service: DocumentLifecycleService
+    document_id: UUID,
+    service: DocumentLifecycleService,
+    workspace: WritableWorkspace,
 ) -> None:
     try:
-        await service.restore(document_id)
+        await service.restore(workspace.workspace_id, document_id)
     except DocumentNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -210,9 +221,12 @@ async def restore_document(
 async def ingest_document(
     file: Annotated[UploadFile, File()],
     service: IngestionService,
+    workspace: WritableWorkspace,
     title: Annotated[str, Form()] = "",
 ) -> IngestDocumentResponse:
-    return await _ingest(file=file, title=title, service=service)
+    return await _ingest(
+        file=file, title=title, service=service, workspace_id=workspace.workspace_id
+    )
 
 
 @router.post(
@@ -224,11 +238,13 @@ async def ingest_document_version(
     document_id: UUID,
     file: Annotated[UploadFile, File()],
     service: IngestionService,
+    workspace: WritableWorkspace,
 ) -> IngestDocumentResponse:
     return await _ingest(
         file=file,
         title="",
         service=service,
+        workspace_id=workspace.workspace_id,
         document_id=document_id,
     )
 
@@ -237,10 +253,12 @@ async def ingest_document_version(
     "/{document_id}/versions", response_model=list[DocumentVersionSummaryResponse]
 )
 async def list_document_versions(
-    document_id: UUID, service: DocumentVersionService
+    document_id: UUID,
+    service: DocumentVersionService,
+    workspace: CurrentWorkspace,
 ) -> list[DocumentVersionSummaryResponse]:
     try:
-        versions = await service.list_versions(document_id)
+        versions = await service.list_versions(workspace.workspace_id, document_id)
     except DocumentNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -272,9 +290,10 @@ async def activate_document_version(
     document_id: UUID,
     version_id: UUID,
     service: DocumentVersionService,
+    workspace: WritableWorkspace,
 ) -> None:
     try:
-        await service.activate_version(document_id, version_id)
+        await service.activate_version(workspace.workspace_id, document_id, version_id)
     except DocumentNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -297,6 +316,7 @@ async def _ingest(
     file: UploadFile,
     title: str,
     service: IngestNewDocument,
+    workspace_id: UUID,
     document_id: UUID | None = None,
 ) -> IngestDocumentResponse:
     filename = file.filename or ""
@@ -315,9 +335,9 @@ async def _ingest(
             content=content,
         )
         if document_id is None:
-            result = await service.execute(command)
+            result = await service.execute(workspace_id, command)
         else:
-            result = await service.execute_version(document_id, command)
+            result = await service.execute_version(workspace_id, document_id, command)
     except DocumentValidationError as error:
         raise HTTPException(
             status_code=_validation_status(error.code),

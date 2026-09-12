@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import App from './App'
+import { configureApiSession } from './api'
 
 afterEach(() => vi.restoreAllMocks())
+beforeEach(() => configureApiSession('test-access-token', 'test-workspace-id'))
 
 function jsonResponse(body: object, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -251,7 +253,7 @@ test('shows immutable history and makes an older version current', async () => {
       fetchMock,
     ).toHaveBeenCalledWith(
       '/api/documents/document-id/versions/version-1-id/activate',
-      { method: 'POST' },
+      expect.objectContaining({ method: 'POST', headers: expect.any(Headers) }),
     ),
   )
   await waitFor(() =>
@@ -461,9 +463,10 @@ test('archives a document and restores it with undo', async () => {
   expect(
     await screen.findByRole('button', { name: 'Archive Architecture notes' }),
   ).toBeInTheDocument()
-  expect(fetchMock).toHaveBeenCalledWith('/api/documents/document-id/restore', {
-    method: 'POST',
-  })
+  expect(fetchMock).toHaveBeenCalledWith(
+    '/api/documents/document-id/restore',
+    expect.objectContaining({ method: 'POST', headers: expect.any(Headers) }),
+  )
 })
 
 test('loads archived documents after a page-state change and restores one', async () => {

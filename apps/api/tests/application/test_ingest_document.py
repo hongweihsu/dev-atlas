@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -17,6 +18,8 @@ from tests.fakes import (
     DeterministicEmbeddingProvider,
     FakeIngestionUnitOfWorkFactory,
 )
+
+WORKSPACE_ID = UUID(int=999)
 
 
 def accepts_unit_of_work_factory(
@@ -44,7 +47,9 @@ async def test_ingest_new_document_commits_complete_version_one() -> None:
         expected_embedding_dimension=8,
     )
 
-    result = await use_case.execute(make_command(title="  DevAtlas Notes  "))
+    result = await use_case.execute(
+        WORKSPACE_ID, make_command(title="  DevAtlas Notes  ")
+    )
 
     assert result.chunk_count == 2
     assert result.version_number == 1
@@ -75,7 +80,7 @@ async def test_ingest_new_document_rolls_back_failed_commit() -> None:
     )
 
     with pytest.raises(RuntimeError, match="database commit failed"):
-        await use_case.execute(make_command())
+        await use_case.execute(WORKSPACE_ID, make_command())
 
     assert factory.committed_documents == []
     assert factory.created[0].commit_calls == 1
@@ -99,7 +104,7 @@ async def test_bad_embeddings_do_not_open_transaction() -> None:
     )
 
     with pytest.raises(EmbeddingBatchError, match="expected 2 embeddings"):
-        await use_case.execute(make_command())
+        await use_case.execute(WORKSPACE_ID, make_command())
 
     assert factory.created == []
     assert factory.committed_documents == []
@@ -119,7 +124,7 @@ async def test_ingest_new_document_rejects_invalid_title_before_external_work(
     )
 
     with pytest.raises(ValueError, match="title must"):
-        await use_case.execute(make_command(title=title))
+        await use_case.execute(WORKSPACE_ID, make_command(title=title))
 
     assert factory.created == []
 
@@ -143,9 +148,10 @@ async def test_ingest_changed_content_creates_next_document_version() -> None:
         unit_of_work_factory=factory,
         expected_embedding_dimension=8,
     )
-    original = await use_case.execute(make_command())
+    original = await use_case.execute(WORKSPACE_ID, make_command())
 
     result = await use_case.execute_version(
+        WORKSPACE_ID,
         original.document_id,
         IngestNewDocumentCommand(
             title="",
@@ -168,10 +174,12 @@ async def test_ingest_duplicate_content_is_rejected() -> None:
         unit_of_work_factory=factory,
         expected_embedding_dimension=8,
     )
-    original = await use_case.execute(make_command())
+    original = await use_case.execute(WORKSPACE_ID, make_command())
 
     with pytest.raises(DuplicateDocumentContentError, match="same content"):
-        await use_case.execute_version(original.document_id, make_command())
+        await use_case.execute_version(
+            WORKSPACE_ID, original.document_id, make_command()
+        )
 
 
 @pytest.mark.asyncio
@@ -182,10 +190,10 @@ async def test_new_document_rejects_content_that_already_exists_globally() -> No
         unit_of_work_factory=factory,
         expected_embedding_dimension=8,
     )
-    original = await use_case.execute(make_command(title="First title"))
+    original = await use_case.execute(WORKSPACE_ID, make_command(title="First title"))
 
     with pytest.raises(DuplicateDocumentContentError) as caught:
-        await use_case.execute(make_command(title="Different title"))
+        await use_case.execute(WORKSPACE_ID, make_command(title="Different title"))
 
     assert caught.value.document_id == original.document_id
     assert len(factory.committed_documents) == 1
@@ -193,8 +201,6 @@ async def test_new_document_rejects_content_that_already_exists_globally() -> No
 
 @pytest.mark.asyncio
 async def test_ingest_version_rejects_unknown_document() -> None:
-    from uuid import uuid4
-
     use_case = IngestNewDocument(
         embedding_provider=DeterministicEmbeddingProvider(dimension=8),
         unit_of_work_factory=FakeIngestionUnitOfWorkFactory(),
@@ -202,7 +208,7 @@ async def test_ingest_version_rejects_unknown_document() -> None:
     )
 
     with pytest.raises(DocumentNotFoundError, match="was not found"):
-        await use_case.execute_version(uuid4(), make_command())
+        await use_case.execute_version(WORKSPACE_ID, uuid4(), make_command())
 
 
 class NeverCalledEmbeddingProvider(DeterministicEmbeddingProvider):
@@ -218,7 +224,7 @@ async def test_archived_document_rejects_version_before_embedding() -> None:
         unit_of_work_factory=factory,
         expected_embedding_dimension=8,
     )
-    original = await creator.execute(make_command())
+    original = await creator.execute(WORKSPACE_ID, make_command())
     factory.archived_document_ids.add(original.document_id)
     updater = IngestNewDocument(
         embedding_provider=NeverCalledEmbeddingProvider(dimension=8),
@@ -227,4 +233,6 @@ async def test_archived_document_rejects_version_before_embedding() -> None:
     )
 
     with pytest.raises(DocumentArchivedError, match="must be restored"):
-        await updater.execute_version(original.document_id, make_command())
+        await updater.execute_version(
+            WORKSPACE_ID, original.document_id, make_command()
+        )

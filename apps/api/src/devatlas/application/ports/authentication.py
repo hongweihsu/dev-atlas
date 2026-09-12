@@ -13,5 +13,4 @@ class InvalidCredentialError(ValueError):
 
 
 class TokenVerifier(Protocol):
-    def verify(self, token: str) -> AuthenticatedPrincipal:
-        ...
+    def verify(self, token: str) -> AuthenticatedPrincipal: ...

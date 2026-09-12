@@ -9,6 +9,7 @@ from devatlas.application.ports.persistence import (
     NewDocumentRecord,
     NewDocumentVersionRecord,
 )
+from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.models import Document
 from devatlas.infrastructure.persistence import (
     SqlAlchemyDocumentIngestionRepository,
@@ -57,7 +58,7 @@ async def test_repository_maps_complete_document_aggregate() -> None:
     repository = SqlAlchemyDocumentIngestionRepository(session)
     record = make_record()
 
-    await repository.add(record)
+    await repository.add(LEGACY_WORKSPACE_ID, record)
 
     document = session.add.call_args.args[0]
     assert isinstance(document, Document)

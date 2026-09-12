@@ -10,10 +10,10 @@ class ManageDocumentLifecycle:
     def __init__(self, repository: DocumentLifecycleRepository) -> None:
         self._repository = repository
 
-    async def archive(self, document_id: UUID) -> None:
-        if not await self._repository.archive(document_id):
+    async def archive(self, workspace_id: UUID, document_id: UUID) -> None:
+        if not await self._repository.archive(workspace_id, document_id):
             raise DocumentNotFoundError(f"document {document_id} was not found")
 
-    async def restore(self, document_id: UUID) -> None:
-        if not await self._repository.restore(document_id):
+    async def restore(self, workspace_id: UUID, document_id: UUID) -> None:
+        if not await self._repository.restore(workspace_id, document_id):
             raise DocumentNotFoundError(f"document {document_id} was not found")

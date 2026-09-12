@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -29,6 +29,8 @@ from tests.fakes import (
     DeterministicEmbeddingProvider,
     FakeIngestionUnitOfWorkFactory,
 )
+
+TEST_WORKSPACE_ID = UUID(int=999)
 
 
 @pytest.fixture
@@ -141,7 +143,9 @@ def test_document_version_routes_list_and_activate_immutable_version() -> None:
     assert listed.json()[0]["version_id"] == str(version_id)
     assert listed.json()[0]["is_active"] is False
     assert activated.status_code == 204
-    service.activate_version.assert_awaited_once_with(document_id, version_id)
+    service.activate_version.assert_awaited_once_with(
+        TEST_WORKSPACE_ID, document_id, version_id
+    )
 
 
 def test_document_lifecycle_routes_archive_restore_and_map_missing() -> None:
@@ -160,7 +164,7 @@ def test_document_lifecycle_routes_archive_restore_and_map_missing() -> None:
     assert archived.status_code == 204
     assert restored.status_code == 204
     service.archive.assert_awaited()
-    service.restore.assert_awaited_once_with(document_id)
+    service.restore.assert_awaited_once_with(TEST_WORKSPACE_ID, document_id)
     assert missing.status_code == 404
     assert missing.json()["detail"]["code"] == "document_not_found"
 

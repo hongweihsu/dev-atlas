@@ -20,7 +20,7 @@ class DocumentSummary:
 
 class DocumentListRepository(Protocol):
     async def list_documents(
-        self, *, status: DocumentListStatus
+        self, *, workspace_id: UUID, status: DocumentListStatus
     ) -> list[DocumentSummary]:
         """Return filtered documents with their current version summaries."""
         ...

@@ -24,8 +24,10 @@ class DocumentVersionNotFoundError(LookupError):
 
 
 class DocumentVersionRepository(Protocol):
-    async def list_versions(self, document_id: UUID) -> list[DocumentVersionSummary]:
-        ...
+    async def list_versions(
+        self, workspace_id: UUID, document_id: UUID
+    ) -> list[DocumentVersionSummary]: ...
 
-    async def activate_version(self, document_id: UUID, version_id: UUID) -> None:
-        ...
+    async def activate_version(
+        self, workspace_id: UUID, document_id: UUID, version_id: UUID
+    ) -> None: ...

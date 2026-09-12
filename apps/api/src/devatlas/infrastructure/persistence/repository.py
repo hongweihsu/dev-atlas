@@ -10,22 +10,16 @@ from devatlas.application.ports.persistence import (
     NewDocumentRecord,
     NewDocumentVersionRecord,
 )
-from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.models import Chunk, Document, DocumentVersion
 
 
 class SqlAlchemyDocumentIngestionRepository:
     """Map an ingestion record to one SQLAlchemy document aggregate."""
 
-    def __init__(
-        self,
-        session: AsyncSession,
-        workspace_id: UUID = LEGACY_WORKSPACE_ID,
-    ) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self._session = session
-        self._workspace_id = workspace_id
 
-    async def add(self, record: NewDocumentRecord) -> None:
+    async def add(self, workspace_id: UUID, record: NewDocumentRecord) -> None:
         await self._session.execute(
             select(
                 func.pg_advisory_xact_lock(
@@ -38,8 +32,8 @@ class SqlAlchemyDocumentIngestionRepository:
                 select(DocumentVersion.document_id, Document.archived_at)
                 .join(Document, Document.id == DocumentVersion.document_id)
                 .where(
-                    DocumentVersion.content_checksum
-                    == record.version.content_checksum
+                    Document.workspace_id == workspace_id,
+                    DocumentVersion.content_checksum == record.version.content_checksum,
                 )
             )
         ).first()
@@ -52,7 +46,7 @@ class SqlAlchemyDocumentIngestionRepository:
         version = self._map_version(record.version)
         document = Document(
             id=record.id,
-            workspace_id=self._workspace_id,
+            workspace_id=workspace_id,
             title=record.title,
             versions=[version],
         )
@@ -60,11 +54,17 @@ class SqlAlchemyDocumentIngestionRepository:
 
     async def add_version(
         self,
+        workspace_id: UUID,
         document_id: UUID,
         version: NewDocumentVersionRecord,
     ) -> int:
         document = await self._session.scalar(
-            select(Document).where(Document.id == document_id).with_for_update()
+            select(Document)
+            .where(
+                Document.id == document_id,
+                Document.workspace_id == workspace_id,
+            )
+            .with_for_update()
         )
         if document is None:
             raise DocumentNotFoundError(f"document {document_id} was not found")
@@ -107,9 +107,14 @@ class SqlAlchemyDocumentIngestionRepository:
         )
         return next_number
 
-    async def ensure_version_target(self, document_id: UUID) -> None:
+    async def ensure_version_target(
+        self, workspace_id: UUID, document_id: UUID
+    ) -> None:
         document = await self._session.scalar(
-            select(Document).where(Document.id == document_id)
+            select(Document).where(
+                Document.id == document_id,
+                Document.workspace_id == workspace_id,
+            )
         )
         if document is None:
             raise DocumentNotFoundError(f"document {document_id} was not found")

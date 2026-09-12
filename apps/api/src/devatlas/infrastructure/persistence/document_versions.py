@@ -19,11 +19,14 @@ class SqlAlchemyDocumentVersionRepository:
         self._session_factory = session_factory
 
     async def list_versions(
-        self, document_id: UUID
+        self, workspace_id: UUID, document_id: UUID
     ) -> list[DocumentVersionSummary]:
         async with self._session_factory() as session:
             exists = await session.scalar(
-                select(Document.id).where(Document.id == document_id)
+                select(Document.id).where(
+                    Document.id == document_id,
+                    Document.workspace_id == workspace_id,
+                )
             )
             if exists is None:
                 raise DocumentNotFoundError(f"document {document_id} was not found")
@@ -65,10 +68,17 @@ class SqlAlchemyDocumentVersionRepository:
             for row in rows
         ]
 
-    async def activate_version(self, document_id: UUID, version_id: UUID) -> None:
+    async def activate_version(
+        self, workspace_id: UUID, document_id: UUID, version_id: UUID
+    ) -> None:
         async with self._session_factory() as session, session.begin():
             document = await session.scalar(
-                select(Document).where(Document.id == document_id).with_for_update()
+                select(Document)
+                .where(
+                    Document.id == document_id,
+                    Document.workspace_id == workspace_id,
+                )
+                .with_for_update()
             )
             if document is None:
                 raise DocumentNotFoundError(f"document {document_id} was not found")

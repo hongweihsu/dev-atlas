@@ -20,7 +20,8 @@ class FakeDocumentIngestionRepository:
         self._archived_document_ids = archived_document_ids
         self.staged: list[NewDocumentRecord] = []
 
-    async def add(self, document: NewDocumentRecord) -> None:
+    async def add(self, workspace_id: UUID, document: NewDocumentRecord) -> None:
+        del workspace_id
         duplicate = next(
             (
                 item
@@ -38,9 +39,11 @@ class FakeDocumentIngestionRepository:
 
     async def add_version(
         self,
+        workspace_id: UUID,
         document_id: UUID,
         version: NewDocumentVersionRecord,
     ) -> int:
+        del workspace_id
         versions = [
             item for item in self._committed_documents if item.id == document_id
         ]
@@ -77,7 +80,10 @@ class FakeDocumentIngestionRepository:
         )
         return next_number
 
-    async def ensure_version_target(self, document_id: UUID) -> None:
+    async def ensure_version_target(
+        self, workspace_id: UUID, document_id: UUID
+    ) -> None:
+        del workspace_id
         if not any(item.id == document_id for item in self._committed_documents):
             raise DocumentNotFoundError(f"document {document_id} was not found")
         if document_id in self._archived_document_ids:

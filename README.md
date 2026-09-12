@@ -19,6 +19,11 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   migration path for existing single-user content
 - PyJWT-backed bearer verification with pinned HS256, issuer, audience, expiry,
   and subject validation plus membership-resolved `GET /session` workspace context
+- Server-enforced workspace isolation across ingestion, lists, lifecycle,
+  versions, retrieval, and answers; Viewer is read-only while Editor and Owner
+  may mutate documents
+- An explicitly development-only session endpoint lets the local React app use
+  the same authenticated API boundary without pretending to be production OIDC
 - Deterministic text normalization, SHA-256 fingerprinting, and traceable
   character-based chunking
 - Framework-independent validation and preparation for bounded UTF-8 text files
@@ -44,8 +49,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   users can atomically make an older version current without re-embedding or
   overwriting its chunks, while archived documents must be restored first
 - Optional document display titles that default to the uploaded filename stem
-- Global normalized-content duplicate protection for new writes, including
-  concurrent requests, while preserving pre-existing historical rows
+- Workspace-scoped normalized-content duplicate protection for new writes,
+  including concurrent requests, while preserving pre-existing historical rows
 - OpenAI `text-embedding-3-small` adapter and FastAPI lifespan wiring, enabled
   only when `OPENAI_API_KEY` is configured
 - Controlled live upload verified document, active-version, chunk, model, and
@@ -71,9 +76,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 
 ### Planned
 
-- Authenticated request identity and server-enforced workspace query scoping
 - Persistent or cached lexical indexing when its measured review gate is reached
-- Workspace-scoped authorization and explicit search scope
+- Production OIDC/JWKS authentication and explicit authorized search scope
 - Asynchronous ingestion and AWS deployment
 - Multimodal document understanding and bounded research workflows
 
@@ -147,18 +151,22 @@ Copy `.env.example` to `.env` for local defaults. `.env` is ignored by Git.
 Production credentials must be supplied through an appropriate secrets system;
 the example values are development-only. Set `OPENAI_API_KEY` to enable live
 document ingestion; leave it empty to keep the endpoint safely unavailable.
+Docker Compose enables a local development-session issuer by default. That
+issuer uses an in-memory browser token and a development signing secret; disable
+`AUTH_DEVELOPMENT_MODE` and configure a production identity adapter before any
+deployment.
 
 ## Future direction
 
-The current milestone finishes Hybrid Retrieval by clarifying score semantics
-and measuring its bounded in-memory index cost. Reranking and context
-engineering follow; multi-user authorization, asynchronous processing, and
-cloud deployment come later.
+The current milestone is Phase 7 authentication, workspace isolation, and RBAC.
+Production identity-provider integration and explicit search scope follow;
+asynchronous processing and cloud deployment come later.
 
 ## Limitations
 
-- No authentication, workspace isolation, or background ingestion exists yet.
-  The hybrid comparison covers only five controlled documents and must not be
+- Local authentication is development-only; production OIDC/JWKS integration,
+  membership administration, and background ingestion do not exist yet. The
+  hybrid comparison covers only five controlled documents and must not be
   interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Re-ingestion currently embeds content before transactional duplicate

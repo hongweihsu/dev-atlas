@@ -26,6 +26,27 @@ interface HealthResponse {
   service: string
 }
 
+interface DevelopmentSessionResponse {
+  access_token: string
+  token_type: 'bearer'
+  workspace_id: string
+  expires_at: string
+}
+
+let apiSession: DevelopmentSessionResponse | null = null
+
+export function configureApiSession(
+  accessToken: string,
+  workspaceId: string,
+): void {
+  apiSession = {
+    access_token: accessToken,
+    token_type: 'bearer',
+    workspace_id: workspaceId,
+    expires_at: '',
+  }
+}
+
 export interface IngestDocumentResponse {
   document_id: string
   version_id: string
@@ -106,6 +127,24 @@ export async function checkHealth(signal?: AbortSignal): Promise<HealthResponse>
   return parseResponse(await fetch('/api/health', { signal }))
 }
 
+export async function createDevelopmentSession(): Promise<void> {
+  if (apiSession !== null) return
+  apiSession = await parseResponse(
+    await fetch('/api/auth/development-session', { method: 'POST' }),
+  )
+}
+
+async function authorizedFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  if (apiSession === null) throw new Error('No authenticated API session')
+  const headers = new Headers(init.headers)
+  headers.set('Authorization', `Bearer ${apiSession.access_token}`)
+  headers.set('X-Workspace-ID', apiSession.workspace_id)
+  return fetch(input, { ...init, headers })
+}
+
 export async function uploadDocument(
   file: File,
   title: string,
@@ -113,25 +152,29 @@ export async function uploadDocument(
   const body = new FormData()
   body.append('title', title)
   body.append('file', file)
-  return parseResponse(await fetch('/api/documents', { method: 'POST', body }))
+  return parseResponse(
+    await authorizedFetch('/api/documents', { method: 'POST', body }),
+  )
 }
 
 export async function listDocuments(
   status: 'active' | 'archived' = 'active',
 ): Promise<DocumentSummary[]> {
   const url = status === 'active' ? '/api/documents' : '/api/documents?status=archived'
-  return parseResponse(await fetch(url))
+  return parseResponse(await authorizedFetch(url))
 }
 
 export async function archiveDocument(documentId: string): Promise<void> {
   await parseNoContent(
-    await fetch(`/api/documents/${documentId}`, { method: 'DELETE' }),
+    await authorizedFetch(`/api/documents/${documentId}`, { method: 'DELETE' }),
   )
 }
 
 export async function restoreDocument(documentId: string): Promise<void> {
   await parseNoContent(
-    await fetch(`/api/documents/${documentId}/restore`, { method: 'POST' }),
+    await authorizedFetch(`/api/documents/${documentId}/restore`, {
+      method: 'POST',
+    }),
   )
 }
 
@@ -142,7 +185,7 @@ export async function uploadDocumentVersion(
   const body = new FormData()
   body.append('file', file)
   return parseResponse(
-    await fetch(`/api/documents/${documentId}/versions`, {
+    await authorizedFetch(`/api/documents/${documentId}/versions`, {
       method: 'POST',
       body,
     }),
@@ -152,7 +195,9 @@ export async function uploadDocumentVersion(
 export async function listDocumentVersions(
   documentId: string,
 ): Promise<DocumentVersionSummary[]> {
-  return parseResponse(await fetch(`/api/documents/${documentId}/versions`))
+  return parseResponse(
+    await authorizedFetch(`/api/documents/${documentId}/versions`),
+  )
 }
 
 export async function activateDocumentVersion(
@@ -160,15 +205,16 @@ export async function activateDocumentVersion(
   versionId: string,
 ): Promise<void> {
   await parseNoContent(
-    await fetch(`/api/documents/${documentId}/versions/${versionId}/activate`, {
-      method: 'POST',
-    }),
+    await authorizedFetch(
+      `/api/documents/${documentId}/versions/${versionId}/activate`,
+      { method: 'POST' },
+    ),
   )
 }
 
 export async function answerQuestion(question: string): Promise<AnswerResponse> {
   return parseResponse(
-    await fetch('/api/answers', {
+    await authorizedFetch('/api/answers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, limit: 5 }),

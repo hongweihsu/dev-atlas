@@ -31,13 +31,18 @@ class HybridChunkSearchRepository:
         query: str,
         embedding: Sequence[float] | None,
         *,
+        workspace_id: UUID,
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "hybrid",
     ) -> list[RetrievedChunk]:
         candidate_limit = min(MAX_CANDIDATE_LIMIT, max(limit * 4, limit))
         if strategy == "lexical":
-            return (await self._lexical.search(query, limit=candidate_limit))[:limit]
+            return (
+                await self._lexical.search(
+                    query, workspace_id=workspace_id, limit=candidate_limit
+                )
+            )[:limit]
         if embedding is None:
             raise ValueError("vector and hybrid search require an embedding")
         if strategy == "vector":
@@ -45,6 +50,7 @@ class HybridChunkSearchRepository:
                 await self._vector.search(
                     query,
                     embedding,
+                    workspace_id=workspace_id,
                     model=model,
                     limit=candidate_limit,
                     strategy="vector",
@@ -54,11 +60,14 @@ class HybridChunkSearchRepository:
             self._vector.search(
                 query,
                 embedding,
+                workspace_id=workspace_id,
                 model=model,
                 limit=candidate_limit,
                 strategy="vector",
             ),
-            self._lexical.search(query, limit=candidate_limit),
+            self._lexical.search(
+                query, workspace_id=workspace_id, limit=candidate_limit
+            ),
         )
         return reciprocal_rank_fusion(
             vector_results,

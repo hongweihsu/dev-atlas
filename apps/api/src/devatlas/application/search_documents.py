@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 from devatlas.application.ports.embedding import (
     EmbeddingProvider,
@@ -21,6 +22,7 @@ class InvalidSearchQueryError(ValueError):
 @dataclass(frozen=True, slots=True)
 class SearchDocumentsCommand:
     query: str
+    workspace_id: UUID
     limit: int = 5
     strategy: RetrievalStrategy = "hybrid"
 
@@ -60,6 +62,7 @@ class SearchDocuments:
         return await self._repository.search(
             query,
             embedding,
+            workspace_id=command.workspace_id,
             model=self._embedding_provider.model,
             limit=command.limit,
             strategy=command.strategy,

@@ -69,11 +69,13 @@ class VectorStub:
         query: str,
         embedding: Sequence[float] | None,
         *,
+        workspace_id: UUID,
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "hybrid",
     ) -> list[RetrievedChunk]:
         assert embedding is not None
+        del workspace_id
         self.calls.append((query, tuple(embedding), model, limit))
         return self.results[:limit]
 
@@ -83,7 +85,10 @@ class LexicalStub:
         self.results = results
         self.calls: list[tuple[str, int]] = []
 
-    async def search(self, query: str, *, limit: int) -> list[RetrievedChunk]:
+    async def search(
+        self, query: str, *, workspace_id: UUID, limit: int
+    ) -> list[RetrievedChunk]:
+        del workspace_id
         self.calls.append((query, limit))
         return self.results[:limit]
 
@@ -98,6 +103,7 @@ async def test_hybrid_repository_collects_bounded_candidates_from_both() -> None
     results = await repository.search(
         "DVX-4827",
         [0.1, 0.2],
+        workspace_id=UUID(int=999),
         model="embedding-v1",
         limit=3,
     )

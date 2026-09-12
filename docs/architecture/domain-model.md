@@ -3,10 +3,9 @@
 ## Status
 
 The document/version/chunk persistence slice and the Phase 7 user, workspace,
-membership, and document-ownership schema are implemented. Request
-authentication and query-level workspace enforcement are still in progress;
-the runtime must not yet be described as tenant-isolated. Knowledge-base scope
-remains planned for Phase 8.
+membership, authentication, and query-level document isolation are implemented.
+Knowledge-base scope and production identity-provider integration remain
+planned work.
 
 DevAtlas will use the following conceptual ownership model unless a later ADR
 changes it:
@@ -44,13 +43,15 @@ and cascading ownership. Re-ingestion locks the logical document, rejects an
 existing normalized-content checksum, assigns the next version number, archives
 the old active version, and creates the new active version in one transaction.
 For new writes, the application additionally rejects a checksum found under any
-logical document and returns that existing document's ID. This global policy is
-transactionally serialized with a PostgreSQL advisory lock so historical
-duplicates can remain without weakening concurrency protection for future
-writes.
+logical document in the authorized workspace and returns that existing
+document's ID. This workspace-scoped policy is transactionally serialized with
+a PostgreSQL advisory lock so historical duplicates can remain without
+weakening concurrency protection for future writes.
 
-The remaining entities will receive concrete schemas, constraints, indexes, and
-security tests only in the phases that implement them.
+Every current document query receives the workspace resolved from a validated
+credential and database membership. Reads allow all membership roles; writes
+allow Owner and Editor. The browser-provided workspace ID selects a desired
+scope but cannot grant access by itself.
 
 Phase 7 stores external identity as `(identity_issuer, identity_subject)`, models
 workspace membership with one of `owner`, `editor`, or `viewer`, and requires

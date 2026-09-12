@@ -3,6 +3,7 @@ from typing import Annotated, Literal, cast
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 
+from devatlas.api.dependencies.authentication import CurrentWorkspace
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
@@ -61,11 +62,13 @@ SearchService = Annotated[SearchDocuments, Depends(get_search_documents)]
 async def search_documents(
     request: SearchRequest,
     service: SearchService,
+    workspace: CurrentWorkspace,
 ) -> SearchResponse:
     try:
         results = await service.execute(
             SearchDocumentsCommand(
                 query=request.query,
+                workspace_id=workspace.workspace_id,
                 limit=request.limit,
                 strategy=request.strategy,
             )

@@ -13,9 +13,11 @@ class ManageDocumentVersions:
         self._repository = repository
 
     async def list_versions(
-        self, document_id: UUID
+        self, workspace_id: UUID, document_id: UUID
     ) -> list[DocumentVersionSummary]:
-        return await self._repository.list_versions(document_id)
+        return await self._repository.list_versions(workspace_id, document_id)
 
-    async def activate_version(self, document_id: UUID, version_id: UUID) -> None:
-        await self._repository.activate_version(document_id, version_id)
+    async def activate_version(
+        self, workspace_id: UUID, document_id: UUID, version_id: UUID
+    ) -> None:
+        await self._repository.activate_version(workspace_id, document_id, version_id)

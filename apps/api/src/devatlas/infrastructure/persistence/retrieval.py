@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from typing import Any
+from uuid import UUID
 
 import bm25s  # type: ignore[import-untyped]
 from sqlalchemy import select
@@ -21,6 +22,7 @@ class SqlAlchemyChunkSearchRepository:
         query: str,
         embedding: Sequence[float] | None,
         *,
+        workspace_id: UUID,
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "vector",
@@ -47,6 +49,7 @@ class SqlAlchemyChunkSearchRepository:
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
             .join(Chunk, Chunk.document_version_id == DocumentVersion.id)
             .where(
+                Document.workspace_id == workspace_id,
                 Document.archived_at.is_(None),
                 DocumentVersion.is_active.is_(True),
                 DocumentVersion.embedding_model == model,
@@ -85,7 +88,9 @@ class SqlAlchemyBm25ChunkSearchRepository:
     def __init__(self, session_factory: SessionFactory) -> None:
         self._session_factory = session_factory
 
-    async def search(self, query: str, *, limit: int) -> list[RetrievedChunk]:
+    async def search(
+        self, query: str, *, workspace_id: UUID, limit: int
+    ) -> list[RetrievedChunk]:
         statement = (
             select(
                 Document.id.label("document_id"),
@@ -101,6 +106,7 @@ class SqlAlchemyBm25ChunkSearchRepository:
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
             .join(Chunk, Chunk.document_version_id == DocumentVersion.id)
             .where(
+                Document.workspace_id == workspace_id,
                 Document.archived_at.is_(None),
                 DocumentVersion.is_active.is_(True),
             )

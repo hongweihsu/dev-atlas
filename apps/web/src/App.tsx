@@ -10,6 +10,7 @@ import {
   answerQuestion,
   archiveDocument,
   checkHealth,
+  createDevelopmentSession,
   listDocuments,
   listDocumentVersions,
   restoreDocument,
@@ -57,6 +58,7 @@ export default function App() {
     const controller = new AbortController()
     void checkHealth(controller.signal)
       .then(async () => {
+        await createDevelopmentSession()
         setApiState('healthy')
         try {
           const loaded = await listDocuments()
@@ -80,6 +82,7 @@ export default function App() {
     setApiState('checking')
     try {
       await checkHealth()
+      await createDevelopmentSession()
       setApiState('healthy')
       await refreshDocuments()
     } catch {

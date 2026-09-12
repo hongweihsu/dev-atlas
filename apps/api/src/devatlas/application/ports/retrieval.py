@@ -28,6 +28,7 @@ class ChunkSearchRepository(Protocol):
         query: str,
         embedding: Sequence[float] | None,
         *,
+        workspace_id: UUID,
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "hybrid",
@@ -37,6 +38,8 @@ class ChunkSearchRepository(Protocol):
 
 
 class LexicalChunkSearchRepository(Protocol):
-    async def search(self, query: str, *, limit: int) -> list[RetrievedChunk]:
+    async def search(
+        self, query: str, *, workspace_id: UUID, limit: int
+    ) -> list[RetrievedChunk]:
         """Return active-version chunks ordered by lexical relevance."""
         ...

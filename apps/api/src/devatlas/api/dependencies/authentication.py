@@ -19,9 +19,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 def get_authenticated_principal(
     request: Request,
-    credentials: Annotated[
-        HTTPAuthorizationCredentials | None, Depends(bearer_scheme)
-    ],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
 ) -> AuthenticatedPrincipal:
     verifier = cast(
         TokenVerifier | None, getattr(request.app.state, "token_verifier", None)
@@ -84,6 +82,19 @@ async def get_authorized_workspace(
     return workspace
 
 
-CurrentWorkspace = Annotated[
-    AuthorizedWorkspace, Depends(get_authorized_workspace)
-]
+CurrentWorkspace = Annotated[AuthorizedWorkspace, Depends(get_authorized_workspace)]
+
+
+def require_workspace_editor(workspace: CurrentWorkspace) -> AuthorizedWorkspace:
+    if workspace.role == "viewer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "workspace_write_denied",
+                "message": "viewer membership cannot modify workspace documents",
+            },
+        )
+    return workspace
+
+
+WritableWorkspace = Annotated[AuthorizedWorkspace, Depends(require_workspace_editor)]

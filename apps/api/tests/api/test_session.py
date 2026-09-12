@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from devatlas.api.dependencies.authentication import (
     CurrentPrincipal,
+    WritableWorkspace,
     get_authorized_workspace,
 )
 from devatlas.api.routes.session import router
@@ -76,3 +77,25 @@ def test_workspace_membership_denial_does_not_return_session() -> None:
 
     assert response.status_code == 403
     assert response.json()["detail"]["code"] == "workspace_access_denied"
+
+
+def test_viewer_cannot_use_a_workspace_write_dependency() -> None:
+    application = FastAPI()
+
+    @application.post("/write")
+    def write(workspace: WritableWorkspace) -> dict[str, str]:
+        return {"workspace_id": str(workspace.workspace_id)}
+
+    application.dependency_overrides[get_authorized_workspace] = lambda: (
+        AuthorizedWorkspace(
+            user_id=uuid4(),
+            workspace_id=uuid4(),
+            workspace_name="Read only",
+            role="viewer",
+        )
+    )
+
+    response = TestClient(application).post("/write")
+
+    assert response.status_code == 403
+    assert response.json()["detail"]["code"] == "workspace_write_denied"

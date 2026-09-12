@@ -64,19 +64,22 @@ class DuplicateDocumentContentError(ValueError):
 class DocumentIngestionRepository(Protocol):
     """Persistence operations required by new-document ingestion."""
 
-    async def add(self, document: NewDocumentRecord) -> None:
+    async def add(self, workspace_id: UUID, document: NewDocumentRecord) -> None:
         """Stage a complete document aggregate in the current transaction."""
         ...
 
     async def add_version(
         self,
+        workspace_id: UUID,
         document_id: UUID,
         version: NewDocumentVersionRecord,
     ) -> int:
         """Stage the next active version and return its assigned number."""
         ...
 
-    async def ensure_version_target(self, document_id: UUID) -> None:
+    async def ensure_version_target(
+        self, workspace_id: UUID, document_id: UUID
+    ) -> None:
         """Reject missing or archived documents before paid preparation work."""
         ...
 

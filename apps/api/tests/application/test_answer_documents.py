@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -18,6 +18,12 @@ from tests.fakes import (
     FakeChunkSearchRepository,
     RecordingAnswerGenerator,
 )
+
+WORKSPACE_ID = UUID(int=999)
+
+
+def answer_command(question: str) -> AnswerDocumentsCommand:
+    return AnswerDocumentsCommand(question=question, workspace_id=WORKSPACE_ID)
 
 
 def make_chunk() -> RetrievedChunk:
@@ -60,7 +66,7 @@ async def test_answer_searches_builds_context_and_returns_cited_sources() -> Non
         ),
     )
 
-    result = await use_case.execute(AnswerDocumentsCommand(question="  What is it?  "))
+    result = await use_case.execute(answer_command("  What is it?  "))
 
     assert result.answer == "It defines the transaction boundary. [S1]"
     assert result.has_sufficient_evidence is True
@@ -78,7 +84,7 @@ async def test_answer_does_not_call_generator_without_evidence() -> None:
         ),
     )
 
-    result = await use_case.execute(AnswerDocumentsCommand(question="unknown"))
+    result = await use_case.execute(answer_command("unknown"))
 
     assert result.answer == NO_EVIDENCE_ANSWER
     assert result.has_sufficient_evidence is False
@@ -98,7 +104,7 @@ async def test_answer_rejects_unknown_citation_ids() -> None:
     )
 
     with pytest.raises(InvalidGeneratedAnswerError, match="S99"):
-        await use_case.execute(AnswerDocumentsCommand(question="What is it?"))
+        await use_case.execute(answer_command("What is it?"))
 
 
 @pytest.mark.asyncio
@@ -117,7 +123,7 @@ async def test_answer_rejects_incomplete_generated_output(
     use_case, _ = make_use_case([make_chunk()], generated)
 
     with pytest.raises(InvalidGeneratedAnswerError):
-        await use_case.execute(AnswerDocumentsCommand(question="What is it?"))
+        await use_case.execute(answer_command("What is it?"))
 
 
 @pytest.mark.asyncio
@@ -133,7 +139,7 @@ async def test_answer_deduplicates_returned_citations_in_model_order() -> None:
         ),
     )
 
-    result = await use_case.execute(AnswerDocumentsCommand(question="Compare them"))
+    result = await use_case.execute(answer_command("Compare them"))
 
     assert [source.chunk_id for source in result.citations] == [
         second.chunk_id,
@@ -152,7 +158,7 @@ async def test_answer_allows_explicit_insufficient_evidence_without_citations() 
         ),
     )
 
-    result = await use_case.execute(AnswerDocumentsCommand(question="Unrelated?"))
+    result = await use_case.execute(answer_command("Unrelated?"))
 
     assert result.answer == "The indexed evidence is insufficient."
     assert result.has_sufficient_evidence is False
@@ -171,4 +177,4 @@ async def test_answer_rejects_citations_when_evidence_is_marked_insufficient() -
     )
 
     with pytest.raises(InvalidGeneratedAnswerError, match="must not cite"):
-        await use_case.execute(AnswerDocumentsCommand(question="Unrelated?"))
+        await use_case.execute(answer_command("Unrelated?"))

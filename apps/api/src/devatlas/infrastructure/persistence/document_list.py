@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import func, select
 
 from devatlas.application.ports.document_list import DocumentListStatus, DocumentSummary
@@ -10,7 +12,7 @@ class SqlAlchemyDocumentListRepository:
         self._session_factory = session_factory
 
     async def list_documents(
-        self, *, status: DocumentListStatus
+        self, *, workspace_id: UUID, status: DocumentListStatus
     ) -> list[DocumentSummary]:
         lifecycle_filter = (
             Document.archived_at.is_(None)
@@ -31,6 +33,7 @@ class SqlAlchemyDocumentListRepository:
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
             .join(Chunk, Chunk.document_version_id == DocumentVersion.id)
             .where(
+                Document.workspace_id == workspace_id,
                 lifecycle_filter,
                 DocumentVersion.is_active.is_(True),
             )

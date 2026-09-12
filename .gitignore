@@ -18,6 +18,9 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# Manual browser upload fixture retained locally
+phase-1-browser-check.txt
+
 # Editors
 .idea/
 .vscode/
