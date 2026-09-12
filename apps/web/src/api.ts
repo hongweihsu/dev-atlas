@@ -34,10 +34,19 @@ interface DevelopmentSessionResponse {
 }
 
 let apiSession: DevelopmentSessionResponse | null = null
+let resolvedSession: SessionResponse | null = null
+
+export interface SessionResponse {
+  user_id: string
+  workspace_id: string
+  workspace_name: string
+  role: 'owner' | 'editor' | 'viewer'
+}
 
 export function configureApiSession(
   accessToken: string,
   workspaceId: string,
+  session: SessionResponse | null = null,
 ): void {
   apiSession = {
     access_token: accessToken,
@@ -45,6 +54,7 @@ export function configureApiSession(
     workspace_id: workspaceId,
     expires_at: '',
   }
+  resolvedSession = session
 }
 
 export interface IngestDocumentResponse {
@@ -132,6 +142,15 @@ export async function createDevelopmentSession(): Promise<void> {
   apiSession = await parseResponse(
     await fetch('/api/auth/development-session', { method: 'POST' }),
   )
+}
+
+export async function getSession(): Promise<SessionResponse> {
+  if (resolvedSession !== null) return resolvedSession
+  const session = await parseResponse<SessionResponse>(
+    await authorizedFetch('/api/session'),
+  )
+  resolvedSession = session
+  return session
 }
 
 async function authorizedFetch(

@@ -5,7 +5,14 @@ import App from './App'
 import { configureApiSession } from './api'
 
 afterEach(() => vi.restoreAllMocks())
-beforeEach(() => configureApiSession('test-access-token', 'test-workspace-id'))
+beforeEach(() =>
+  configureApiSession('test-access-token', 'test-workspace-id', {
+    user_id: 'test-user-id',
+    workspace_id: 'test-workspace-id',
+    workspace_name: 'Engineering Notes',
+    role: 'owner',
+  }),
+)
 
 function jsonResponse(body: object, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -63,6 +70,8 @@ test('shows the product identity and hides healthy API status', async () => {
   expect(screen.getByText('Grounded technical research')).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
   expect(screen.queryByText('API connected')).not.toBeInTheDocument()
+  expect(screen.getByText('Engineering Notes')).toBeInTheDocument()
+  expect(screen.getByText('owner')).toBeInTheDocument()
 })
 
 test('shows an unavailable banner and retries the health check', async () => {

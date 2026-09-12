@@ -6,11 +6,13 @@ import {
   DocumentSummary,
   DocumentVersionSummary,
   IngestDocumentResponse,
+  SessionResponse,
   activateDocumentVersion,
   answerQuestion,
   archiveDocument,
   checkHealth,
   createDevelopmentSession,
+  getSession,
   listDocuments,
   listDocumentVersions,
   restoreDocument,
@@ -26,6 +28,7 @@ type UploadTab = 'add' | 'update'
 
 export default function App() {
   const [apiState, setApiState] = useState<ApiState>('checking')
+  const [session, setSession] = useState<SessionResponse | null>(null)
   const [title, setTitle] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [fileInputKey, setFileInputKey] = useState(0)
@@ -59,6 +62,7 @@ export default function App() {
     void checkHealth(controller.signal)
       .then(async () => {
         await createDevelopmentSession()
+        setSession(await getSession())
         setApiState('healthy')
         try {
           const loaded = await listDocuments()
@@ -83,6 +87,7 @@ export default function App() {
     try {
       await checkHealth()
       await createDevelopmentSession()
+      setSession(await getSession())
       setApiState('healthy')
       await refreshDocuments()
     } catch {
@@ -316,6 +321,12 @@ export default function App() {
           <div className="status" role="status">
             <span className="status__dot" aria-hidden="true" />
             Connecting…
+          </div>
+        )}
+        {apiState === 'healthy' && session && (
+          <div className="session-context" aria-label="Current workspace and role">
+            <span>{session.workspace_name}</span>
+            <strong>{session.role}</strong>
           </div>
         )}
       </header>

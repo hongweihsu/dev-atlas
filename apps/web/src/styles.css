@@ -28,6 +28,8 @@ button { cursor: pointer; }
 .brand__mark { display: grid; place-items: center; width: 2rem; height: 2rem; border: 1px solid #76d99e; color: #76d99e; font: 500 0.72rem ui-monospace, monospace; }
 .status { display: inline-flex; align-items: center; gap: 0.6rem; color: #91a19b; font: 0.76rem ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.08em; }
 .status__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #68756f; }
+.session-context { display: flex; align-items: center; gap: 0.65rem; color: #aebbb6; font: 0.72rem ui-monospace, monospace; }
+.session-context strong { padding: 0.3rem 0.45rem; border: 1px solid #3c5148; color: #76d99e; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .service-banner { max-width: 86rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem auto 0; padding: 1rem 1.1rem; border: 1px solid rgba(240, 130, 120, 0.42); background: rgba(240, 130, 120, 0.08); }
 .service-banner > div { display: grid; gap: 0.2rem; }
 .service-banner strong { color: #ffc2bc; font-size: 0.84rem; }
