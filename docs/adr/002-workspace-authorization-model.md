@@ -32,6 +32,13 @@ owned by a legacy local identity. This is a compatibility bridge, not the final
 request authentication mechanism. The runtime must not claim tenant isolation
 until every read and mutation is scoped from an authenticated membership.
 
+The first authentication adapter uses FastAPI's HTTP Bearer dependency and
+PyJWT with a server-pinned HS256 algorithm, configured secret, issuer, audience,
+required expiry, and required subject. Tokens establish identity only; the
+database membership remains the authority for workspace access and role. The
+local symmetric verifier is an adapter boundary that can later be replaced by
+an external OIDC/JWKS verifier without changing workspace policy.
+
 ## Alternatives considered
 
 - `user.workspace_id`: cannot represent membership in multiple workspaces.

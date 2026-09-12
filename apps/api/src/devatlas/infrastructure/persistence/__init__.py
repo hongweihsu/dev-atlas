@@ -18,6 +18,9 @@ from devatlas.infrastructure.persistence.unit_of_work import (
     SqlAlchemyIngestionUnitOfWork,
     SqlAlchemyIngestionUnitOfWorkFactory,
 )
+from devatlas.infrastructure.persistence.workspace_access import (
+    SqlAlchemyWorkspaceAccessRepository,
+)
 
 __all__ = [
     "SqlAlchemyBm25ChunkSearchRepository",
@@ -28,4 +31,5 @@ __all__ = [
     "SqlAlchemyChunkSearchRepository",
     "SqlAlchemyIngestionUnitOfWork",
     "SqlAlchemyIngestionUnitOfWorkFactory",
+    "SqlAlchemyWorkspaceAccessRepository",
 ]

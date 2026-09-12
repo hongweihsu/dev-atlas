@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-3-small"
     embedding_dimension: int = 1536
     answer_model: str = "gpt-4.1-mini"
+    auth_jwt_secret: SecretStr | None = None
+    auth_jwt_issuer: str = "devatlas-local"
+    auth_jwt_audience: str = "devatlas-api"
 
     @field_validator("openai_api_key", mode="before")
     @classmethod

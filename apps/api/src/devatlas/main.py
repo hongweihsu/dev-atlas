@@ -14,6 +14,7 @@ from devatlas.application.manage_document_lifecycle import ManageDocumentLifecyc
 from devatlas.application.manage_document_versions import ManageDocumentVersions
 from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
+from devatlas.infrastructure.authentication import PyJwtTokenVerifier
 from devatlas.infrastructure.database import (
     create_database_engine,
     create_session_factory,
@@ -27,6 +28,7 @@ from devatlas.infrastructure.persistence import (
     SqlAlchemyDocumentListRepository,
     SqlAlchemyDocumentVersionRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
+    SqlAlchemyWorkspaceAccessRepository,
 )
 
 
@@ -46,6 +48,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.manage_document_versions = ManageDocumentVersions(
             SqlAlchemyDocumentVersionRepository(session_factory)
         )
+        application.state.workspace_access_repository = (
+            SqlAlchemyWorkspaceAccessRepository(session_factory)
+        )
+        if app_settings.auth_jwt_secret is not None:
+            application.state.token_verifier = PyJwtTokenVerifier(
+                secret=app_settings.auth_jwt_secret.get_secret_value(),
+                issuer=app_settings.auth_jwt_issuer,
+                audience=app_settings.auth_jwt_audience,
+            )
         client: AsyncOpenAI | None = None
         if app_settings.openai_api_key is not None:
             client = AsyncOpenAI(
@@ -84,6 +95,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             del application.state.list_documents
             del application.state.manage_document_lifecycle
             del application.state.manage_document_versions
+            del application.state.workspace_access_repository
+            if app_settings.auth_jwt_secret is not None:
+                del application.state.token_verifier
             if client is not None:
                 del application.state.answer_documents
                 del application.state.search_documents
