@@ -324,9 +324,11 @@ test('loads existing documents and lets the user select one for an update', asyn
   render(<App />)
 
   expect(
-    await screen.findByRole('button', { name: /Architecture notes/i }),
+    await screen.findByRole('button', { name: /Select Architecture notes/i }),
   ).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /Architecture notes/i }))
+  fireEvent.click(
+    screen.getByRole('button', { name: /Select Architecture notes/i }),
+  )
   expect(screen.getByText('Selected document').nextSibling).toHaveTextContent(
     'Architecture notes',
   )
@@ -334,9 +336,57 @@ test('loads existing documents and lets the user select one for an update', asyn
 
   fireEvent.change(screen.getByLabelText('Sort'), { target: { value: 'name' } })
   const documentButtons = screen.getAllByRole('button', {
-    name: /Architecture notes|Database notes/i,
+    name: /Select (Architecture notes|Database notes)/i,
   })
   expect(documentButtons[0]).toHaveAccessibleName(/Architecture notes/i)
+})
+
+test('archives a document and restores it with undo', async () => {
+  let archived = false
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
+    async (input, init) => {
+      if (input === '/api/health') {
+        return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      }
+      if (input === '/api/documents/document-id' && init?.method === 'DELETE') {
+        archived = true
+        return new Response(null, { status: 204 })
+      }
+      if (
+        input === '/api/documents/document-id/restore' &&
+        init?.method === 'POST'
+      ) {
+        archived = false
+        return new Response(null, { status: 204 })
+      }
+      if (isDocumentListRequest(input, init)) {
+        return jsonResponse(archived ? [] : [documentSummary()])
+      }
+      throw new Error(`Unexpected request: ${String(input)}`)
+    },
+  )
+
+  render(<App />)
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Archive Architecture notes' }),
+  )
+
+  expect(
+    await screen.findByText(/archived and removed from search/i),
+  ).toBeInTheDocument()
+  expect(
+    screen.queryByRole('button', { name: 'Archive Architecture notes' }),
+  ).not.toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+
+  expect(
+    await screen.findByRole('button', { name: 'Archive Architecture notes' }),
+  ).toBeInTheDocument()
+  expect(fetchMock).toHaveBeenCalledWith('/api/documents/document-id/restore', {
+    method: 'POST',
+  })
 })
 
 test('selects the existing document when a new upload duplicates its content', async () => {

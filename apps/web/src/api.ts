@@ -95,6 +95,18 @@ export async function listDocuments(): Promise<DocumentSummary[]> {
   return parseResponse(await fetch('/api/documents'))
 }
 
+export async function archiveDocument(documentId: string): Promise<void> {
+  await parseNoContent(
+    await fetch(`/api/documents/${documentId}`, { method: 'DELETE' }),
+  )
+}
+
+export async function restoreDocument(documentId: string): Promise<void> {
+  await parseNoContent(
+    await fetch(`/api/documents/${documentId}/restore`, { method: 'POST' }),
+  )
+}
+
 export async function uploadDocumentVersion(
   documentId: string,
   file: File,
@@ -117,4 +129,9 @@ export async function answerQuestion(question: string): Promise<AnswerResponse> 
       body: JSON.stringify({ question, limit: 5 }),
     }),
   )
+}
+
+async function parseNoContent(response: Response): Promise<void> {
+  if (response.ok) return
+  await parseResponse(response)
 }

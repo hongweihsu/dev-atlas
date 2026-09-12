@@ -61,10 +61,14 @@ h2 { margin: 0.3rem 0 0; font-size: 1.45rem; font-weight: 600; letter-spacing: -
 .document-list__items::-webkit-scrollbar-track { background: #0a1512; }
 .document-list__items::-webkit-scrollbar-thumb { border: 1px solid #0a1512; background: #4a6459; }
 .document-list__items::-webkit-scrollbar-thumb:hover { background: #76d99e; }
+.document-list__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.4rem; }
 .document-list__item { display: grid; gap: 0.2rem; width: 100%; padding: 0.75rem; border: 1px solid #31423b; color: #b7c2be; background: #0a1512; text-align: left; }
 .document-list__item:hover, .document-list__item--selected { border-color: #76d99e; background: rgba(118, 217, 158, 0.05); }
 .document-list__item strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .document-list__item span { overflow: hidden; color: #718079; font: 0.68rem ui-monospace, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.document-list__archive { padding: 0 0.65rem; border: 1px solid #31423b; color: #91a19b; background: #0a1512; font-size: 0.68rem; }
+.document-list__archive:hover:not(:disabled) { border-color: #f08278; color: #ffc2bc; }
+.document-list__archive:disabled { cursor: not-allowed; opacity: 0.45; }
 .upload-tabs { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem; border-bottom: 1px solid #31423b; }
 .upload-tabs button { padding: 0.75rem 0.5rem; border: 0; border-bottom: 2px solid transparent; color: #718079; background: transparent; font-size: 0.78rem; font-weight: 700; }
 .upload-tabs button:hover { color: #b7c2be; }
@@ -95,6 +99,9 @@ button[type='submit']:disabled { cursor: not-allowed; opacity: 0.42; }
 .notice { display: grid; gap: 0.25rem; margin: 1.25rem 0 0; padding: 1rem; border-left: 2px solid; color: #aebbb6; background: #0a1512; font-size: 0.82rem; }
 .notice--success { border-color: #76d99e; }
 .notice--error { border-color: #f08278; color: #ffc2bc; }
+.document-lifecycle { grid-template-columns: 1fr auto; align-items: center; }
+.document-lifecycle button { padding: 0.45rem 0.7rem; border: 1px solid #76d99e; color: #76d99e; background: transparent; font-size: 0.72rem; font-weight: 700; }
+.document-lifecycle button:hover:not(:disabled) { color: #08110e; background: #76d99e; }
 .selected-document { display: grid; gap: 0.2rem; }
 .selected-document span { color: #718079; font: 0.68rem ui-monospace, monospace; letter-spacing: 0.08em; text-transform: uppercase; }
 .selected-document strong { color: #dce5e1; font-size: 0.9rem; }

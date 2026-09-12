@@ -6,8 +6,10 @@ import {
   DocumentSummary,
   IngestDocumentResponse,
   answerQuestion,
+  archiveDocument,
   checkHealth,
   listDocuments,
+  restoreDocument,
   uploadDocument,
   uploadDocumentVersion,
 } from './api'
@@ -28,6 +30,11 @@ export default function App() {
   const [documentList, setDocumentList] = useState<DocumentSummary[]>([])
   const [documentListError, setDocumentListError] = useState('')
   const [documentSort, setDocumentSort] = useState<DocumentSort>('updated')
+  const [archivedDocument, setArchivedDocument] = useState<DocumentSummary | null>(
+    null,
+  )
+  const [lifecycleState, setLifecycleState] = useState<RequestState>('idle')
+  const [lifecycleError, setLifecycleError] = useState('')
   const [uploadTab, setUploadTab] = useState<UploadTab>('add')
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
   const [versionFile, setVersionFile] = useState<File | null>(null)
@@ -152,6 +159,52 @@ export default function App() {
     (document) => document.document_id === selectedDocumentId,
   )
 
+  async function handleArchive(document: DocumentSummary) {
+    const confirmed = window.confirm(
+      `Archive “${document.title}”? It will leave search and the active list, but its versions can be restored.`,
+    )
+    if (!confirmed) return
+
+    setLifecycleState('submitting')
+    setLifecycleError('')
+    try {
+      await archiveDocument(document.document_id)
+      setArchivedDocument(document)
+      setDocumentList((current) =>
+        current.filter((item) => item.document_id !== document.document_id),
+      )
+      if (selectedDocumentId === document.document_id) {
+        const nextDocument = documentList.find(
+          (item) => item.document_id !== document.document_id,
+        )
+        setSelectedDocumentId(nextDocument?.document_id ?? null)
+      }
+      setLifecycleState('success')
+    } catch (error) {
+      setLifecycleError(
+        error instanceof Error ? error.message : 'Document archive failed',
+      )
+      setLifecycleState('error')
+    }
+  }
+
+  async function handleRestore() {
+    if (!archivedDocument) return
+    setLifecycleState('submitting')
+    setLifecycleError('')
+    try {
+      await restoreDocument(archivedDocument.document_id)
+      await refreshDocuments(archivedDocument.document_id)
+      setArchivedDocument(null)
+      setLifecycleState('success')
+    } catch (error) {
+      setLifecycleError(
+        error instanceof Error ? error.message : 'Document restore failed',
+      )
+      setLifecycleState('error')
+    }
+  }
+
   async function handleQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!question.trim()) return
@@ -235,33 +288,61 @@ export default function App() {
             ) : (
               <div className="document-list__items">
                 {visibleDocumentList.map((document) => (
-                  <button
-                    className={
-                      document.document_id === selectedDocumentId
-                        ? 'document-list__item document-list__item--selected'
-                        : 'document-list__item'
-                    }
-                    type="button"
-                    key={document.document_id}
-                    aria-pressed={document.document_id === selectedDocumentId}
-                    onClick={() => {
-                      setSelectedDocumentId(document.document_id)
-                      setUploadTab('update')
-                      setUploadResult(null)
-                      setVersionError('')
-                    }}
-                  >
-                    <strong>{document.title}</strong>
-                    <span>
-                      Version {document.active_version_number} ·{' '}
-                      {document.source_filename}
-                    </span>
-                  </button>
+                  <div className="document-list__row" key={document.document_id}>
+                    <button
+                      className={
+                        document.document_id === selectedDocumentId
+                          ? 'document-list__item document-list__item--selected'
+                          : 'document-list__item'
+                      }
+                      type="button"
+                      aria-label={`Select ${document.title}, version ${document.active_version_number}`}
+                      aria-pressed={document.document_id === selectedDocumentId}
+                      onClick={() => {
+                        setSelectedDocumentId(document.document_id)
+                        setUploadTab('update')
+                        setUploadResult(null)
+                        setVersionError('')
+                      }}
+                    >
+                      <strong>{document.title}</strong>
+                      <span>
+                        Version {document.active_version_number} ·{' '}
+                        {document.source_filename}
+                      </span>
+                    </button>
+                    <button
+                      className="document-list__archive"
+                      type="button"
+                      aria-label={`Archive ${document.title}`}
+                      disabled={lifecycleState === 'submitting'}
+                      onClick={() => void handleArchive(document)}
+                    >
+                      Archive
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
             {documentListError && (
               <p className="notice notice--error">{documentListError}</p>
+            )}
+            {archivedDocument && (
+              <div className="notice notice--success document-lifecycle" role="status">
+                <span>“{archivedDocument.title}” archived and removed from search.</span>
+                <button
+                  type="button"
+                  disabled={lifecycleState === 'submitting'}
+                  onClick={() => void handleRestore()}
+                >
+                  Undo
+                </button>
+              </div>
+            )}
+            {lifecycleError && (
+              <p className="notice notice--error" role="alert">
+                {lifecycleError}
+              </p>
             )}
           </section>
 
