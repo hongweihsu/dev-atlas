@@ -1,6 +1,6 @@
 # ADR-002: Use workspace-scoped authorization in V1
 
-- **Status:** Proposed; implementation is planned for a later phase
+- **Status:** Accepted; ownership schema implemented, authorization enforcement in progress
 - **Date:** 2026-08-19
 
 ## Context
@@ -19,6 +19,18 @@ system knowledge is read-only to normal users.
 
 Authorization will be resolved before or during retrieval. The model prompt is
 not an authorization boundary.
+
+Phase 7 begins with `User`, `Workspace`, and `WorkspaceMembership` tables and a
+non-null `documents.workspace_id` ownership key. Until Phase 8 introduces
+selectable knowledge bases, documents belong directly to a workspace; this
+keeps the tenant boundary enforceable without inventing an unused scope layer.
+External identity is keyed by issuer plus subject rather than email because
+email is mutable and need not be unique across identity providers.
+
+Existing single-user documents migrate into a deterministic personal workspace
+owned by a legacy local identity. This is a compatibility bridge, not the final
+request authentication mechanism. The runtime must not claim tenant isolation
+until every read and mutation is scoped from an authenticated membership.
 
 ## Alternatives considered
 

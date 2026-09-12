@@ -14,6 +14,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - FastAPI service with a typed `GET /health` endpoint
 - PostgreSQL development service with pgvector available
 - Alembic migration infrastructure and an initial document/version/chunk schema
+- Phase 7 workspace ownership foundation with issuer/subject user identity,
+  owner/editor/viewer memberships, non-null document tenancy, and a lossless
+  migration path for existing single-user content
 - Deterministic text normalization, SHA-256 fingerprinting, and traceable
   character-based chunking
 - Framework-independent validation and preparation for bounded UTF-8 text files
@@ -66,6 +69,7 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 
 ### Planned
 
+- Authenticated request identity and server-enforced workspace query scoping
 - Persistent or cached lexical indexing when its measured review gate is reached
 - Workspace-scoped authorization and explicit search scope
 - Asynchronous ingestion and AWS deployment

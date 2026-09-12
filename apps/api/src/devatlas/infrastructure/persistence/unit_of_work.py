@@ -1,9 +1,11 @@
 from collections.abc import Callable
 from types import TracebackType
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from devatlas.application.ports.persistence import DocumentIngestionRepository
+from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.persistence.repository import (
     SqlAlchemyDocumentIngestionRepository,
 )
@@ -14,8 +16,13 @@ SessionFactory = Callable[[], AsyncSession]
 class SqlAlchemyIngestionUnitOfWork:
     """Own one SQLAlchemy session and transaction for an ingestion attempt."""
 
-    def __init__(self, session_factory: SessionFactory) -> None:
+    def __init__(
+        self,
+        session_factory: SessionFactory,
+        workspace_id: UUID = LEGACY_WORKSPACE_ID,
+    ) -> None:
         self._session_factory = session_factory
+        self._workspace_id = workspace_id
         self._session: AsyncSession | None = None
         self._documents: DocumentIngestionRepository | None = None
         self._committed = False
@@ -30,7 +37,9 @@ class SqlAlchemyIngestionUnitOfWork:
         if self._session is not None:
             raise RuntimeError("Unit of Work cannot be entered more than once")
         self._session = self._session_factory()
-        self._documents = SqlAlchemyDocumentIngestionRepository(self._session)
+        self._documents = SqlAlchemyDocumentIngestionRepository(
+            self._session, self._workspace_id
+        )
         return self
 
     async def __aexit__(
@@ -65,8 +74,15 @@ class SqlAlchemyIngestionUnitOfWork:
 
 
 class SqlAlchemyIngestionUnitOfWorkFactory:
-    def __init__(self, session_factory: SessionFactory) -> None:
+    def __init__(
+        self,
+        session_factory: SessionFactory,
+        workspace_id: UUID = LEGACY_WORKSPACE_ID,
+    ) -> None:
         self._session_factory = session_factory
+        self._workspace_id = workspace_id
 
     def __call__(self) -> SqlAlchemyIngestionUnitOfWork:
-        return SqlAlchemyIngestionUnitOfWork(self._session_factory)
+        return SqlAlchemyIngestionUnitOfWork(
+            self._session_factory, self._workspace_id
+        )

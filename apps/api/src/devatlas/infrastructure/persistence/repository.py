@@ -10,14 +10,20 @@ from devatlas.application.ports.persistence import (
     NewDocumentRecord,
     NewDocumentVersionRecord,
 )
+from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.models import Chunk, Document, DocumentVersion
 
 
 class SqlAlchemyDocumentIngestionRepository:
     """Map an ingestion record to one SQLAlchemy document aggregate."""
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        workspace_id: UUID = LEGACY_WORKSPACE_ID,
+    ) -> None:
         self._session = session
+        self._workspace_id = workspace_id
 
     async def add(self, record: NewDocumentRecord) -> None:
         await self._session.execute(
@@ -46,6 +52,7 @@ class SqlAlchemyDocumentIngestionRepository:
         version = self._map_version(record.version)
         document = Document(
             id=record.id,
+            workspace_id=self._workspace_id,
             title=record.title,
             versions=[version],
         )

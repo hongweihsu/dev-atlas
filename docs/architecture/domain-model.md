@@ -2,9 +2,11 @@
 
 ## Status
 
-The `Document`, `DocumentVersion`, and `Chunk` persistence slice is implemented
-in Phase 1. User, workspace, membership, and knowledge-base entities remain
-planned and are not enforced by the runtime.
+The document/version/chunk persistence slice and the Phase 7 user, workspace,
+membership, and document-ownership schema are implemented. Request
+authentication and query-level workspace enforcement are still in progress;
+the runtime must not yet be described as tenant-isolated. Knowledge-base scope
+remains planned for Phase 8.
 
 DevAtlas will use the following conceptual ownership model unless a later ADR
 changes it:
@@ -49,6 +51,14 @@ writes.
 
 The remaining entities will receive concrete schemas, constraints, indexes, and
 security tests only in the phases that implement them.
+
+Phase 7 stores external identity as `(identity_issuer, identity_subject)`, models
+workspace membership with one of `owner`, `editor`, or `viewer`, and requires
+every document to reference a workspace. The migration assigns all pre-workspace
+documents to a deterministic legacy personal workspace so no existing content
+becomes ownerless. Documents currently attach directly to workspaces; the
+KnowledgeBase relationship in the conceptual model remains a Phase 8 search-
+scope concern.
 
 Phase 6 adds a reversible lifecycle boundary to the logical document.
 `archived_at` is null while a document participates in default lists and

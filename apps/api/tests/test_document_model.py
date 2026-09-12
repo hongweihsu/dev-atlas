@@ -3,7 +3,14 @@ from typing import cast
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import CheckConstraint, String, Table, UniqueConstraint
 
-from devatlas.infrastructure.models import Chunk, Document, DocumentVersion
+from devatlas.infrastructure.models import (
+    Chunk,
+    Document,
+    DocumentVersion,
+    User,
+    Workspace,
+    WorkspaceMembership,
+)
 
 
 def test_document_model_exposes_expected_database_contract() -> None:
@@ -12,6 +19,7 @@ def test_document_model_exposes_expected_database_contract() -> None:
     assert table.name == "documents"
     assert set(table.columns.keys()) == {
         "id",
+        "workspace_id",
         "title",
         "created_at",
         "updated_at",
@@ -27,6 +35,34 @@ def test_document_model_exposes_expected_database_contract() -> None:
         if isinstance(constraint, CheckConstraint)
     }
     assert check_names == {"ck_documents_title_not_empty"}
+    workspace_key = next(iter(table.columns.workspace_id.foreign_keys))
+    assert workspace_key.target_fullname == "workspaces.id"
+    assert workspace_key.ondelete == "RESTRICT"
+
+
+def test_workspace_models_enforce_identity_and_membership_contract() -> None:
+    user_table = cast(Table, User.__table__)
+    workspace_table = cast(Table, Workspace.__table__)
+    membership_table = cast(Table, WorkspaceMembership.__table__)
+
+    assert {constraint.name for constraint in user_table.constraints} >= {
+        "uq_users_identity_issuer_subject",
+        "ck_users_identity_issuer_not_empty",
+        "ck_users_identity_subject_not_empty",
+    }
+    assert {constraint.name for constraint in workspace_table.constraints} >= {
+        "ck_workspaces_name_not_empty"
+    }
+    assert list(membership_table.primary_key.columns.keys()) == [
+        "workspace_id",
+        "user_id",
+    ]
+    role_check = next(
+        constraint
+        for constraint in membership_table.constraints
+        if constraint.name == "ck_workspace_memberships_role_valid"
+    )
+    assert isinstance(role_check, CheckConstraint)
 
 
 def test_document_version_model_enforces_identity_and_lifecycle_contract() -> None:
