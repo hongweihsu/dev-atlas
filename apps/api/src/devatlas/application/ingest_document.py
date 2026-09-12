@@ -79,6 +79,8 @@ class IngestNewDocument:
         document_id: UUID,
         command: IngestNewDocumentCommand,
     ) -> IngestedDocument:
+        async with self._unit_of_work_factory() as unit_of_work:
+            await unit_of_work.documents.ensure_version_target(document_id)
         record = await self._prepare_record(
             command,
             document_id=document_id,

@@ -22,6 +22,11 @@ Versions and chunks remain unchanged while archived. Both transitions lock and
 update the document in one database transaction and are idempotent for an
 existing document.
 
+Creating a version requires a non-archived document. The application performs a
+read-only preflight before embedding to avoid paid work for a known-invalid
+request, while the write transaction locks and checks the document again to
+close the race between preflight and persistence.
+
 ## Alternatives considered
 
 - Hard delete immediately: simpler storage behavior but destroys audit history,

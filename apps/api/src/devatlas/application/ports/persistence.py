@@ -42,6 +42,10 @@ class DocumentNotFoundError(LookupError):
     """Raised when a version targets a document that does not exist."""
 
 
+class DocumentArchivedError(ValueError):
+    """Raised when an operation requires an active logical document."""
+
+
 class DuplicateDocumentContentError(ValueError):
     """Raised when a document already contains the normalized content."""
 
@@ -70,6 +74,10 @@ class DocumentIngestionRepository(Protocol):
         version: NewDocumentVersionRecord,
     ) -> int:
         """Stage the next active version and return its assigned number."""
+        ...
+
+    async def ensure_version_target(self, document_id: UUID) -> None:
+        """Reject missing or archived documents before paid preparation work."""
         ...
 
 

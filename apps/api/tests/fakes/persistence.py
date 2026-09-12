@@ -2,6 +2,7 @@ from types import TracebackType
 from uuid import UUID
 
 from devatlas.application.ports.persistence import (
+    DocumentArchivedError,
     DocumentNotFoundError,
     DuplicateDocumentContentError,
     NewDocumentRecord,
@@ -10,8 +11,13 @@ from devatlas.application.ports.persistence import (
 
 
 class FakeDocumentIngestionRepository:
-    def __init__(self, committed_documents: list[NewDocumentRecord]) -> None:
+    def __init__(
+        self,
+        committed_documents: list[NewDocumentRecord],
+        archived_document_ids: set[UUID],
+    ) -> None:
         self._committed_documents = committed_documents
+        self._archived_document_ids = archived_document_ids
         self.staged: list[NewDocumentRecord] = []
 
     async def add(self, document: NewDocumentRecord) -> None:
@@ -71,18 +77,29 @@ class FakeDocumentIngestionRepository:
         )
         return next_number
 
+    async def ensure_version_target(self, document_id: UUID) -> None:
+        if not any(item.id == document_id for item in self._committed_documents):
+            raise DocumentNotFoundError(f"document {document_id} was not found")
+        if document_id in self._archived_document_ids:
+            raise DocumentArchivedError(
+                f"document {document_id} must be restored before adding a version"
+            )
+
 
 class FakeIngestionUnitOfWork:
     def __init__(
         self,
         committed_documents: list[NewDocumentRecord],
+        archived_document_ids: set[UUID],
         *,
         fail_on_commit: bool = False,
     ) -> None:
         self._committed_documents = committed_documents
         self._fail_on_commit = fail_on_commit
         self._committed = False
-        self.documents = FakeDocumentIngestionRepository(committed_documents)
+        self.documents = FakeDocumentIngestionRepository(
+            committed_documents, archived_document_ids
+        )
         self.commit_calls = 0
         self.rollback_calls = 0
 
@@ -114,12 +131,14 @@ class FakeIngestionUnitOfWork:
 class FakeIngestionUnitOfWorkFactory:
     def __init__(self, *, fail_on_commit: bool = False) -> None:
         self.committed_documents: list[NewDocumentRecord] = []
+        self.archived_document_ids: set[UUID] = set()
         self.fail_on_commit = fail_on_commit
         self.created: list[FakeIngestionUnitOfWork] = []
 
     def __call__(self) -> FakeIngestionUnitOfWork:
         unit_of_work = FakeIngestionUnitOfWork(
             self.committed_documents,
+            self.archived_document_ids,
             fail_on_commit=self.fail_on_commit,
         )
         self.created.append(unit_of_work)

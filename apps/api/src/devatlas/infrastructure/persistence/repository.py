@@ -4,6 +4,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from devatlas.application.ports.persistence import (
+    DocumentArchivedError,
     DocumentNotFoundError,
     DuplicateDocumentContentError,
     NewDocumentRecord,
@@ -60,6 +61,10 @@ class SqlAlchemyDocumentIngestionRepository:
         )
         if document is None:
             raise DocumentNotFoundError(f"document {document_id} was not found")
+        if document.archived_at is not None:
+            raise DocumentArchivedError(
+                f"document {document_id} must be restored before adding a version"
+            )
 
         duplicate_id = await self._session.scalar(
             select(DocumentVersion.id).where(
@@ -94,6 +99,17 @@ class SqlAlchemyDocumentIngestionRepository:
             )
         )
         return next_number
+
+    async def ensure_version_target(self, document_id: UUID) -> None:
+        document = await self._session.scalar(
+            select(Document).where(Document.id == document_id)
+        )
+        if document is None:
+            raise DocumentNotFoundError(f"document {document_id} was not found")
+        if document.archived_at is not None:
+            raise DocumentArchivedError(
+                f"document {document_id} must be restored before adding a version"
+            )
 
     @staticmethod
     def _map_version(

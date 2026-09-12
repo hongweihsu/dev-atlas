@@ -27,6 +27,7 @@ from devatlas.application.ports.embedding import (
     EmbeddingProviderUnavailableError,
 )
 from devatlas.application.ports.persistence import (
+    DocumentArchivedError,
     DocumentNotFoundError,
     DuplicateDocumentContentError,
 )
@@ -248,6 +249,11 @@ async def _ingest(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "document_not_found", "message": str(error)},
+        ) from error
+    except DocumentArchivedError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "document_archived", "message": str(error)},
         ) from error
     except DuplicateDocumentContentError as error:
         detail: dict[str, str | bool] = {

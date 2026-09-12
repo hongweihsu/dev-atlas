@@ -8,6 +8,7 @@ from devatlas.application.ingest_document import (
 )
 from devatlas.application.ports.embedding import EmbeddingBatchError
 from devatlas.application.ports.persistence import (
+    DocumentArchivedError,
     DocumentNotFoundError,
     DuplicateDocumentContentError,
     IngestionUnitOfWorkFactory,
@@ -202,3 +203,28 @@ async def test_ingest_version_rejects_unknown_document() -> None:
 
     with pytest.raises(DocumentNotFoundError, match="was not found"):
         await use_case.execute_version(uuid4(), make_command())
+
+
+class NeverCalledEmbeddingProvider(DeterministicEmbeddingProvider):
+    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        raise AssertionError(f"embedding must not be called for {list(texts)}")
+
+
+@pytest.mark.asyncio
+async def test_archived_document_rejects_version_before_embedding() -> None:
+    factory = FakeIngestionUnitOfWorkFactory()
+    creator = IngestNewDocument(
+        embedding_provider=DeterministicEmbeddingProvider(dimension=8),
+        unit_of_work_factory=factory,
+        expected_embedding_dimension=8,
+    )
+    original = await creator.execute(make_command())
+    factory.archived_document_ids.add(original.document_id)
+    updater = IngestNewDocument(
+        embedding_provider=NeverCalledEmbeddingProvider(dimension=8),
+        unit_of_work_factory=factory,
+        expected_embedding_dimension=8,
+    )
+
+    with pytest.raises(DocumentArchivedError, match="must be restored"):
+        await updater.execute_version(original.document_id, make_command())
