@@ -55,3 +55,17 @@ Phase 6 adds a reversible lifecycle boundary to the logical document.
 retrieval. Archiving sets the timestamp but preserves all versions, chunks,
 embeddings, and citation provenance; restoring clears it. Permanent cascading
 deletion is intentionally a separate, higher-risk operation.
+
+An active document exposes all retained immutable versions through its history.
+Activating a historical version changes only version-selection state: all
+versions for the document become inactive and the chosen version becomes active
+in one transaction. It does not copy content, re-chunk, re-embed, or change the
+version number. The next uploaded revision still uses `max(version_number) + 1`.
+
+For the current upload-only product, `Document.id` is the stable logical
+identity and each version's filename, media type, checksum, and creation time
+are sufficient snapshot provenance. Phase 6 deliberately does not add a
+speculative reusable `Source` table: URL and connector sources do not exist yet,
+and their stable external keys and synchronization lifecycle are still unknown.
+The first additional source type will supply the evidence needed to design that
+boundary without an expensive premature migration.

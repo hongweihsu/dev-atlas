@@ -48,3 +48,11 @@ transaction-level advisory lock derived from the checksum and then performs an
 exact checksum query. The lock serializes competing new writes; the exact query
 avoids relying on the advisory-lock hash as identity. The conflict returns the
 existing document ID so a client can select that logical document instead.
+
+Phase 6 exposes version history and explicit activation. Activation locks the
+parent document, rejects archived documents, verifies that the selected version
+belongs to that document, and changes the active flags in one transaction. It
+reuses the immutable version's existing chunks and embeddings. This is a
+selection transition rather than a new content revision, so it does not create
+an additional version or renumber history. Activation events are not yet stored
+as a separate audit log.

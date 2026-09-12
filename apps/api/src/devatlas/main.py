@@ -11,6 +11,7 @@ from devatlas.application.hybrid_retrieval import HybridChunkSearchRepository
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
 from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
+from devatlas.application.manage_document_versions import ManageDocumentVersions
 from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
 from devatlas.infrastructure.database import (
@@ -24,6 +25,7 @@ from devatlas.infrastructure.persistence import (
     SqlAlchemyChunkSearchRepository,
     SqlAlchemyDocumentLifecycleRepository,
     SqlAlchemyDocumentListRepository,
+    SqlAlchemyDocumentVersionRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
 )
 
@@ -40,6 +42,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         application.state.manage_document_lifecycle = ManageDocumentLifecycle(
             SqlAlchemyDocumentLifecycleRepository(session_factory)
+        )
+        application.state.manage_document_versions = ManageDocumentVersions(
+            SqlAlchemyDocumentVersionRepository(session_factory)
         )
         client: AsyncOpenAI | None = None
         if app_settings.openai_api_key is not None:
@@ -78,6 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             del application.state.list_documents
             del application.state.manage_document_lifecycle
+            del application.state.manage_document_versions
             if client is not None:
                 del application.state.answer_documents
                 del application.state.search_documents

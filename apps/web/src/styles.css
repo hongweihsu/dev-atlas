@@ -113,6 +113,17 @@ button[type='submit']:disabled { cursor: not-allowed; opacity: 0.42; }
 .version-form > div { display: grid; gap: 0.2rem; }
 .version-form > div strong { color: #dce5e1; font-size: 0.86rem; }
 .version-form > div span { color: #718079; font-size: 0.76rem; }
+.version-history { display: grid; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #2a3933; }
+.version-history__heading { display: flex; align-items: center; justify-content: space-between; }
+.version-history__heading > strong { color: #dce5e1; font-size: 0.86rem; }
+.version-history__heading > span { color: #718079; font: 0.7rem ui-monospace, monospace; }
+.version-history__items { display: grid; gap: 0.55rem; }
+.version-history__item { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem; border: 1px solid #2a3933; border-radius: 0.55rem; background: #101713; }
+.version-history__item > div { display: grid; gap: 0.15rem; min-width: 0; }
+.version-history__item strong { color: #dce5e1; font-size: 0.8rem; }
+.version-history__item span, .version-history__item small { color: #718079; overflow-wrap: anywhere; }
+.version-history__item button { flex: 0 0 auto; }
+.version-history__current { color: #82c99d !important; font: 0.68rem ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
 
 .answer { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #2a3933; }
 .answer__meta { display: flex; justify-content: space-between; gap: 1rem; color: #718079; font: 0.7rem ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.06em; }

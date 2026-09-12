@@ -22,6 +22,8 @@ from devatlas.application.ingest_document import (
 )
 from devatlas.application.list_documents import ListDocuments
 from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
+from devatlas.application.manage_document_versions import ManageDocumentVersions
+from devatlas.application.ports.document_versions import DocumentVersionNotFoundError
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
@@ -57,6 +59,20 @@ class DocumentSummaryResponse(BaseModel):
     chunk_count: int
     updated_at: datetime
     archived_at: datetime | None
+
+
+class DocumentVersionSummaryResponse(BaseModel):
+    version_id: str
+    version_number: int
+    source_filename: str
+    media_type: str
+    content_checksum: str
+    character_count: int
+    chunk_count: int
+    embedding_model: str
+    embedding_dimension: int
+    is_active: bool
+    created_at: datetime
 
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -110,6 +126,24 @@ def get_manage_document_lifecycle(request: Request) -> ManageDocumentLifecycle:
 
 DocumentLifecycleService = Annotated[
     ManageDocumentLifecycle, Depends(get_manage_document_lifecycle)
+]
+
+
+def get_manage_document_versions(request: Request) -> ManageDocumentVersions:
+    service = getattr(request.app.state, "manage_document_versions", None)
+    if service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "document_versions_unavailable",
+                "message": "document version management is not configured",
+            },
+        )
+    return cast(ManageDocumentVersions, service)
+
+
+DocumentVersionService = Annotated[
+    ManageDocumentVersions, Depends(get_manage_document_versions)
 ]
 
 
@@ -197,6 +231,65 @@ async def ingest_document_version(
         service=service,
         document_id=document_id,
     )
+
+
+@router.get(
+    "/{document_id}/versions", response_model=list[DocumentVersionSummaryResponse]
+)
+async def list_document_versions(
+    document_id: UUID, service: DocumentVersionService
+) -> list[DocumentVersionSummaryResponse]:
+    try:
+        versions = await service.list_versions(document_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "document_not_found", "message": str(error)},
+        ) from error
+    return [
+        DocumentVersionSummaryResponse(
+            version_id=str(version.version_id),
+            version_number=version.version_number,
+            source_filename=version.source_filename,
+            media_type=version.media_type,
+            content_checksum=version.content_checksum,
+            character_count=version.character_count,
+            chunk_count=version.chunk_count,
+            embedding_model=version.embedding_model,
+            embedding_dimension=version.embedding_dimension,
+            is_active=version.is_active,
+            created_at=version.created_at,
+        )
+        for version in versions
+    ]
+
+
+@router.post(
+    "/{document_id}/versions/{version_id}/activate",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def activate_document_version(
+    document_id: UUID,
+    version_id: UUID,
+    service: DocumentVersionService,
+) -> None:
+    try:
+        await service.activate_version(document_id, version_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "document_not_found", "message": str(error)},
+        ) from error
+    except DocumentVersionNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "document_version_not_found", "message": str(error)},
+        ) from error
+    except DocumentArchivedError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "document_archived", "message": str(error)},
+        ) from error
 
 
 async def _ingest(

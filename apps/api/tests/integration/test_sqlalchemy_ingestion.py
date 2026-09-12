@@ -19,6 +19,7 @@ from devatlas.infrastructure.models import Document, DocumentVersion
 from devatlas.infrastructure.persistence import (
     SqlAlchemyChunkSearchRepository,
     SqlAlchemyDocumentListRepository,
+    SqlAlchemyDocumentVersionRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
 )
 from tests.fakes import DeterministicEmbeddingProvider
@@ -160,6 +161,7 @@ async def test_reingestion_archives_previous_version_and_rejects_duplicate() -> 
         unit_of_work_factory=SqlAlchemyIngestionUnitOfWorkFactory(session_factory),
     )
     title = "Document version transition fixture"
+    versions_repository = SqlAlchemyDocumentVersionRepository(session_factory)
 
     try:
         first = await ingestion.execute(
@@ -191,6 +193,14 @@ async def test_reingestion_archives_previous_version_and_rejects_duplicate() -> 
             ).all()
             assert [version.version_number for version in versions] == [1, 2]
             assert [version.is_active for version in versions] == [False, True]
+
+        summaries = await versions_repository.list_versions(first.document_id)
+        assert [summary.version_number for summary in summaries] == [2, 1]
+        await versions_repository.activate_version(
+            first.document_id, first.version_id
+        )
+        summaries = await versions_repository.list_versions(first.document_id)
+        assert [summary.is_active for summary in summaries] == [False, True]
 
         with pytest.raises(DuplicateDocumentContentError, match="same content"):
             await ingestion.execute_version(

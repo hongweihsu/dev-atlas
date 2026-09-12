@@ -35,6 +35,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - React archive controls explain the reversible behavior, remove successful
   archives from the active list immediately, provide inline Undo, and include a
   persistent Archived view for later restoration
+- Immutable version-history APIs and UI expose every retained source snapshot;
+  users can atomically make an older version current without re-embedding or
+  overwriting its chunks, while archived documents must be restored first
 - Optional document display titles that default to the uploaded filename stem
 - Global normalized-content duplicate protection for new writes, including
   concurrent requests, while preserving pre-existing historical rows

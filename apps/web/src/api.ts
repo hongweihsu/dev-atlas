@@ -47,6 +47,20 @@ export interface DocumentSummary {
   archived_at: string | null
 }
 
+export interface DocumentVersionSummary {
+  version_id: string
+  version_number: number
+  source_filename: string
+  media_type: string
+  content_checksum: string
+  character_count: number
+  chunk_count: number
+  embedding_model: string
+  embedding_dimension: number
+  is_active: boolean
+  created_at: string
+}
+
 export interface AnswerCitation {
   citation_id: string
   document_id: string
@@ -131,6 +145,23 @@ export async function uploadDocumentVersion(
     await fetch(`/api/documents/${documentId}/versions`, {
       method: 'POST',
       body,
+    }),
+  )
+}
+
+export async function listDocumentVersions(
+  documentId: string,
+): Promise<DocumentVersionSummary[]> {
+  return parseResponse(await fetch(`/api/documents/${documentId}/versions`))
+}
+
+export async function activateDocumentVersion(
+  documentId: string,
+  versionId: string,
+): Promise<void> {
+  await parseNoContent(
+    await fetch(`/api/documents/${documentId}/versions/${versionId}/activate`, {
+      method: 'POST',
     }),
   )
 }

@@ -4,11 +4,14 @@ import {
   AnswerResponse,
   ApiRequestError,
   DocumentSummary,
+  DocumentVersionSummary,
   IngestDocumentResponse,
+  activateDocumentVersion,
   answerQuestion,
   archiveDocument,
   checkHealth,
   listDocuments,
+  listDocumentVersions,
   restoreDocument,
   uploadDocument,
   uploadDocumentVersion,
@@ -42,6 +45,9 @@ export default function App() {
   const [versionFile, setVersionFile] = useState<File | null>(null)
   const [versionState, setVersionState] = useState<RequestState>('idle')
   const [versionError, setVersionError] = useState('')
+  const [versionHistory, setVersionHistory] = useState<DocumentVersionSummary[]>([])
+  const [versionHistoryState, setVersionHistoryState] =
+    useState<RequestState>('idle')
   const [question, setQuestion] = useState('')
   const [answerState, setAnswerState] = useState<RequestState>('idle')
   const [answerResult, setAnswerResult] = useState<AnswerResponse | null>(null)
@@ -78,6 +84,20 @@ export default function App() {
       await refreshDocuments()
     } catch {
       setApiState('unavailable')
+    }
+  }
+
+  async function loadVersionHistory(documentId: string) {
+    setVersionHistoryState('submitting')
+    setVersionError('')
+    try {
+      setVersionHistory(await listDocumentVersions(documentId))
+      setVersionHistoryState('success')
+    } catch (error) {
+      setVersionError(
+        error instanceof Error ? error.message : 'Version history failed',
+      )
+      setVersionHistoryState('error')
     }
   }
 
@@ -133,9 +153,27 @@ export default function App() {
       await refreshDocuments(result.document_id)
       setVersionFile(null)
       setVersionState('success')
+      setVersionHistory(await listDocumentVersions(result.document_id))
     } catch (error) {
       setVersionError(error instanceof Error ? error.message : 'Version upload failed')
       setVersionState('error')
+    }
+  }
+
+  async function handleActivateVersion(version: DocumentVersionSummary) {
+    if (!selectedDocumentId || version.is_active) return
+    setVersionHistoryState('submitting')
+    setVersionError('')
+    try {
+      await activateDocumentVersion(selectedDocumentId, version.version_id)
+      await refreshDocuments(selectedDocumentId)
+      setVersionHistory(await listDocumentVersions(selectedDocumentId))
+      setVersionHistoryState('success')
+    } catch (error) {
+      setVersionError(
+        error instanceof Error ? error.message : 'Version activation failed',
+      )
+      setVersionHistoryState('error')
     }
   }
 
@@ -360,6 +398,7 @@ export default function App() {
                           setUploadTab('update')
                           setUploadResult(null)
                           setVersionError('')
+                          void loadVersionHistory(document.document_id)
                         }}
                       >
                         <strong>{document.title}</strong>
@@ -433,7 +472,12 @@ export default function App() {
               aria-selected={uploadTab === 'update'}
               aria-controls="update-document-panel"
               id="update-document-tab"
-              onClick={() => setUploadTab('update')}
+              onClick={() => {
+                setUploadTab('update')
+                if (selectedDocumentId) {
+                  void loadVersionHistory(selectedDocumentId)
+                }
+              }}
             >
               Update document
             </button>
@@ -520,6 +564,42 @@ export default function App() {
                     : `Upload Version ${selectedDocument.active_version_number + 1}`}
                 </button>
               </form>
+                  <section className="version-history" aria-labelledby="version-history-title">
+                    <div className="version-history__heading">
+                      <strong id="version-history-title">Version history</strong>
+                      <span>{versionHistory.length}</span>
+                    </div>
+                    {versionHistoryState === 'submitting' &&
+                    versionHistory.length === 0 ? (
+                      <p>Loading versions…</p>
+                    ) : (
+                      <div className="version-history__items">
+                        {versionHistory.map((version) => (
+                          <div className="version-history__item" key={version.version_id}>
+                            <div>
+                              <strong>Version {version.version_number}</strong>
+                              <span>{version.source_filename}</span>
+                              <small>
+                                {version.chunk_count} chunks ·{' '}
+                                {new Date(version.created_at).toLocaleString()}
+                              </small>
+                            </div>
+                            {version.is_active ? (
+                              <span className="version-history__current">Current</span>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={versionHistoryState === 'submitting'}
+                                onClick={() => void handleActivateVersion(version)}
+                              >
+                                Make current
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
                   {uploadResult && <UploadSuccess result={uploadResult} />}
                   {versionError && (
                     <p className="notice notice--error" role="alert">

@@ -4,6 +4,9 @@ from devatlas.infrastructure.persistence.document_lifecycle import (
 from devatlas.infrastructure.persistence.document_list import (
     SqlAlchemyDocumentListRepository,
 )
+from devatlas.infrastructure.persistence.document_versions import (
+    SqlAlchemyDocumentVersionRepository,
+)
 from devatlas.infrastructure.persistence.repository import (
     SqlAlchemyDocumentIngestionRepository,
 )
@@ -20,6 +23,7 @@ __all__ = [
     "SqlAlchemyBm25ChunkSearchRepository",
     "SqlAlchemyDocumentListRepository",
     "SqlAlchemyDocumentLifecycleRepository",
+    "SqlAlchemyDocumentVersionRepository",
     "SqlAlchemyDocumentIngestionRepository",
     "SqlAlchemyChunkSearchRepository",
     "SqlAlchemyIngestionUnitOfWork",

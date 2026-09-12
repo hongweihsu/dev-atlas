@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -9,11 +10,14 @@ from devatlas.api.routes.documents import (
     get_ingest_new_document,
     get_list_documents,
     get_manage_document_lifecycle,
+    get_manage_document_versions,
 )
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
 from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
+from devatlas.application.manage_document_versions import ManageDocumentVersions
 from devatlas.application.ports.document_list import DocumentSummary
+from devatlas.application.ports.document_versions import DocumentVersionSummary
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
@@ -79,8 +83,6 @@ def test_post_document_defaults_blank_title_to_filename(
 
 
 def test_get_documents_returns_active_version_summaries() -> None:
-    from datetime import UTC, datetime
-
     service = AsyncMock(spec=ListDocuments)
     service.execute.return_value = [
         DocumentSummary(
@@ -104,6 +106,42 @@ def test_get_documents_returns_active_version_summaries() -> None:
     assert response.json()[0]["title"] == "Architecture notes"
     assert response.json()[0]["active_version_number"] == 2
     assert response.json()[0]["chunk_count"] == 3
+
+
+def test_document_version_routes_list_and_activate_immutable_version() -> None:
+    document_id = uuid4()
+    version_id = uuid4()
+    service = AsyncMock(spec=ManageDocumentVersions)
+    service.list_versions.return_value = [
+        DocumentVersionSummary(
+            version_id=version_id,
+            version_number=1,
+            source_filename="notes.txt",
+            media_type="text/plain",
+            content_checksum="a" * 64,
+            character_count=21,
+            chunk_count=1,
+            embedding_model="text-embedding-3-small",
+            embedding_dimension=1536,
+            is_active=False,
+            created_at=datetime(2026, 9, 12, tzinfo=UTC),
+        )
+    ]
+    app.dependency_overrides[get_manage_document_versions] = lambda: service
+    try:
+        client = TestClient(app)
+        listed = client.get(f"/documents/{document_id}/versions")
+        activated = client.post(
+            f"/documents/{document_id}/versions/{version_id}/activate"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert listed.status_code == 200
+    assert listed.json()[0]["version_id"] == str(version_id)
+    assert listed.json()[0]["is_active"] is False
+    assert activated.status_code == 204
+    service.activate_version.assert_awaited_once_with(document_id, version_id)
 
 
 def test_document_lifecycle_routes_archive_restore_and_map_missing() -> None:

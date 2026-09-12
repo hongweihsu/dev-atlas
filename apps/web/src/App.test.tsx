@@ -25,6 +25,22 @@ function documentSummary(versionNumber = 1, filename = 'notes.txt') {
   }
 }
 
+function versionSummary(versionNumber: number, isActive: boolean) {
+  return {
+    version_id: `version-${versionNumber}-id`,
+    version_number: versionNumber,
+    source_filename: versionNumber === 1 ? 'notes.txt' : 'notes-v2.txt',
+    media_type: 'text/plain',
+    content_checksum: `checksum-${versionNumber}`,
+    character_count: 10,
+    chunk_count: versionNumber,
+    embedding_model: 'text-embedding-3-small',
+    embedding_dimension: 1536,
+    is_active: isActive,
+    created_at: `2026-09-0${versionNumber}T00:00:00Z`,
+  }
+}
+
 function isDocumentListRequest(input: RequestInfo | URL, init?: RequestInit) {
   return input === '/api/documents' && init?.method !== 'POST'
 }
@@ -139,6 +155,16 @@ test('uploads a new version for the document that was just indexed', async () =>
         201,
       )
     }
+    if (
+      input === '/api/documents/document-id/versions' &&
+      init?.method !== 'POST'
+    ) {
+      return jsonResponse(
+        activeVersion === 1
+          ? [versionSummary(1, true)]
+          : [versionSummary(2, true), versionSummary(1, false)],
+      )
+    }
     activeVersion = 2
     return jsonResponse(
       {
@@ -178,10 +204,59 @@ test('uploads a new version for the document that was just indexed', async () =>
 
   expect(await screen.findByText('Version 2: notes-v2.txt')).toBeInTheDocument()
   const versionCall = fetchMock.mock.calls.find(
-    ([input]) => input === '/api/documents/document-id/versions',
+    ([input, init]) =>
+      input === '/api/documents/document-id/versions' && init?.method === 'POST',
   )
   expect(versionCall?.[1]?.method).toBe('POST')
   expect(versionCall?.[1]?.body).toBeInstanceOf(FormData)
+})
+
+test('shows immutable history and makes an older version current', async () => {
+  let activeVersion = 2
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
+    async (input, init) => {
+      if (input === '/api/health') {
+        return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      }
+      if (isDocumentListRequest(input, init)) {
+        return jsonResponse([documentSummary(activeVersion)])
+      }
+      if (input === '/api/documents/document-id/versions') {
+        return jsonResponse([
+          versionSummary(2, activeVersion === 2),
+          versionSummary(1, activeVersion === 1),
+        ])
+      }
+      if (
+        input ===
+          '/api/documents/document-id/versions/version-1-id/activate' &&
+        init?.method === 'POST'
+      ) {
+        activeVersion = 1
+        return new Response(null, { status: 204 })
+      }
+      return jsonResponse({}, 404)
+    },
+  )
+
+  render(<App />)
+  await screen.findByText('Architecture notes')
+  fireEvent.click(screen.getByRole('tab', { name: 'Update document' }))
+
+  expect(await screen.findByText('Version history')).toBeInTheDocument()
+  fireEvent.click(await screen.findByRole('button', { name: 'Make current' }))
+
+  await waitFor(() =>
+    expect(
+      fetchMock,
+    ).toHaveBeenCalledWith(
+      '/api/documents/document-id/versions/version-1-id/activate',
+      { method: 'POST' },
+    ),
+  )
+  await waitFor(() =>
+    expect(screen.getAllByText('Current')).toHaveLength(1),
+  )
 })
 
 test('shows a duplicate-content error when a version is rejected', async () => {
