@@ -56,6 +56,7 @@ export default function App() {
   const [answerState, setAnswerState] = useState<RequestState>('idle')
   const [answerResult, setAnswerResult] = useState<AnswerResponse | null>(null)
   const [answerError, setAnswerError] = useState('')
+  const canWrite = session?.role === 'owner' || session?.role === 'editor'
 
   useEffect(() => {
     const controller = new AbortController()
@@ -441,7 +442,7 @@ export default function App() {
                       className="document-list__archive"
                       type="button"
                       aria-label={`${documentView === 'active' ? 'Archive' : 'Restore'} ${document.title}`}
-                      disabled={lifecycleState === 'submitting'}
+                      disabled={!canWrite || lifecycleState === 'submitting'}
                       onClick={() =>
                         void (documentView === 'active'
                           ? handleArchive(document)
@@ -476,6 +477,13 @@ export default function App() {
             )}
           </section>
 
+          {!canWrite && session && (
+            <p className="read-only-notice" role="status">
+              Viewer access is read-only. You can search and inspect documents,
+              but only an Editor or Owner can change them.
+            </p>
+          )}
+
           <div className="upload-tabs" role="tablist" aria-label="Document action">
             <button
               type="button"
@@ -483,6 +491,7 @@ export default function App() {
               aria-selected={uploadTab === 'add'}
               aria-controls="add-document-panel"
               id="add-document-tab"
+              disabled={!canWrite}
               onClick={() => setUploadTab('add')}
             >
               Add document
@@ -493,6 +502,7 @@ export default function App() {
               aria-selected={uploadTab === 'update'}
               aria-controls="update-document-panel"
               id="update-document-tab"
+              disabled={!canWrite}
               onClick={() => {
                 setUploadTab('update')
                 if (selectedDocumentId) {
@@ -518,6 +528,7 @@ export default function App() {
                     type="text"
                     value={title}
                     maxLength={255}
+                    disabled={!canWrite}
                     onChange={(event) => setTitle(event.target.value)}
                     placeholder="Defaults to the filename"
                   />
@@ -528,12 +539,14 @@ export default function App() {
                   label="Plain-text file"
                   file={file}
                   onFile={setFile}
+                  disabled={!canWrite}
                 />
 
                 <button
                   type="submit"
                   disabled={
                     apiState !== 'healthy' ||
+                    !canWrite ||
                     !file ||
                     uploadState === 'submitting'
                   }
@@ -571,11 +584,13 @@ export default function App() {
                   label="New version file"
                   file={versionFile}
                   onFile={setVersionFile}
+                  disabled={!canWrite}
                 />
                 <button
                   type="submit"
                   disabled={
                     apiState !== 'healthy' ||
+                    !canWrite ||
                     !versionFile ||
                     versionState === 'submitting'
                   }
@@ -610,7 +625,9 @@ export default function App() {
                             ) : (
                               <button
                                 type="button"
-                                disabled={versionHistoryState === 'submitting'}
+                                disabled={
+                                  !canWrite || versionHistoryState === 'submitting'
+                                }
                                 onClick={() => void handleActivateVersion(version)}
                               >
                                 Make current
@@ -694,6 +711,7 @@ function FileDropField(props: {
   label: string
   file: File | null
   onFile: (file: File | null) => void
+  disabled?: boolean
 }) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -708,17 +726,20 @@ function FileDropField(props: {
       className={isDragging ? 'file-field file-field--dragging' : 'file-field'}
       onDragEnter={(event) => {
         event.preventDefault()
-        setIsDragging(true)
+        if (!props.disabled) setIsDragging(true)
       }}
       onDragOver={(event) => event.preventDefault()}
-      onDragLeave={() => setIsDragging(false)}
-      onDrop={handleDrop}
+      onDragLeave={() => {
+        if (!props.disabled) setIsDragging(false)
+      }}
+      onDrop={props.disabled ? undefined : handleDrop}
     >
       <span>{props.label}</span>
       <input
         key={props.inputKey}
         type="file"
         accept=".txt,text/plain"
+        disabled={props.disabled}
         onChange={(event) => props.onFile(event.target.files?.[0] ?? null)}
         required
       />

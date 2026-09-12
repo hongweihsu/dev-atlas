@@ -26,6 +26,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   the same authenticated API boundary without pretending to be production OIDC
 - The React header displays the workspace name and role resolved by the server,
   making the active authorization context visible to the user
+- Viewer sessions enter an explained read-only UI while the API independently
+  enforces the same mutation boundary
 - Deterministic text normalization, SHA-256 fingerprinting, and traceable
   character-based chunking
 - Framework-independent validation and preparation for bounded UTF-8 text files

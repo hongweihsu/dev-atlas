@@ -80,6 +80,8 @@ h2 { margin: 0.3rem 0 0; font-size: 1.45rem; font-weight: 600; letter-spacing: -
 .upload-tabs button:hover { color: #b7c2be; }
 .upload-tabs button[aria-selected='true'] { border-bottom-color: #76d99e; color: #76d99e; background: rgba(118, 217, 158, 0.04); }
 .upload-tabs button:focus-visible { outline: 2px solid #76d99e; outline-offset: 2px; }
+.upload-tabs button:disabled { cursor: not-allowed; opacity: 0.42; }
+.read-only-notice { margin: 0 0 1rem; padding: 0.8rem 0.9rem; border-left: 2px solid #76d99e; color: #aebbb6; background: rgba(118, 217, 158, 0.06); font-size: 0.78rem; line-height: 1.5; }
 .upload-tab-panel__empty { margin: 0; padding: 1rem; border-left: 2px solid #3c5148; color: #91a19b; background: #0a1512; font-size: 0.8rem; line-height: 1.5; }
 label { display: grid; gap: 0.55rem; color: #b7c2be; font-size: 0.82rem; font-weight: 600; }
 label > span small { margin-left: 0.35rem; color: #718079; font: 0.65rem ui-monospace, monospace; font-weight: 500; text-transform: uppercase; }

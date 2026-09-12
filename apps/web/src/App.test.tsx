@@ -74,6 +74,30 @@ test('shows the product identity and hides healthy API status', async () => {
   expect(screen.getByText('owner')).toBeInTheDocument()
 })
 
+test('shows viewer access as read-only while keeping research available', async () => {
+  configureApiSession('viewer-token', 'test-workspace-id', {
+    user_id: 'viewer-id',
+    workspace_id: 'test-workspace-id',
+    workspace_name: 'Shared Research',
+    role: 'viewer',
+  })
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    return jsonResponse([documentSummary()])
+  })
+
+  render(<App />)
+
+  expect(await screen.findByText('Viewer access is read-only.', { exact: false }))
+    .toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Archive Architecture notes' }))
+    .toBeDisabled()
+  expect(screen.getByRole('tab', { name: 'Add document' })).toBeDisabled()
+  expect(screen.getByRole('textbox', { name: 'Question' })).toBeEnabled()
+})
+
 test('shows an unavailable banner and retries the health check', async () => {
   const fetchMock = vi
     .spyOn(globalThis, 'fetch')
