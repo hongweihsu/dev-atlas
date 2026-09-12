@@ -33,7 +33,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   `POST /documents/{document_id}/restore`; archived documents are excluded from
   default lists and retrieval without deleting version or citation history
 - React archive controls explain the reversible behavior, remove successful
-  archives from the active list immediately, and provide an inline Undo action
+  archives from the active list immediately, provide inline Undo, and include a
+  persistent Archived view for later restoration
 - Optional document display titles that default to the uploaded filename stem
 - Global normalized-content duplicate protection for new writes, including
   concurrent requests, while preserving pre-existing historical rows

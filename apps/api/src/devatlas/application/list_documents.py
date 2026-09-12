@@ -1,5 +1,6 @@
 from devatlas.application.ports.document_list import (
     DocumentListRepository,
+    DocumentListStatus,
     DocumentSummary,
 )
 
@@ -8,5 +9,7 @@ class ListDocuments:
     def __init__(self, repository: DocumentListRepository) -> None:
         self._repository = repository
 
-    async def execute(self) -> list[DocumentSummary]:
-        return await self._repository.list_documents()
+    async def execute(
+        self, *, status: DocumentListStatus = "active"
+    ) -> list[DocumentSummary]:
+        return await self._repository.list_documents(status=status)

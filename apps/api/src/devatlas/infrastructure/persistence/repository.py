@@ -26,15 +26,21 @@ class SqlAlchemyDocumentIngestionRepository:
                 )
             )
         )
-        duplicate_document_id = await self._session.scalar(
-            select(DocumentVersion.document_id).where(
-                DocumentVersion.content_checksum == record.version.content_checksum
+        duplicate = (
+            await self._session.execute(
+                select(DocumentVersion.document_id, Document.archived_at)
+                .join(Document, Document.id == DocumentVersion.document_id)
+                .where(
+                    DocumentVersion.content_checksum
+                    == record.version.content_checksum
+                )
             )
-        )
-        if duplicate_document_id is not None:
+        ).first()
+        if duplicate is not None:
             raise DuplicateDocumentContentError(
                 "this content already exists in another document",
-                document_id=duplicate_document_id,
+                document_id=duplicate.document_id,
+                document_archived=duplicate.archived_at is not None,
             )
         version = self._map_version(record.version)
         document = Document(

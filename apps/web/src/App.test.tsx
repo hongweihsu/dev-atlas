@@ -21,6 +21,7 @@ function documentSummary(versionNumber = 1, filename = 'notes.txt') {
     source_filename: filename,
     chunk_count: versionNumber,
     updated_at: '2026-09-09T00:00:00Z',
+    archived_at: null,
   }
 }
 
@@ -387,6 +388,48 @@ test('archives a document and restores it with undo', async () => {
   expect(fetchMock).toHaveBeenCalledWith('/api/documents/document-id/restore', {
     method: 'POST',
   })
+})
+
+test('loads archived documents after a page-state change and restores one', async () => {
+  let restored = false
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    if (input === '/api/documents') return jsonResponse([])
+    if (input === '/api/documents?status=archived') {
+      return jsonResponse(
+        restored
+          ? []
+          : [
+              {
+                ...documentSummary(),
+                archived_at: '2026-09-12T00:00:00Z',
+              },
+            ],
+      )
+    }
+    if (
+      input === '/api/documents/document-id/restore' &&
+      init?.method === 'POST'
+    ) {
+      restored = true
+      return new Response(null, { status: 204 })
+    }
+    throw new Error(`Unexpected request: ${String(input)}`)
+  })
+
+  render(<App />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Archived' }))
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Restore Architecture notes' }),
+  )
+
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('button', { name: 'Restore Architecture notes' }),
+    ).not.toBeInTheDocument(),
+  )
 })
 
 test('selects the existing document when a new upload duplicates its content', async () => {

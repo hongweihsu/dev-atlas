@@ -51,6 +51,9 @@ def make_record() -> NewDocumentRecord:
 async def test_repository_maps_complete_document_aggregate() -> None:
     session = MagicMock(spec=AsyncSession)
     session.scalar = AsyncMock(return_value=None)
+    duplicate_result = MagicMock()
+    duplicate_result.first.return_value = None
+    session.execute = AsyncMock(side_effect=[MagicMock(), duplicate_result])
     repository = SqlAlchemyDocumentIngestionRepository(session)
     record = make_record()
 

@@ -8,6 +8,7 @@ from fastapi import (
     File,
     Form,
     HTTPException,
+    Query,
     Request,
     UploadFile,
     status,
@@ -54,6 +55,7 @@ class DocumentSummaryResponse(BaseModel):
     source_filename: str
     chunk_count: int
     updated_at: datetime
+    archived_at: datetime | None
 
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -119,8 +121,13 @@ def _validation_status(code: DocumentValidationCode) -> int:
 
 
 @router.get("", response_model=list[DocumentSummaryResponse])
-async def list_documents(service: DocumentListService) -> list[DocumentSummaryResponse]:
-    documents = await service.execute()
+async def list_documents(
+    service: DocumentListService,
+    status_filter: Annotated[
+        Literal["active", "archived"], Query(alias="status")
+    ] = "active",
+) -> list[DocumentSummaryResponse]:
+    documents = await service.execute(status=status_filter)
     return [
         DocumentSummaryResponse(
             document_id=str(document.document_id),
@@ -130,6 +137,7 @@ async def list_documents(service: DocumentListService) -> list[DocumentSummaryRe
             source_filename=document.source_filename,
             chunk_count=document.chunk_count,
             updated_at=document.updated_at,
+            archived_at=document.archived_at,
         )
         for document in documents
     ]
@@ -242,12 +250,13 @@ async def _ingest(
             detail={"code": "document_not_found", "message": str(error)},
         ) from error
     except DuplicateDocumentContentError as error:
-        detail: dict[str, str] = {
+        detail: dict[str, str | bool] = {
             "code": "duplicate_document_content",
             "message": str(error),
         }
         if error.document_id is not None:
             detail["document_id"] = str(error.document_id)
+            detail["document_archived"] = error.document_archived
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=detail,

@@ -45,9 +45,16 @@ class DocumentNotFoundError(LookupError):
 class DuplicateDocumentContentError(ValueError):
     """Raised when a document already contains the normalized content."""
 
-    def __init__(self, message: str, *, document_id: UUID | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        document_id: UUID | None = None,
+        document_archived: bool = False,
+    ) -> None:
         super().__init__(message)
         self.document_id = document_id
+        self.document_archived = document_archived
 
 
 class DocumentIngestionRepository(Protocol):

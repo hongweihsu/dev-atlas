@@ -91,6 +91,7 @@ def test_get_documents_returns_active_version_summaries() -> None:
             source_filename="notes-v2.txt",
             chunk_count=3,
             updated_at=datetime(2026, 9, 9, tzinfo=UTC),
+            archived_at=None,
         )
     ]
     app.dependency_overrides[get_list_documents] = lambda: service
@@ -147,6 +148,7 @@ def test_post_document_duplicate_returns_existing_document_id(
         "code": "duplicate_document_content",
         "message": "this content already exists in another document",
         "document_id": first.json()["document_id"],
+        "document_archived": False,
     }
 
 

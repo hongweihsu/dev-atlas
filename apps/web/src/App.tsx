@@ -17,6 +17,7 @@ import {
 type ApiState = 'checking' | 'healthy' | 'unavailable'
 type RequestState = 'idle' | 'submitting' | 'success' | 'error'
 type DocumentSort = 'updated' | 'name'
+type DocumentView = 'active' | 'archived'
 type UploadTab = 'add' | 'update'
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
   const [documentList, setDocumentList] = useState<DocumentSummary[]>([])
   const [documentListError, setDocumentListError] = useState('')
   const [documentSort, setDocumentSort] = useState<DocumentSort>('updated')
+  const [documentView, setDocumentView] = useState<DocumentView>('active')
   const [archivedDocument, setArchivedDocument] = useState<DocumentSummary | null>(
     null,
   )
@@ -103,7 +105,14 @@ export default function App() {
         error.code === 'duplicate_document_content' &&
         error.documentId
       ) {
-        await refreshDocuments(error.documentId)
+        const view = error.documentArchived ? 'archived' : 'active'
+        setDocumentView(view)
+        if (error.documentArchived) {
+          setUploadError(
+            'This content belongs to an archived document. Restore the existing document to use it again.',
+          )
+        }
+        await refreshDocuments(error.documentId, view)
       }
       setUploadState('error')
     }
@@ -130,9 +139,12 @@ export default function App() {
     }
   }
 
-  async function refreshDocuments(preferredDocumentId?: string) {
+  async function refreshDocuments(
+    preferredDocumentId?: string,
+    view: DocumentView = documentView,
+  ) {
     try {
-      const loaded = await listDocuments()
+      const loaded = await listDocuments(view)
       setDocumentList(loaded)
       setDocumentListError('')
       setSelectedDocumentId((current) => {
@@ -146,6 +158,12 @@ export default function App() {
         error instanceof Error ? error.message : 'Document list failed',
       )
     }
+  }
+
+  async function handleDocumentView(view: DocumentView) {
+    setDocumentView(view)
+    setDocumentListError('')
+    await refreshDocuments(undefined, view)
   }
 
   const visibleDocumentList =
@@ -194,8 +212,26 @@ export default function App() {
     setLifecycleError('')
     try {
       await restoreDocument(archivedDocument.document_id)
-      await refreshDocuments(archivedDocument.document_id)
+      setDocumentView('active')
+      await refreshDocuments(archivedDocument.document_id, 'active')
       setArchivedDocument(null)
+      setLifecycleState('success')
+    } catch (error) {
+      setLifecycleError(
+        error instanceof Error ? error.message : 'Document restore failed',
+      )
+      setLifecycleState('error')
+    }
+  }
+
+  async function handleRestoreDocument(document: DocumentSummary) {
+    setLifecycleState('submitting')
+    setLifecycleError('')
+    try {
+      await restoreDocument(document.document_id)
+      setDocumentList((current) =>
+        current.filter((item) => item.document_id !== document.document_id),
+      )
       setLifecycleState('success')
     } catch (error) {
       setLifecycleError(
@@ -266,6 +302,22 @@ export default function App() {
         <article className="panel panel--upload">
           <PanelHeading step="01" kicker="Knowledge source" title="Index a document" />
           <section className="document-list" aria-labelledby="documents-title">
+            <div className="document-list__views" role="group" aria-label="Document status">
+              <button
+                type="button"
+                aria-pressed={documentView === 'active'}
+                onClick={() => void handleDocumentView('active')}
+              >
+                Active
+              </button>
+              <button
+                type="button"
+                aria-pressed={documentView === 'archived'}
+                onClick={() => void handleDocumentView('archived')}
+              >
+                Archived
+              </button>
+            </div>
             <div className="document-list__heading">
               <h3 id="documents-title">Documents</h3>
               <div>
@@ -284,41 +336,59 @@ export default function App() {
               </div>
             </div>
             {documentList.length === 0 ? (
-              <p className="document-list__empty">No indexed documents yet.</p>
+              <p className="document-list__empty">
+                {documentView === 'active'
+                  ? 'No indexed documents yet.'
+                  : 'No archived documents.'}
+              </p>
             ) : (
               <div className="document-list__items">
                 {visibleDocumentList.map((document) => (
                   <div className="document-list__row" key={document.document_id}>
-                    <button
-                      className={
-                        document.document_id === selectedDocumentId
-                          ? 'document-list__item document-list__item--selected'
-                          : 'document-list__item'
-                      }
-                      type="button"
-                      aria-label={`Select ${document.title}, version ${document.active_version_number}`}
-                      aria-pressed={document.document_id === selectedDocumentId}
-                      onClick={() => {
-                        setSelectedDocumentId(document.document_id)
-                        setUploadTab('update')
-                        setUploadResult(null)
-                        setVersionError('')
-                      }}
-                    >
-                      <strong>{document.title}</strong>
-                      <span>
-                        Version {document.active_version_number} ·{' '}
-                        {document.source_filename}
-                      </span>
-                    </button>
+                    {documentView === 'active' ? (
+                      <button
+                        className={
+                          document.document_id === selectedDocumentId
+                            ? 'document-list__item document-list__item--selected'
+                            : 'document-list__item'
+                        }
+                        type="button"
+                        aria-label={`Select ${document.title}, version ${document.active_version_number}`}
+                        aria-pressed={document.document_id === selectedDocumentId}
+                        onClick={() => {
+                          setSelectedDocumentId(document.document_id)
+                          setUploadTab('update')
+                          setUploadResult(null)
+                          setVersionError('')
+                        }}
+                      >
+                        <strong>{document.title}</strong>
+                        <span>
+                          Version {document.active_version_number} ·{' '}
+                          {document.source_filename}
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="document-list__item document-list__item--archived">
+                        <strong>{document.title}</strong>
+                        <span>
+                          Version {document.active_version_number} ·{' '}
+                          {document.source_filename}
+                        </span>
+                      </div>
+                    )}
                     <button
                       className="document-list__archive"
                       type="button"
-                      aria-label={`Archive ${document.title}`}
+                      aria-label={`${documentView === 'active' ? 'Archive' : 'Restore'} ${document.title}`}
                       disabled={lifecycleState === 'submitting'}
-                      onClick={() => void handleArchive(document)}
+                      onClick={() =>
+                        void (documentView === 'active'
+                          ? handleArchive(document)
+                          : handleRestoreDocument(document))
+                      }
                     >
-                      Archive
+                      {documentView === 'active' ? 'Archive' : 'Restore'}
                     </button>
                   </div>
                 ))}

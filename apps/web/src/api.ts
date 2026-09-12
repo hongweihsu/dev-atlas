@@ -1,5 +1,12 @@
 interface ApiErrorBody {
-  detail?: string | { code?: string; message?: string; document_id?: string }
+  detail?:
+    | string
+    | {
+        code?: string
+        message?: string
+        document_id?: string
+        document_archived?: boolean
+      }
 }
 
 export class ApiRequestError extends Error {
@@ -7,6 +14,7 @@ export class ApiRequestError extends Error {
     message: string,
     readonly code?: string,
     readonly documentId?: string,
+    readonly documentArchived = false,
   ) {
     super(message)
     this.name = 'ApiRequestError'
@@ -36,6 +44,7 @@ export interface DocumentSummary {
   source_filename: string
   chunk_count: number
   updated_at: string
+  archived_at: string | null
 }
 
 export interface AnswerCitation {
@@ -63,6 +72,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
   let message = `Request failed (${response.status})`
   let code: string | undefined
   let documentId: string | undefined
+  let documentArchived = false
   try {
     const body = (await response.json()) as ApiErrorBody
     if (typeof body.detail === 'string') message = body.detail
@@ -70,11 +80,12 @@ async function parseResponse<T>(response: Response): Promise<T> {
       message = body.detail.message
       code = body.detail.code
       documentId = body.detail.document_id
+      documentArchived = body.detail.document_archived ?? false
     }
   } catch {
     // Keep the status-based message when the response is not JSON.
   }
-  throw new ApiRequestError(message, code, documentId)
+  throw new ApiRequestError(message, code, documentId, documentArchived)
 }
 
 export async function checkHealth(signal?: AbortSignal): Promise<HealthResponse> {
@@ -91,8 +102,11 @@ export async function uploadDocument(
   return parseResponse(await fetch('/api/documents', { method: 'POST', body }))
 }
 
-export async function listDocuments(): Promise<DocumentSummary[]> {
-  return parseResponse(await fetch('/api/documents'))
+export async function listDocuments(
+  status: 'active' | 'archived' = 'active',
+): Promise<DocumentSummary[]> {
+  const url = status === 'active' ? '/api/documents' : '/api/documents?status=archived'
+  return parseResponse(await fetch(url))
 }
 
 export async function archiveDocument(documentId: string): Promise<void> {

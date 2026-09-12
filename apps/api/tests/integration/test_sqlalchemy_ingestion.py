@@ -232,7 +232,7 @@ async def test_catalog_and_global_duplicate_protection() -> None:
             )
         )
 
-        summaries = await document_list.list_documents()
+        summaries = await document_list.list_documents(status="active")
         summary = next(
             item for item in summaries if item.document_id == created.document_id
         )

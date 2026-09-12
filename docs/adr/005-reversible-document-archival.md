@@ -35,7 +35,8 @@ existing document.
 
 Archival is safe and reversible, but storage is not reclaimed. The frontend
 removes archived documents from the active list immediately and offers inline
-Undo/restore. A future permanent-delete operation must be separately authorized
-and should communicate that cascades remove versions and chunks. A persistent
-archived-document browser remains future work; Undo currently lasts for the
-page session.
+Undo/restore plus a persistent Archived view. Duplicate-content conflicts expose
+whether the existing logical document is archived so the client can offer
+restore instead of creating another identity. A future permanent-delete
+operation must be separately authorized and should communicate that cascades
+remove versions and chunks.

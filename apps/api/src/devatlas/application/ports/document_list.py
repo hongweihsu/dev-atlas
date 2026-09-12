@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
+
+type DocumentListStatus = Literal["active", "archived"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,9 +15,12 @@ class DocumentSummary:
     source_filename: str
     chunk_count: int
     updated_at: datetime
+    archived_at: datetime | None
 
 
 class DocumentListRepository(Protocol):
-    async def list_documents(self) -> list[DocumentSummary]:
-        """Return logical documents with their active version summaries."""
+    async def list_documents(
+        self, *, status: DocumentListStatus
+    ) -> list[DocumentSummary]:
+        """Return filtered documents with their current version summaries."""
         ...
