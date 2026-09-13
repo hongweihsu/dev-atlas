@@ -12,3 +12,4 @@ of every library choice.
 - [ADR-005: Reversible document archival](005-reversible-document-archival.md)
 - [ADR-006: KnowledgeBase search scope](006-knowledge-base-search-scope.md)
 - [ADR-007: PostgreSQL-backed ARQ ingestion jobs](007-postgresql-backed-arq-ingestion-jobs.md)
+- [ADR-008: Cost-bounded AWS demo](008-cost-bounded-aws-demo.md)

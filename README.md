@@ -30,6 +30,10 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Asynchronous new-document ingestion with PostgreSQL-backed observable job
   state, workspace-scoped idempotency keys, Redis/ARQ dispatch, a separate
   worker, bounded retries, and result/error polling from React
+- Cost-bounded Phase 10 Terraform foundation for Sydney: private S3/CloudFront
+  web delivery, a single ARM EC2 Docker host, CloudFront-only API ingress, SSM
+  administration, encrypted gp3 storage, private backups, and USD 30 budget
+  alerts; validated as a no-apply plan and not yet deployed
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - A provider-neutral RS256/JWKS verifier can validate externally issued access
@@ -111,8 +115,11 @@ React + Vite  --->  FastAPI  --->  PostgreSQL + pgvector
 The browser calls the API; the API owns access to persistent data. During local
 development, Vite proxies `/api` requests to FastAPI. See the
 [system overview](docs/architecture/system-overview.md) and
-[domain model](docs/architecture/domain-model.md). Phase 1 verification is
-recorded in the [acceptance record](docs/verification/phase-1-acceptance.md).
+[domain model](docs/architecture/domain-model.md). The planned low-cost cloud
+topology is documented in the
+[AWS demo deployment](docs/architecture/aws-demo-deployment.md). Phase 1
+verification is recorded in the
+[acceptance record](docs/verification/phase-1-acceptance.md).
 
 ## Local setup
 
