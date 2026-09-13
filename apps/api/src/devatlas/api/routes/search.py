@@ -1,13 +1,16 @@
 from typing import Annotated, Literal, cast
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from devatlas.api.dependencies.authentication import CurrentWorkspace
+from devatlas.api.routes.knowledge_bases import get_manage_knowledge_bases
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
 )
+from devatlas.application.ports.knowledge_bases import InvalidKnowledgeBaseScopeError
 from devatlas.application.search_documents import (
     InvalidSearchQueryError,
     SearchDocuments,
@@ -19,6 +22,7 @@ class SearchRequest(BaseModel):
     query: str
     limit: int = 5
     strategy: Literal["vector", "lexical", "hybrid"] = "hybrid"
+    knowledge_base_ids: list[UUID] = Field(default_factory=list)
 
 
 class SearchChunkResponse(BaseModel):
@@ -60,19 +64,31 @@ SearchService = Annotated[SearchDocuments, Depends(get_search_documents)]
 
 @router.post("", response_model=SearchResponse)
 async def search_documents(
-    request: SearchRequest,
+    payload: SearchRequest,
+    request: Request,
     service: SearchService,
     workspace: CurrentWorkspace,
 ) -> SearchResponse:
     try:
+        scope: tuple[UUID, ...] = ()
+        if payload.knowledge_base_ids:
+            scope = await get_manage_knowledge_bases(request).resolve_scope(
+                workspace.workspace_id, tuple(payload.knowledge_base_ids)
+            )
         results = await service.execute(
             SearchDocumentsCommand(
-                query=request.query,
+                query=payload.query,
                 workspace_id=workspace.workspace_id,
-                limit=request.limit,
-                strategy=request.strategy,
+                limit=payload.limit,
+                strategy=payload.strategy,
+                knowledge_base_ids=scope,
             )
         )
+    except InvalidKnowledgeBaseScopeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "invalid_knowledge_base_scope", "message": str(error)},
+        ) from error
     except InvalidSearchQueryError as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,

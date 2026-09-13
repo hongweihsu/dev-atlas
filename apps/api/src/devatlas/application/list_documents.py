@@ -12,8 +12,14 @@ class ListDocuments:
         self._repository = repository
 
     async def execute(
-        self, *, workspace_id: UUID, status: DocumentListStatus = "active"
+        self,
+        *,
+        workspace_id: UUID,
+        status: DocumentListStatus = "active",
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[DocumentSummary]:
         return await self._repository.list_documents(
-            workspace_id=workspace_id, status=status
+            workspace_id=workspace_id,
+            status=status,
+            knowledge_base_ids=knowledge_base_ids,
         )

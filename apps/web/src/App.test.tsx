@@ -31,7 +31,17 @@ function documentSummary(versionNumber = 1, filename = 'notes.txt') {
     chunk_count: versionNumber,
     updated_at: '2026-09-09T00:00:00Z',
     archived_at: null,
+    knowledge_base_id: 'general-id',
+    knowledge_base_name: 'General',
   }
+}
+
+const knowledgeBases = [
+  { id: 'general-id', name: 'General', is_default: true, document_count: 1 },
+]
+
+function isKnowledgeBaseListRequest(input: RequestInfo | URL, init?: RequestInit) {
+  return input === '/api/knowledge-bases' && init?.method !== 'POST'
 }
 
 function versionSummary(versionNumber: number, isActive: boolean) {
@@ -59,6 +69,7 @@ test('shows the product identity and hides healthy API status', async () => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input)) return jsonResponse(knowledgeBases)
     return jsonResponse([])
   })
 
@@ -85,6 +96,7 @@ test('shows viewer access as read-only while keeping research available', async 
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input)) return jsonResponse(knowledgeBases)
     return jsonResponse([documentSummary()])
   })
 
@@ -122,6 +134,7 @@ test('uploads a dropped text document without a custom title', async () => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) {
       return jsonResponse(created ? [documentSummary()] : [])
     }
@@ -168,6 +181,7 @@ test('uploads a new version for the document that was just indexed', async () =>
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) {
       return jsonResponse(
         activeVersion === 0
@@ -253,6 +267,7 @@ test('shows immutable history and makes an older version current', async () => {
       if (input === '/api/health') {
         return jsonResponse({ status: 'ok', service: 'devatlas-api' })
       }
+      if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
       if (isDocumentListRequest(input, init)) {
         return jsonResponse([documentSummary(activeVersion)])
       }
@@ -301,6 +316,7 @@ test('shows a duplicate-content error when a version is rejected', async () => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) {
       return jsonResponse(created ? [documentSummary()] : [])
     }
@@ -357,10 +373,11 @@ test('shows a duplicate-content error when a version is rejected', async () => {
 })
 
 test('asks a question and renders expandable citation provenance', async () => {
-  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) return jsonResponse([])
     return jsonResponse({
       answer: 'Offsets connect the chunk to normalized source text.',
@@ -395,6 +412,10 @@ test('asks a question and renders expandable citation provenance', async () => {
   expect(screen.getByText('Evidence grounded')).toBeInTheDocument()
   expect(screen.getByText('Architecture notes')).toBeInTheDocument()
   expect(screen.getByText('Characters 10–42')).toBeInTheDocument()
+  const answerCall = fetchMock.mock.calls.find(([input]) => input === '/api/answers')
+  expect(JSON.parse(String(answerCall?.[1]?.body))).toMatchObject({
+    knowledge_base_ids: ['general-id'],
+  })
 })
 
 test('shows the API error message without discarding the question', async () => {
@@ -402,6 +423,7 @@ test('shows the API error message without discarding the question', async () => 
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) return jsonResponse([])
     return jsonResponse({ detail: { message: 'answer provider request failed' } }, 503)
   })
@@ -423,6 +445,7 @@ test('loads existing documents and lets the user select one for an update', asyn
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input)) return jsonResponse(knowledgeBases)
     return jsonResponse([
       {
         ...documentSummary(3, 'database-v3.txt'),
@@ -461,6 +484,7 @@ test('archives a document and restores it with undo', async () => {
       if (input === '/api/health') {
         return jsonResponse({ status: 'ok', service: 'devatlas-api' })
       }
+      if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
       if (input === '/api/documents/document-id' && init?.method === 'DELETE') {
         archived = true
         return new Response(null, { status: 204 })
@@ -508,6 +532,7 @@ test('loads archived documents after a page-state change and restores one', asyn
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (input === '/api/documents') return jsonResponse([])
     if (input === '/api/documents?status=archived') {
       return jsonResponse(
@@ -550,6 +575,7 @@ test('selects the existing document when a new upload duplicates its content', a
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) {
       return jsonResponse(duplicateRejected ? [documentSummary()] : [])
     }

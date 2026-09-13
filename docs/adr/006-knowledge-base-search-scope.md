@@ -1,6 +1,6 @@
 # ADR-006: Use KnowledgeBase as an authorized search scope
 
-- **Status:** Accepted; persistence foundation implemented
+- **Status:** Accepted; implemented
 - **Date:** 2026-09-13
 
 ## Context
@@ -17,8 +17,8 @@ during the transition.
 
 Introduce `KnowledgeBase` as a named retrieval scope owned by exactly one
 workspace. In the first Phase 8 slice, each document belongs to exactly one
-knowledge base. A later API may search one or more authorized knowledge bases,
-but workspace membership remains the outer authorization boundary.
+knowledge base. Search and answers may select one or more authorized knowledge
+bases, but workspace membership remains the outer authorization boundary.
 
 Keep `documents.workspace_id` alongside `documents.knowledge_base_id`. The
 former makes tenant filters explicit and efficient; the latter selects retrieval
@@ -42,7 +42,9 @@ documents use that default until the API exposes explicit selection.
 
 ## Consequences
 
-The schema temporarily stores workspace ownership twice, so the composite
-foreign key is mandatory. The default knowledge base preserves current upload
-behavior. Phase 8 must next expose authorized knowledge-base discovery and pass
-selected IDs through list, retrieval, and answer boundaries.
+The schema stores workspace ownership twice, so the composite foreign key is
+mandatory. The default knowledge base preserves backward-compatible upload
+behavior. The API validates the complete requested set before retrieval, then
+globally ranks the combined candidate pool rather than assigning fixed per-base
+quotas. React exposes creation, upload targeting, document filtering, and
+multi-base question scope.

@@ -24,6 +24,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   may mutate documents
 - Phase 8 KnowledgeBase persistence gives every document a workspace-consistent
   retrieval scope, with existing data migrated into a default `General` base
+- Authorized KnowledgeBase management and selection across uploads, document
+  lists, hybrid search, and grounded answers; one query can globally rank chunks
+  from multiple selected bases while rejecting any cross-workspace scope ID
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - A provider-neutral RS256/JWKS verifier can validate externally issued access
@@ -85,7 +88,7 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- External OIDC login UX and explicit authorized search scope
+- External OIDC login UX
 - Asynchronous ingestion and AWS deployment
 - Multimodal document understanding and bounded research workflows
 
@@ -168,9 +171,9 @@ unset.
 
 ## Future direction
 
-The current milestone is Phase 7 authentication, workspace isolation, and RBAC.
-Production identity-provider integration and explicit search scope follow;
-asynchronous processing and cloud deployment come later.
+The current milestone is completed Phase 8 authorized search scope. Phase 9
+adds asynchronous ingestion; production identity-provider UX and cloud
+deployment follow in later milestones.
 
 ## Limitations
 

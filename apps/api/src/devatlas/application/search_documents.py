@@ -25,6 +25,7 @@ class SearchDocumentsCommand:
     workspace_id: UUID
     limit: int = 5
     strategy: RetrievalStrategy = "hybrid"
+    knowledge_base_ids: tuple[UUID, ...] = ()
 
 
 class SearchDocuments:
@@ -59,6 +60,16 @@ class SearchDocuments:
                 expected_dimension=self._embedding_provider.dimension,
             )
             embedding = embeddings[0]
+        if command.knowledge_base_ids:
+            return await self._repository.search(
+                query,
+                embedding,
+                workspace_id=command.workspace_id,
+                model=self._embedding_provider.model,
+                limit=command.limit,
+                strategy=command.strategy,
+                knowledge_base_ids=command.knowledge_base_ids,
+            )
         return await self._repository.search(
             query,
             embedding,

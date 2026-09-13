@@ -76,6 +76,15 @@ export interface DocumentSummary {
   chunk_count: number
   updated_at: string
   archived_at: string | null
+  knowledge_base_id: string
+  knowledge_base_name: string
+}
+
+export interface KnowledgeBaseSummary {
+  id: string
+  name: string
+  is_default: boolean
+  document_count: number
 }
 
 export interface DocumentVersionSummary {
@@ -167,10 +176,12 @@ async function authorizedFetch(
 export async function uploadDocument(
   file: File,
   title: string,
+  knowledgeBaseId?: string,
 ): Promise<IngestDocumentResponse> {
   const body = new FormData()
   body.append('title', title)
   body.append('file', file)
+  if (knowledgeBaseId) body.append('knowledge_base_id', knowledgeBaseId)
   return parseResponse(
     await authorizedFetch('/api/documents', { method: 'POST', body }),
   )
@@ -178,9 +189,30 @@ export async function uploadDocument(
 
 export async function listDocuments(
   status: 'active' | 'archived' = 'active',
+  knowledgeBaseId?: string,
 ): Promise<DocumentSummary[]> {
-  const url = status === 'active' ? '/api/documents' : '/api/documents?status=archived'
+  const parameters = new URLSearchParams()
+  if (status === 'archived') parameters.set('status', 'archived')
+  if (knowledgeBaseId) parameters.set('knowledge_base_id', knowledgeBaseId)
+  const query = parameters.toString()
+  const url = `/api/documents${query ? `?${query}` : ''}`
   return parseResponse(await authorizedFetch(url))
+}
+
+export async function listKnowledgeBases(): Promise<KnowledgeBaseSummary[]> {
+  return parseResponse(await authorizedFetch('/api/knowledge-bases'))
+}
+
+export async function createKnowledgeBase(
+  name: string,
+): Promise<KnowledgeBaseSummary> {
+  return parseResponse(
+    await authorizedFetch('/api/knowledge-bases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }),
+  )
 }
 
 export async function archiveDocument(documentId: string): Promise<void> {
@@ -231,12 +263,19 @@ export async function activateDocumentVersion(
   )
 }
 
-export async function answerQuestion(question: string): Promise<AnswerResponse> {
+export async function answerQuestion(
+  question: string,
+  knowledgeBaseIds: string[] = [],
+): Promise<AnswerResponse> {
   return parseResponse(
     await authorizedFetch('/api/answers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, limit: 5 }),
+      body: JSON.stringify({
+        question,
+        limit: 5,
+        knowledge_base_ids: knowledgeBaseIds,
+      }),
     }),
   )
 }

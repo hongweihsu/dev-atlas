@@ -26,6 +26,7 @@ class SqlAlchemyChunkSearchRepository:
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "vector",
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[RetrievedChunk]:
         del query, strategy
         if embedding is None:
@@ -58,6 +59,10 @@ class SqlAlchemyChunkSearchRepository:
             .order_by(distance, Chunk.id)
             .limit(limit)
         )
+        if knowledge_base_ids:
+            statement = statement.where(
+                Document.knowledge_base_id.in_(knowledge_base_ids)
+            )
 
         async with self._session_factory() as session:
             return self._rows_to_chunks(await session.execute(statement))
@@ -89,7 +94,12 @@ class SqlAlchemyBm25ChunkSearchRepository:
         self._session_factory = session_factory
 
     async def search(
-        self, query: str, *, workspace_id: UUID, limit: int
+        self,
+        query: str,
+        *,
+        workspace_id: UUID,
+        limit: int,
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[RetrievedChunk]:
         statement = (
             select(
@@ -112,6 +122,10 @@ class SqlAlchemyBm25ChunkSearchRepository:
             )
             .order_by(Chunk.id)
         )
+        if knowledge_base_ids:
+            statement = statement.where(
+                Document.knowledge_base_id.in_(knowledge_base_ids)
+            )
         async with self._session_factory() as session:
             rows = list((await session.execute(statement)).all())
 

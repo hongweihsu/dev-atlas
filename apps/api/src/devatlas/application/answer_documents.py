@@ -21,6 +21,7 @@ class AnswerDocumentsCommand:
     question: str
     workspace_id: UUID
     limit: int = 5
+    knowledge_base_ids: tuple[UUID, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,13 +42,19 @@ class AnswerDocuments:
         self._generator = generator
 
     async def execute(self, command: AnswerDocumentsCommand) -> AnswerDocumentsResult:
-        chunks = await self._search_documents.execute(
-            SearchDocumentsCommand(
+        search_command = SearchDocumentsCommand(
+            query=command.question,
+            workspace_id=command.workspace_id,
+            limit=command.limit,
+        )
+        if command.knowledge_base_ids:
+            search_command = SearchDocumentsCommand(
                 query=command.question,
                 workspace_id=command.workspace_id,
                 limit=command.limit,
+                knowledge_base_ids=command.knowledge_base_ids,
             )
-        )
+        chunks = await self._search_documents.execute(search_command)
         context, sources = build_bounded_context(chunks)
         if not sources:
             return AnswerDocumentsResult(

@@ -32,6 +32,7 @@ class ChunkSearchRepository(Protocol):
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "hybrid",
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[RetrievedChunk]:
         """Return compatible active-version chunks ordered by relevance."""
         ...
@@ -39,7 +40,12 @@ class ChunkSearchRepository(Protocol):
 
 class LexicalChunkSearchRepository(Protocol):
     async def search(
-        self, query: str, *, workspace_id: UUID, limit: int
+        self,
+        query: str,
+        *,
+        workspace_id: UUID,
+        limit: int,
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[RetrievedChunk]:
         """Return active-version chunks ordered by lexical relevance."""
         ...

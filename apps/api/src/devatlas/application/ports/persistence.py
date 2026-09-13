@@ -36,6 +36,7 @@ class NewDocumentRecord:
     id: UUID
     title: str
     version: NewDocumentVersionRecord
+    knowledge_base_id: UUID | None = None
 
 
 class DocumentNotFoundError(LookupError):

@@ -48,12 +48,14 @@ class SqlAlchemyDocumentIngestionRepository:
                 document_id=duplicate.document_id,
                 document_archived=duplicate.archived_at is not None,
             )
-        knowledge_base_id = await self._session.scalar(
-            select(KnowledgeBase.id).where(
-                KnowledgeBase.workspace_id == workspace_id,
-                KnowledgeBase.is_default.is_(True),
+        knowledge_base_id = record.knowledge_base_id
+        if knowledge_base_id is None:
+            knowledge_base_id = await self._session.scalar(
+                select(KnowledgeBase.id).where(
+                    KnowledgeBase.workspace_id == workspace_id,
+                    KnowledgeBase.is_default.is_(True),
+                )
             )
-        )
         if knowledge_base_id is None:
             raise RuntimeError("workspace has no default knowledge base")
         version = self._map_version(record.version)

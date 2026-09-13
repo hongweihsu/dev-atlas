@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 from unittest.mock import AsyncMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -65,6 +65,28 @@ def test_post_search_returns_ranked_chunk_provenance(
     assert result["end_offset"] == 22
     assert result["score"] == 0.91
     assert result["scoring_method"] == "cosine_similarity"
+
+
+def test_post_search_forwards_validated_multi_knowledge_base_scope(
+    search_client: TestClient,
+) -> None:
+    first, second = uuid4(), uuid4()
+    manager = AsyncMock()
+    manager.resolve_scope.return_value = (first, second)
+    app.state.manage_knowledge_bases = manager
+    try:
+        response = search_client.post(
+            "/search",
+            json={
+                "query": "transaction",
+                "knowledge_base_ids": [str(first), str(second)],
+            },
+        )
+    finally:
+        del app.state.manage_knowledge_bases
+
+    assert response.status_code == 200
+    manager.resolve_scope.assert_awaited_once_with(UUID(int=999), (first, second))
 
 
 @pytest.mark.parametrize(

@@ -22,6 +22,7 @@ class IngestNewDocumentCommand:
     source_filename: str
     media_type: str
     content: bytes
+    knowledge_base_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +129,7 @@ class IngestNewDocument:
         return NewDocumentRecord(
             id=document_id,
             title=title,
+            knowledge_base_id=command.knowledge_base_id,
             version=NewDocumentVersionRecord(
                 id=version_id,
                 version_number=1,

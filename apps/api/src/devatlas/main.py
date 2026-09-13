@@ -12,6 +12,7 @@ from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
 from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
 from devatlas.application.manage_document_versions import ManageDocumentVersions
+from devatlas.application.manage_knowledge_bases import ManageKnowledgeBases
 from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
 from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
@@ -33,6 +34,7 @@ from devatlas.infrastructure.persistence import (
     SqlAlchemyDocumentListRepository,
     SqlAlchemyDocumentVersionRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
+    SqlAlchemyKnowledgeBaseRepository,
     SqlAlchemyWorkspaceAccessRepository,
 )
 
@@ -46,6 +48,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session_factory = create_session_factory(engine)
         application.state.list_documents = ListDocuments(
             SqlAlchemyDocumentListRepository(session_factory)
+        )
+        application.state.manage_knowledge_bases = ManageKnowledgeBases(
+            SqlAlchemyKnowledgeBaseRepository(session_factory)
         )
         application.state.manage_document_lifecycle = ManageDocumentLifecycle(
             SqlAlchemyDocumentLifecycleRepository(session_factory)
@@ -113,6 +118,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             yield
         finally:
             del application.state.list_documents
+            del application.state.manage_knowledge_bases
             del application.state.manage_document_lifecycle
             del application.state.manage_document_versions
             del application.state.workspace_access_repository

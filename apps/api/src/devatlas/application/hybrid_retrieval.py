@@ -35,17 +35,38 @@ class HybridChunkSearchRepository:
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "hybrid",
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[RetrievedChunk]:
         candidate_limit = min(MAX_CANDIDATE_LIMIT, max(limit * 4, limit))
         if strategy == "lexical":
+            if not knowledge_base_ids:
+                return (
+                    await self._lexical.search(
+                        query, workspace_id=workspace_id, limit=candidate_limit
+                    )
+                )[:limit]
             return (
                 await self._lexical.search(
-                    query, workspace_id=workspace_id, limit=candidate_limit
+                    query,
+                    workspace_id=workspace_id,
+                    limit=candidate_limit,
+                    knowledge_base_ids=knowledge_base_ids,
                 )
             )[:limit]
         if embedding is None:
             raise ValueError("vector and hybrid search require an embedding")
         if strategy == "vector":
+            if not knowledge_base_ids:
+                return (
+                    await self._vector.search(
+                        query,
+                        embedding,
+                        workspace_id=workspace_id,
+                        model=model,
+                        limit=candidate_limit,
+                        strategy="vector",
+                    )
+                )[:limit]
             return (
                 await self._vector.search(
                     query,
@@ -54,21 +75,41 @@ class HybridChunkSearchRepository:
                     model=model,
                     limit=candidate_limit,
                     strategy="vector",
+                    knowledge_base_ids=knowledge_base_ids,
                 )
             )[:limit]
-        vector_results, lexical_results = await asyncio.gather(
-            self._vector.search(
-                query,
-                embedding,
-                workspace_id=workspace_id,
-                model=model,
-                limit=candidate_limit,
-                strategy="vector",
-            ),
-            self._lexical.search(
-                query, workspace_id=workspace_id, limit=candidate_limit
-            ),
-        )
+        if not knowledge_base_ids:
+            vector_results, lexical_results = await asyncio.gather(
+                self._vector.search(
+                    query,
+                    embedding,
+                    workspace_id=workspace_id,
+                    model=model,
+                    limit=candidate_limit,
+                    strategy="vector",
+                ),
+                self._lexical.search(
+                    query, workspace_id=workspace_id, limit=candidate_limit
+                ),
+            )
+        else:
+            vector_results, lexical_results = await asyncio.gather(
+                self._vector.search(
+                    query,
+                    embedding,
+                    workspace_id=workspace_id,
+                    model=model,
+                    limit=candidate_limit,
+                    strategy="vector",
+                    knowledge_base_ids=knowledge_base_ids,
+                ),
+                self._lexical.search(
+                    query,
+                    workspace_id=workspace_id,
+                    limit=candidate_limit,
+                    knowledge_base_ids=knowledge_base_ids,
+                ),
+            )
         return reciprocal_rank_fusion(
             vector_results,
             lexical_results,

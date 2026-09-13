@@ -6,14 +6,17 @@ import {
   DocumentSummary,
   DocumentVersionSummary,
   IngestDocumentResponse,
+  KnowledgeBaseSummary,
   SessionResponse,
   activateDocumentVersion,
   answerQuestion,
   archiveDocument,
   checkHealth,
   createDevelopmentSession,
+  createKnowledgeBase,
   getSession,
   listDocuments,
+  listKnowledgeBases,
   listDocumentVersions,
   restoreDocument,
   uploadDocument,
@@ -39,6 +42,12 @@ export default function App() {
   const [documentListError, setDocumentListError] = useState('')
   const [documentSort, setDocumentSort] = useState<DocumentSort>('updated')
   const [documentView, setDocumentView] = useState<DocumentView>('active')
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseSummary[]>([])
+  const [knowledgeBaseName, setKnowledgeBaseName] = useState('')
+  const [knowledgeBaseError, setKnowledgeBaseError] = useState('')
+  const [uploadKnowledgeBaseId, setUploadKnowledgeBaseId] = useState('')
+  const [documentKnowledgeBaseId, setDocumentKnowledgeBaseId] = useState('')
+  const [searchKnowledgeBaseIds, setSearchKnowledgeBaseIds] = useState<string[]>([])
   const [archivedDocument, setArchivedDocument] = useState<DocumentSummary | null>(
     null,
   )
@@ -66,6 +75,14 @@ export default function App() {
         setSession(await getSession())
         setApiState('healthy')
         try {
+          const loadedKnowledgeBases = await listKnowledgeBases()
+          setKnowledgeBases(loadedKnowledgeBases)
+          setUploadKnowledgeBaseId(
+            loadedKnowledgeBases.find((item) => item.is_default)?.id ??
+              loadedKnowledgeBases[0]?.id ??
+              '',
+          )
+          setSearchKnowledgeBaseIds(loadedKnowledgeBases.map((item) => item.id))
           const loaded = await listDocuments()
           setDocumentList(loaded)
           setSelectedDocumentId((current) => current ?? loaded[0]?.document_id ?? null)
@@ -118,7 +135,7 @@ export default function App() {
     setUploadError('')
     setUploadResult(null)
     try {
-      const result = await uploadDocument(file, title.trim())
+      const result = await uploadDocument(file, title.trim(), uploadKnowledgeBaseId)
       setUploadResult(result)
       await refreshDocuments(result.document_id)
       setFile(null)
@@ -191,7 +208,7 @@ export default function App() {
     view: DocumentView = documentView,
   ) {
     try {
-      const loaded = await listDocuments(view)
+      const loaded = await listDocuments(view, documentKnowledgeBaseId || undefined)
       setDocumentList(loaded)
       setDocumentListError('')
       setSelectedDocumentId((current) => {
@@ -296,19 +313,45 @@ export default function App() {
 
   async function handleQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!question.trim()) return
+    if (!question.trim() || searchKnowledgeBaseIds.length === 0) return
 
     setAnswerState('submitting')
     setAnswerError('')
     setAnswerResult(null)
     try {
-      const result = await answerQuestion(question.trim())
+      const result = await answerQuestion(question.trim(), searchKnowledgeBaseIds)
       setAnswerResult(result)
       setAnswerState('success')
     } catch (error) {
       setAnswerError(error instanceof Error ? error.message : 'Answer request failed')
       setAnswerState('error')
     }
+  }
+
+  async function handleCreateKnowledgeBase(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const name = knowledgeBaseName.trim()
+    if (!name) return
+    setKnowledgeBaseError('')
+    try {
+      const created = await createKnowledgeBase(name)
+      setKnowledgeBases((current) => [...current, created])
+      setSearchKnowledgeBaseIds((current) => [...current, created.id])
+      setUploadKnowledgeBaseId(created.id)
+      setKnowledgeBaseName('')
+    } catch (error) {
+      setKnowledgeBaseError(
+        error instanceof Error ? error.message : 'Knowledge base creation failed',
+      )
+    }
+  }
+
+  function toggleSearchKnowledgeBase(id: string) {
+    setSearchKnowledgeBaseIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    )
   }
 
   return (
@@ -360,6 +403,26 @@ export default function App() {
       <section className="workspace" aria-label="Document research workspace">
         <article className="panel panel--upload">
           <PanelHeading step="01" kicker="Knowledge source" title="Index a document" />
+          <section className="knowledge-bases" aria-labelledby="knowledge-bases-title">
+            <div className="document-list__heading">
+              <h3 id="knowledge-bases-title">Knowledge bases</h3>
+              <span>{knowledgeBases.length}</span>
+            </div>
+            {canWrite && (
+              <form className="knowledge-bases__create" onSubmit={handleCreateKnowledgeBase}>
+                <input
+                  type="text"
+                  aria-label="New knowledge base name"
+                  placeholder="New knowledge base"
+                  maxLength={255}
+                  value={knowledgeBaseName}
+                  onChange={(event) => setKnowledgeBaseName(event.target.value)}
+                />
+                <button type="submit" disabled={!knowledgeBaseName.trim()}>Create</button>
+              </form>
+            )}
+            {knowledgeBaseError && <p className="notice notice--error">{knowledgeBaseError}</p>}
+          </section>
           <section className="document-list" aria-labelledby="documents-title">
             <div className="document-list__views" role="group" aria-label="Document status">
               <button
@@ -394,6 +457,21 @@ export default function App() {
                 <span>{documentList.length}</span>
               </div>
             </div>
+            <label className="scope-select">
+              <span>Show documents from</span>
+              <select
+                value={documentKnowledgeBaseId}
+                onChange={(event) => {
+                  setDocumentKnowledgeBaseId(event.target.value)
+                  void listDocuments(documentView, event.target.value || undefined).then(
+                    setDocumentList,
+                  )
+                }}
+              >
+                <option value="">All knowledge bases</option>
+                {knowledgeBases.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </label>
             {documentList.length === 0 ? (
               <p className="document-list__empty">
                 {documentView === 'active'
@@ -428,6 +506,7 @@ export default function App() {
                           Version {document.active_version_number} ·{' '}
                           {document.source_filename}
                         </span>
+                        <small>{document.knowledge_base_name}</small>
                       </button>
                     ) : (
                       <div className="document-list__item document-list__item--archived">
@@ -522,6 +601,17 @@ export default function App() {
               aria-labelledby="add-document-tab"
             >
               <form onSubmit={handleUpload} className="form-stack">
+                <label>
+                  <span>Knowledge base</span>
+                  <select
+                    value={uploadKnowledgeBaseId}
+                    disabled={!canWrite}
+                    onChange={(event) => setUploadKnowledgeBaseId(event.target.value)}
+                    required
+                  >
+                    {knowledgeBases.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                </label>
                 <label>
                   <span>Display title <small>Optional</small></span>
                   <input
@@ -657,6 +747,19 @@ export default function App() {
         <article className="panel panel--answer">
           <PanelHeading step="02" kicker="Grounded answer" title="Ask the knowledge base" />
           <form onSubmit={handleQuestion} className="question-form">
+            <fieldset className="scope-picker">
+              <legend>Search scope</legend>
+              {knowledgeBases.map((item) => (
+                <label key={item.id}>
+                  <input
+                    type="checkbox"
+                    checked={searchKnowledgeBaseIds.includes(item.id)}
+                    onChange={() => toggleSearchKnowledgeBase(item.id)}
+                  />
+                  <span>{item.name} <small>{item.document_count} docs</small></span>
+                </label>
+              ))}
+            </fieldset>
             <label htmlFor="question">Question</label>
             <textarea
               id="question"
@@ -674,6 +777,7 @@ export default function App() {
                 disabled={
                   apiState !== 'healthy' ||
                   !question.trim() ||
+                  searchKnowledgeBaseIds.length === 0 ||
                   answerState === 'submitting'
                 }
               >

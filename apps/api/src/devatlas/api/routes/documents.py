@@ -19,6 +19,7 @@ from devatlas.api.dependencies.authentication import (
     CurrentWorkspace,
     WritableWorkspace,
 )
+from devatlas.api.routes.knowledge_bases import get_manage_knowledge_bases
 from devatlas.application.ingest_document import (
     IngestNewDocument,
     IngestNewDocumentCommand,
@@ -32,6 +33,7 @@ from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
 )
+from devatlas.application.ports.knowledge_bases import InvalidKnowledgeBaseScopeError
 from devatlas.application.ports.persistence import (
     DocumentArchivedError,
     DocumentNotFoundError,
@@ -63,6 +65,8 @@ class DocumentSummaryResponse(BaseModel):
     chunk_count: int
     updated_at: datetime
     archived_at: datetime | None
+    knowledge_base_id: str
+    knowledge_base_name: str
 
 
 class DocumentVersionSummaryResponse(BaseModel):
@@ -161,15 +165,32 @@ def _validation_status(code: DocumentValidationCode) -> int:
 
 @router.get("", response_model=list[DocumentSummaryResponse])
 async def list_documents(
+    request: Request,
     service: DocumentListService,
     workspace: CurrentWorkspace,
     status_filter: Annotated[
         Literal["active", "archived"], Query(alias="status")
     ] = "active",
+    knowledge_base_id: Annotated[UUID | None, Query()] = None,
 ) -> list[DocumentSummaryResponse]:
-    documents = await service.execute(
-        workspace_id=workspace.workspace_id, status=status_filter
-    )
+    try:
+        scope = (
+            await get_manage_knowledge_bases(request).resolve_scope(
+                workspace.workspace_id, (knowledge_base_id,)
+            )
+            if knowledge_base_id is not None
+            else ()
+        )
+        documents = await service.execute(
+            workspace_id=workspace.workspace_id,
+            status=status_filter,
+            knowledge_base_ids=scope,
+        )
+    except InvalidKnowledgeBaseScopeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "invalid_knowledge_base_scope", "message": str(error)},
+        ) from error
     return [
         DocumentSummaryResponse(
             document_id=str(document.document_id),
@@ -180,6 +201,8 @@ async def list_documents(
             chunk_count=document.chunk_count,
             updated_at=document.updated_at,
             archived_at=document.archived_at,
+            knowledge_base_id=str(document.knowledge_base_id),
+            knowledge_base_name=document.knowledge_base_name,
         )
         for document in documents
     ]
@@ -219,13 +242,30 @@ async def restore_document(
     "", response_model=IngestDocumentResponse, status_code=status.HTTP_201_CREATED
 )
 async def ingest_document(
+    request: Request,
     file: Annotated[UploadFile, File()],
     service: IngestionService,
     workspace: WritableWorkspace,
     title: Annotated[str, Form()] = "",
+    knowledge_base_id: Annotated[UUID | None, Form()] = None,
 ) -> IngestDocumentResponse:
+    scope: tuple[UUID, ...] = ()
+    if knowledge_base_id is not None:
+        try:
+            scope = await get_manage_knowledge_bases(request).resolve_scope(
+                workspace.workspace_id, (knowledge_base_id,)
+            )
+        except InvalidKnowledgeBaseScopeError as error:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail={"code": "invalid_knowledge_base_scope", "message": str(error)},
+            ) from error
     return await _ingest(
-        file=file, title=title, service=service, workspace_id=workspace.workspace_id
+        file=file,
+        title=title,
+        service=service,
+        workspace_id=workspace.workspace_id,
+        knowledge_base_id=scope[0] if scope else None,
     )
 
 
@@ -318,6 +358,7 @@ async def _ingest(
     service: IngestNewDocument,
     workspace_id: UUID,
     document_id: UUID | None = None,
+    knowledge_base_id: UUID | None = None,
 ) -> IngestDocumentResponse:
     filename = file.filename or ""
     media_type = file.content_type or ""
@@ -333,6 +374,7 @@ async def _ingest(
             source_filename=filename,
             media_type=media_type,
             content=content,
+            knowledge_base_id=knowledge_base_id,
         )
         if document_id is None:
             result = await service.execute(workspace_id, command)

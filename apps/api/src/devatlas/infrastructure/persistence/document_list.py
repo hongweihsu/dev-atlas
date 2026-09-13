@@ -3,7 +3,12 @@ from uuid import UUID
 from sqlalchemy import func, select
 
 from devatlas.application.ports.document_list import DocumentListStatus, DocumentSummary
-from devatlas.infrastructure.models import Chunk, Document, DocumentVersion
+from devatlas.infrastructure.models import (
+    Chunk,
+    Document,
+    DocumentVersion,
+    KnowledgeBase,
+)
 from devatlas.infrastructure.persistence.unit_of_work import SessionFactory
 
 
@@ -12,7 +17,11 @@ class SqlAlchemyDocumentListRepository:
         self._session_factory = session_factory
 
     async def list_documents(
-        self, *, workspace_id: UUID, status: DocumentListStatus
+        self,
+        *,
+        workspace_id: UUID,
+        status: DocumentListStatus,
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[DocumentSummary]:
         lifecycle_filter = (
             Document.archived_at.is_(None)
@@ -29,7 +38,10 @@ class SqlAlchemyDocumentListRepository:
                 func.count(Chunk.id).label("chunk_count"),
                 Document.updated_at,
                 Document.archived_at,
+                KnowledgeBase.id.label("knowledge_base_id"),
+                KnowledgeBase.name.label("knowledge_base_name"),
             )
+            .join(KnowledgeBase, KnowledgeBase.id == Document.knowledge_base_id)
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
             .join(Chunk, Chunk.document_version_id == DocumentVersion.id)
             .where(
@@ -37,9 +49,13 @@ class SqlAlchemyDocumentListRepository:
                 lifecycle_filter,
                 DocumentVersion.is_active.is_(True),
             )
-            .group_by(Document.id, DocumentVersion.id)
+            .group_by(Document.id, DocumentVersion.id, KnowledgeBase.id)
             .order_by(Document.updated_at.desc(), Document.id)
         )
+        if knowledge_base_ids:
+            statement = statement.where(
+                Document.knowledge_base_id.in_(knowledge_base_ids)
+            )
         async with self._session_factory() as session:
             rows = (await session.execute(statement)).all()
 
@@ -53,6 +69,8 @@ class SqlAlchemyDocumentListRepository:
                 chunk_count=row.chunk_count,
                 updated_at=row.updated_at,
                 archived_at=row.archived_at,
+                knowledge_base_id=row.knowledge_base_id,
+                knowledge_base_name=row.knowledge_base_name,
             )
             for row in rows
         ]

@@ -1,9 +1,11 @@
 from typing import Annotated, cast
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from devatlas.api.dependencies.authentication import CurrentWorkspace
+from devatlas.api.routes.knowledge_bases import get_manage_knowledge_bases
 from devatlas.application.answer_documents import (
     AnswerDocuments,
     AnswerDocumentsCommand,
@@ -16,12 +18,14 @@ from devatlas.application.ports.generation import (
     AnswerGeneratorUnavailableError,
     InvalidGeneratedAnswerError,
 )
+from devatlas.application.ports.knowledge_bases import InvalidKnowledgeBaseScopeError
 from devatlas.application.search_documents import InvalidSearchQueryError
 
 
 class AnswerRequest(BaseModel):
     question: str
     limit: int = 5
+    knowledge_base_ids: list[UUID] = Field(default_factory=list)
 
 
 class AnswerCitationResponse(BaseModel):
@@ -64,18 +68,30 @@ AnswerService = Annotated[AnswerDocuments, Depends(get_answer_documents)]
 
 @router.post("", response_model=AnswerResponse)
 async def answer_documents(
-    request: AnswerRequest,
+    payload: AnswerRequest,
+    request: Request,
     service: AnswerService,
     workspace: CurrentWorkspace,
 ) -> AnswerResponse:
     try:
+        scope: tuple[UUID, ...] = ()
+        if payload.knowledge_base_ids:
+            scope = await get_manage_knowledge_bases(request).resolve_scope(
+                workspace.workspace_id, tuple(payload.knowledge_base_ids)
+            )
         result = await service.execute(
             AnswerDocumentsCommand(
-                question=request.question,
+                question=payload.question,
                 workspace_id=workspace.workspace_id,
-                limit=request.limit,
+                limit=payload.limit,
+                knowledge_base_ids=scope,
             )
         )
+    except InvalidKnowledgeBaseScopeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "invalid_knowledge_base_scope", "message": str(error)},
+        ) from error
     except InvalidSearchQueryError as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,

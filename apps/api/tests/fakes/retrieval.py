@@ -20,7 +20,9 @@ class FakeChunkSearchRepository:
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "hybrid",
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[RetrievedChunk]:
+        del knowledge_base_ids
         normalized_embedding = tuple(embedding) if embedding is not None else None
         self.calls.append(
             (workspace_id, query, normalized_embedding, model, limit, strategy)

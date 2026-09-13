@@ -7,6 +7,9 @@ from devatlas.infrastructure.persistence.document_list import (
 from devatlas.infrastructure.persistence.document_versions import (
     SqlAlchemyDocumentVersionRepository,
 )
+from devatlas.infrastructure.persistence.knowledge_bases import (
+    SqlAlchemyKnowledgeBaseRepository,
+)
 from devatlas.infrastructure.persistence.repository import (
     SqlAlchemyDocumentIngestionRepository,
 )
@@ -31,5 +34,6 @@ __all__ = [
     "SqlAlchemyChunkSearchRepository",
     "SqlAlchemyIngestionUnitOfWork",
     "SqlAlchemyIngestionUnitOfWorkFactory",
+    "SqlAlchemyKnowledgeBaseRepository",
     "SqlAlchemyWorkspaceAccessRepository",
 ]

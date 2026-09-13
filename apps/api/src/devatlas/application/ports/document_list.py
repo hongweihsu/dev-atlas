@@ -16,11 +16,17 @@ class DocumentSummary:
     chunk_count: int
     updated_at: datetime
     archived_at: datetime | None
+    knowledge_base_id: UUID = UUID(int=0)
+    knowledge_base_name: str = "General"
 
 
 class DocumentListRepository(Protocol):
     async def list_documents(
-        self, *, workspace_id: UUID, status: DocumentListStatus
+        self,
+        *,
+        workspace_id: UUID,
+        status: DocumentListStatus,
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[DocumentSummary]:
         """Return filtered documents with their current version summaries."""
         ...
