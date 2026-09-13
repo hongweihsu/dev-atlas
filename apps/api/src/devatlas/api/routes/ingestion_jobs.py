@@ -30,10 +30,10 @@ from devatlas.application.ports.ingestion_jobs import (
 )
 from devatlas.application.ports.knowledge_bases import InvalidKnowledgeBaseScopeError
 from devatlas.domain.document_ingestion import (
-    DEFAULT_MAX_TEXT_BYTES,
+    DEFAULT_MAX_UPLOAD_BYTES,
     DocumentValidationCode,
     DocumentValidationError,
-    prepare_text_document,
+    prepare_document,
 )
 
 
@@ -93,7 +93,7 @@ async def submit_ingestion_job(
     knowledge_base_id: Annotated[UUID, Form()],
     title: Annotated[str, Form()] = "",
 ) -> IngestionJobResponse:
-    content = await file.read(DEFAULT_MAX_TEXT_BYTES + 1)
+    content = await file.read(DEFAULT_MAX_UPLOAD_BYTES + 1)
     filename = file.filename or ""
     media_type = file.content_type or ""
     resolved_title = title.strip() or filename.rsplit(".", 1)[0] or "Untitled document"
@@ -106,7 +106,7 @@ async def submit_ingestion_job(
             },
         )
     try:
-        prepare_text_document(
+        prepare_document(
             content=content, source_filename=filename, media_type=media_type
         )
         scope = await get_manage_knowledge_bases(request).resolve_scope(

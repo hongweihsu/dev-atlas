@@ -192,6 +192,14 @@ class Chunk(Base):
             "end_offset - start_offset <= 1000",
             name="ck_chunks_length_within_v1_limit",
         ),
+        CheckConstraint(
+            "page_start IS NULL OR page_start > 0",
+            name="ck_chunks_page_start_positive",
+        ),
+        CheckConstraint(
+            "page_end IS NULL OR page_end >= page_start",
+            name="ck_chunks_page_range_valid",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
@@ -208,6 +216,8 @@ class Chunk(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     start_offset: Mapped[int] = mapped_column(Integer, nullable=False)
     end_offset: Mapped[int] = mapped_column(Integer, nullable=False)
+    page_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    page_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
     embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

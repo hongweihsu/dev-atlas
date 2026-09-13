@@ -169,6 +169,8 @@ class SqlAlchemyDocumentIngestionRepository:
                     text=chunk.text,
                     start_offset=chunk.start_offset,
                     end_offset=chunk.end_offset,
+                    page_start=chunk.page_start,
+                    page_end=chunk.page_end,
                     embedding=list(chunk.embedding),
                 )
                 for chunk in version_record.chunks

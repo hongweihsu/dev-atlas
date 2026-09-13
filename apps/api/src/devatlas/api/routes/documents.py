@@ -40,7 +40,7 @@ from devatlas.application.ports.persistence import (
     DuplicateDocumentContentError,
 )
 from devatlas.domain.document_ingestion import (
-    DEFAULT_MAX_TEXT_BYTES,
+    DEFAULT_MAX_UPLOAD_BYTES,
     DocumentValidationCode,
     DocumentValidationError,
 )
@@ -362,7 +362,7 @@ async def _ingest(
 ) -> IngestDocumentResponse:
     filename = file.filename or ""
     media_type = file.content_type or ""
-    content = await file.read(DEFAULT_MAX_TEXT_BYTES + 1)
+    content = await file.read(DEFAULT_MAX_UPLOAD_BYTES + 1)
     resolved_title = title
     if document_id is None and not title.strip():
         filename_without_path = filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]

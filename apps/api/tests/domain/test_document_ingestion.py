@@ -4,7 +4,10 @@ from devatlas.domain.document_ingestion import (
     DEFAULT_MAX_TEXT_BYTES,
     DocumentValidationCode,
     DocumentValidationError,
+    PageSpan,
     PreparedTextDocument,
+    prepare_document,
+    prepare_pdf_document,
     prepare_text_document,
 )
 from devatlas.domain.text_processing import content_checksum
@@ -117,3 +120,59 @@ def test_prepare_text_document_rejects_invalid_configured_limit() -> None:
 
 def test_default_text_limit_is_one_mebibyte() -> None:
     assert DEFAULT_MAX_TEXT_BYTES == 1_048_576
+
+
+def test_prepare_pdf_document_preserves_one_based_page_spans(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Page:
+        def __init__(self, text: str) -> None:
+            self._text = text
+
+        def extract_text(self) -> str:
+            return self._text
+
+    class Reader:
+        is_encrypted = False
+        pages = [Page(" First page. "), Page("  "), Page("Third page.")]
+
+    monkeypatch.setattr(
+        "devatlas.domain.document_ingestion.PdfReader", lambda _stream: Reader()
+    )
+
+    prepared = prepare_pdf_document(
+        content=b"pdf-bytes",
+        source_filename="guide.pdf",
+        media_type="application/pdf",
+    )
+
+    assert prepared.normalized_text == "First page.\n\nThird page."
+    assert prepared.page_spans == (
+        PageSpan(page_number=1, start_offset=0, end_offset=11),
+        PageSpan(page_number=3, start_offset=13, end_offset=24),
+    )
+
+
+def test_prepare_document_dispatches_pdf_and_rejects_scanned_only_pdf(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class EmptyPage:
+        def extract_text(self) -> str:
+            return ""
+
+    class Reader:
+        is_encrypted = False
+        pages = [EmptyPage()]
+
+    monkeypatch.setattr(
+        "devatlas.domain.document_ingestion.PdfReader", lambda _stream: Reader()
+    )
+
+    with pytest.raises(DocumentValidationError) as captured:
+        prepare_document(
+            content=b"scanned-pdf",
+            source_filename="scan.pdf",
+            media_type="application/pdf",
+        )
+
+    assert captured.value.code is DocumentValidationCode.NO_EXTRACTABLE_TEXT

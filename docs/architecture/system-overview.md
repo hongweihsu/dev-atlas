@@ -41,9 +41,10 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 - **Ingestion worker:** claims queued jobs, invokes the existing ingestion use
   case outside the HTTP process, records attempts and terminal result/error
   provenance, and recognizes an already-committed deterministic document ID.
-- **Domain text processing:** deterministic line-ending normalization,
-  normalized-content fingerprinting, traceable character-based chunks, and
-  bounded UTF-8 plain-text preparation with stable validation codes.
+- **Document extraction:** deterministic text normalization plus package-backed
+  PDF extraction. Text-based PDFs preserve one-based page spans through chunks,
+  search results, and answer citations; encrypted, malformed, and scanned-only
+  PDFs return stable validation errors instead of silently indexing empty text.
 - **Application ports:** provider-independent embedding contract with strict
   batch count, dimension, and finite-value validation. Routine tests use an
   offline deterministic fake.
@@ -59,7 +60,8 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   exits. A PostgreSQL integration test exercises this path against a migrated,
   disposable test database.
 - **Upload API:** `POST /documents` accepts multipart title and file fields,
-  reads at most one byte beyond the 1 MiB domain limit, and maps safe validation
+  reads at most one byte beyond the largest supported limit (10 MiB for PDF;
+  1 MiB for text), and maps safe validation
   failures to stable `413`, `415`, and `422` responses. Tests inject offline
   embedding and persistence adapters. FastAPI lifespan wires the OpenAI and
   SQLAlchemy adapters when `OPENAI_API_KEY` is present; otherwise the endpoint

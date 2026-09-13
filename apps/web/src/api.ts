@@ -125,6 +125,8 @@ export interface AnswerCitation {
   text: string
   start_offset: number
   end_offset: number
+  page_start: number | null
+  page_end: number | null
 }
 
 export interface AnswerResponse {

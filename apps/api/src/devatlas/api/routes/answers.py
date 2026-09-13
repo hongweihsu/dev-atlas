@@ -39,6 +39,8 @@ class AnswerCitationResponse(BaseModel):
     text: str
     start_offset: int
     end_offset: int
+    page_start: int | None
+    page_end: int | None
 
 
 class AnswerResponse(BaseModel):
@@ -133,6 +135,8 @@ async def answer_documents(
                 text=citation.text,
                 start_offset=citation.start_offset,
                 end_offset=citation.end_offset,
+                page_start=citation.page_start,
+                page_end=citation.page_end,
             )
             for citation in result.citations
         ],

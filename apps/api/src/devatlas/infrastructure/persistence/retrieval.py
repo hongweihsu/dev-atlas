@@ -45,6 +45,8 @@ class SqlAlchemyChunkSearchRepository:
                 Chunk.text,
                 Chunk.start_offset,
                 Chunk.end_offset,
+                Chunk.page_start,
+                Chunk.page_end,
                 distance,
             )
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
@@ -82,6 +84,8 @@ class SqlAlchemyChunkSearchRepository:
                 end_offset=row.end_offset,
                 score=1.0 - float(row.cosine_distance),
                 scoring_method="cosine_similarity",
+                page_start=row.page_start,
+                page_end=row.page_end,
             )
             for row in result
         ]
@@ -112,6 +116,8 @@ class SqlAlchemyBm25ChunkSearchRepository:
                 Chunk.text,
                 Chunk.start_offset,
                 Chunk.end_offset,
+                Chunk.page_start,
+                Chunk.page_end,
             )
             .join(DocumentVersion, DocumentVersion.document_id == Document.id)
             .join(Chunk, Chunk.document_version_id == DocumentVersion.id)
@@ -157,6 +163,8 @@ class SqlAlchemyBm25ChunkSearchRepository:
                 end_offset=rows[int(index)].end_offset,
                 score=float(score),
                 scoring_method="bm25",
+                page_start=rows[int(index)].page_start,
+                page_end=rows[int(index)].page_end,
             )
             for index, score in zip(result.documents[0], result.scores[0], strict=True)
             if float(score) > 0.0

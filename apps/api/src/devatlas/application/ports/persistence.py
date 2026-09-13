@@ -13,6 +13,8 @@ class NewChunkRecord:
     start_offset: int
     end_offset: int
     embedding: tuple[float, ...]
+    page_start: int | None = None
+    page_end: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

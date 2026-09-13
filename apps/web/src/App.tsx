@@ -691,7 +691,7 @@ export default function App() {
 
                 <FileDropField
                   inputKey={fileInputKey}
-                  label="Plain-text file"
+                  label="Document file"
                   file={file}
                   onFile={setFile}
                   disabled={!canWrite}
@@ -913,16 +913,16 @@ function FileDropField(props: {
       <input
         key={props.inputKey}
         type="file"
-        accept=".txt,text/plain"
+        accept=".txt,.pdf,text/plain,application/pdf"
         disabled={props.disabled}
         onChange={(event) => props.onFile(event.target.files?.[0] ?? null)}
         required
       />
       <span className="file-field__surface">
         <span className="file-field__icon" aria-hidden="true">↑</span>
-        <span>{props.file ? props.file.name : 'Choose a .txt file'}</span>
+        <span>{props.file ? props.file.name : 'Choose a .txt or .pdf file'}</span>
         <small>
-          {props.file ? 'Ready to upload' : 'or drop it here'} · UTF-8 · maximum 1 MiB
+          {props.file ? 'Ready to upload' : 'or drop it here'} · TXT 1 MiB · PDF 10 MiB
         </small>
       </span>
     </label>
@@ -957,7 +957,12 @@ function Answer({ result }: { result: AnswerResponse }) {
               <summary>
                 <span>{citation.citation_id}</span>
                 <strong>{citation.document_title}</strong>
-                <small>v{citation.version_number} · chunk {citation.ordinal}</small>
+                <small>
+                  v{citation.version_number} · chunk {citation.ordinal}
+                  {citation.page_start !== null && (
+                    <> · page {citation.page_start}{citation.page_end !== citation.page_start ? `–${citation.page_end}` : ''}</>
+                  )}
+                </small>
               </summary>
               <blockquote>{citation.text}</blockquote>
               <p>Characters {citation.start_offset}–{citation.end_offset}</p>

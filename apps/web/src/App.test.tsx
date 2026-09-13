@@ -163,7 +163,7 @@ test('uploads a dropped text document without a custom title', async () => {
   await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
 
   const droppedFile = new File(['source'], 'notes.txt', { type: 'text/plain' })
-  fireEvent.drop(screen.getByText('Choose a .txt file').closest('label')!, {
+  fireEvent.drop(screen.getByText('Choose a .txt or .pdf file').closest('label')!, {
     dataTransfer: { files: [droppedFile] },
   })
   const uploadButton = screen.getByRole('button', { name: 'Index document' })
@@ -172,8 +172,8 @@ test('uploads a dropped text document without a custom title', async () => {
   fireEvent.submit(uploadForm!)
 
   expect(await screen.findByText('Ingestion succeeded')).toBeInTheDocument()
-  expect(screen.getByText('Choose a .txt file')).toBeInTheDocument()
-  expect(screen.getByLabelText(/Plain-text file/)).toHaveValue('')
+  expect(screen.getByText('Choose a .txt or .pdf file')).toBeInTheDocument()
+  expect(screen.getByLabelText(/Document file/)).toHaveValue('')
   const uploadCall = fetchMock.mock.calls.find(
     ([input, init]) => input === '/api/ingestion-jobs' && init?.method === 'POST',
   )
@@ -231,7 +231,7 @@ test('uploads a new version for the document that was just indexed', async () =>
   fireEvent.change(screen.getByLabelText(/Display title/), {
     target: { value: 'Architecture notes' },
   })
-  fireEvent.change(screen.getByLabelText(/Plain-text file/), {
+  fireEvent.change(screen.getByLabelText(/Document file/), {
     target: { files: [new File(['first'], 'notes.txt', { type: 'text/plain' })] },
   })
   const createButton = screen.getByRole('button', { name: 'Index document' })
@@ -337,7 +337,7 @@ test('shows a duplicate-content error when a version is rejected', async () => {
   fireEvent.change(screen.getByLabelText(/Display title/), {
     target: { value: 'Architecture notes' },
   })
-  fireEvent.change(screen.getByLabelText(/Plain-text file/), {
+  fireEvent.change(screen.getByLabelText(/Document file/), {
     target: { files: [new File(['same'], 'notes.txt', { type: 'text/plain' })] },
   })
   const createButton = screen.getByRole('button', { name: 'Index document' })
@@ -573,7 +573,7 @@ test('selects the existing document when a new upload duplicates its content', a
   fireEvent.change(screen.getByLabelText(/Display title/), {
     target: { value: 'A duplicate title' },
   })
-  fireEvent.change(screen.getByLabelText(/Plain-text file/), {
+  fireEvent.change(screen.getByLabelText(/Document file/), {
     target: { files: [new File(['same'], 'duplicate.txt', { type: 'text/plain' })] },
   })
   const uploadButton = screen.getByRole('button', { name: 'Index document' })

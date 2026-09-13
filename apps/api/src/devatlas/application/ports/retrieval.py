@@ -20,6 +20,8 @@ class RetrievedChunk:
     end_offset: int
     score: float
     scoring_method: ScoringMethod
+    page_start: int | None = None
+    page_end: int | None = None
 
 
 class ChunkSearchRepository(Protocol):

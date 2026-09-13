@@ -12,7 +12,7 @@ from devatlas.application.ports.persistence import (
     NewDocumentVersionRecord,
     chunk_embeddings,
 )
-from devatlas.domain.document_ingestion import prepare_text_document
+from devatlas.domain.document_ingestion import PageSpan, prepare_document
 from devatlas.domain.text_processing import chunk_text
 
 
@@ -110,7 +110,7 @@ class IngestNewDocument:
         document_id: UUID,
         title: str,
     ) -> NewDocumentRecord:
-        prepared = prepare_text_document(
+        prepared = prepare_document(
             content=command.content,
             source_filename=command.source_filename,
             media_type=command.media_type,
@@ -150,6 +150,12 @@ class IngestNewDocument:
                         text=chunk.text,
                         start_offset=chunk.start_offset,
                         end_offset=chunk.end_offset,
+                        page_start=_page_for_offset(
+                            prepared.page_spans, chunk.start_offset
+                        ),
+                        page_end=_page_for_offset(
+                            prepared.page_spans, chunk.end_offset - 1
+                        ),
                         embedding=embedding,
                     )
                     for chunk, embedding in zip(
@@ -174,3 +180,10 @@ class IngestNewDocument:
             chunk_count=len(record.version.chunks),
             version_number=version_number,
         )
+
+
+def _page_for_offset(page_spans: tuple[PageSpan, ...], offset: int) -> int | None:
+    for page in page_spans:
+        if page.start_offset <= offset < page.end_offset:
+            return page.page_number
+    return None

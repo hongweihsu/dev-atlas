@@ -30,21 +30,23 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Asynchronous new-document ingestion with PostgreSQL-backed observable job
   state, workspace-scoped idempotency keys, Redis/ARQ dispatch, a separate
   worker, bounded retries, and result/error polling from React
-- Cost-bounded Phase 10 Terraform foundation for Sydney: private S3/CloudFront
-  web delivery, a single ARM EC2 Docker host, CloudFront-only API ingress, SSM
-  administration, encrypted gp3 storage, private backups, and USD 30 budget
-  alerts; validated as a no-apply plan and not yet deployed
+- Cost-bounded Phase 10 AWS deployment in Sydney: private S3/CloudFront web
+  delivery, a single ARM EC2 Docker host, CloudFront-only API ingress, SSM
+  administration, encrypted gp3 storage, private backups, monitoring, and USD
+  30 budget alerts
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
-- A provider-neutral RS256/JWKS verifier can validate externally issued access
-  tokens with pinned issuer, audience, algorithm, expiry, and subject checks
+- Cognito admin-only login uses OAuth Authorization Code + PKCE; a dedicated
+  access-token verifier pins JWKS/RS256, issuer, token use, client ID, expiry,
+  and subject before database membership authorization
 - The React header displays the workspace name and role resolved by the server,
   making the active authorization context visible to the user
 - Viewer sessions enter an explained read-only UI while the API independently
   enforces the same mutation boundary
 - Deterministic text normalization, SHA-256 fingerprinting, and traceable
   character-based chunking
-- Framework-independent validation and preparation for bounded UTF-8 text files
+- Package-backed extraction for bounded UTF-8 text and text-based PDFs, with
+  one-based PDF page provenance carried through chunks, search, and citations
 - Provider-independent new-document ingestion orchestration with an atomic
   persistence boundary and deterministic test doubles
 - Async SQLAlchemy repository and Unit of Work adapters, verified against a

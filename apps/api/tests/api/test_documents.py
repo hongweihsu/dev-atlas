@@ -197,7 +197,7 @@ def test_post_document_duplicate_returns_existing_document_id(
 @pytest.mark.parametrize(
     ("filename", "content", "media_type", "expected_status", "expected_code"),
     [
-        ("notes.pdf", b"text", "application/pdf", 415, "unsupported_type"),
+        ("notes.pdf", b"text", "application/pdf", 422, "invalid_pdf"),
         (
             "notes.txt",
             b"a" * (DEFAULT_MAX_TEXT_BYTES + 1),

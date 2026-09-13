@@ -179,6 +179,8 @@ def test_chunk_model_enforces_provenance_and_embedding_contract() -> None:
         "text",
         "start_offset",
         "end_offset",
+        "page_start",
+        "page_end",
         "embedding",
         "created_at",
     }
@@ -201,6 +203,8 @@ def test_chunk_model_enforces_provenance_and_embedding_contract() -> None:
         "ck_chunks_start_offset_non_negative",
         "ck_chunks_offset_range_valid",
         "ck_chunks_length_within_v1_limit",
+        "ck_chunks_page_start_positive",
+        "ck_chunks_page_range_valid",
     }
 
     foreign_key = next(iter(table.columns.document_version_id.foreign_keys))

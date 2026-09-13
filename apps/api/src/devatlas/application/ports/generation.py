@@ -17,6 +17,8 @@ class EvidenceSource:
     text: str
     start_offset: int
     end_offset: int
+    page_start: int | None = None
+    page_end: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

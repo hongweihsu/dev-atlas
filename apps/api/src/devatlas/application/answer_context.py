@@ -126,6 +126,8 @@ def _to_evidence_source(
         text=chunk.text,
         start_offset=chunk.start_offset,
         end_offset=chunk.end_offset,
+        page_start=chunk.page_start,
+        page_end=chunk.page_end,
     )
 
 
@@ -142,6 +144,8 @@ def _render_context(sources: Sequence[EvidenceSource]) -> str:
                 "ordinal": source.ordinal,
                 "start_offset": source.start_offset,
                 "end_offset": source.end_offset,
+                "page_start": source.page_start,
+                "page_end": source.page_end,
                 "content": source.text,
             }
             for source in sources

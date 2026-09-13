@@ -35,6 +35,8 @@ class SearchChunkResponse(BaseModel):
     text: str
     start_offset: int
     end_offset: int
+    page_start: int | None
+    page_end: int | None
     score: float
     scoring_method: Literal["cosine_similarity", "bm25", "rrf"]
 
@@ -117,6 +119,8 @@ async def search_documents(
                 text=result.text,
                 start_offset=result.start_offset,
                 end_offset=result.end_offset,
+                page_start=result.page_start,
+                page_end=result.page_end,
                 score=result.score,
                 scoring_method=result.scoring_method,
             )
