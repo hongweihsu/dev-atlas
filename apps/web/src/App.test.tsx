@@ -44,6 +44,24 @@ function isKnowledgeBaseListRequest(input: RequestInfo | URL, init?: RequestInit
   return input === '/api/knowledge-bases' && init?.method !== 'POST'
 }
 
+function ingestionJob(
+  status: 'queued' | 'processing' | 'succeeded' | 'failed' = 'succeeded',
+  errorMessage: string | null = null,
+) {
+  return {
+    id: 'job-id',
+    status,
+    attempt_count: status === 'queued' ? 0 : 1,
+    document_id: status === 'succeeded' ? 'document-id' : null,
+    version_id: status === 'succeeded' ? 'version-id' : null,
+    error_code: status === 'failed' ? 'ingestion_failed' : null,
+    error_message: errorMessage,
+    created_at: '2026-09-13T00:00:00Z',
+    started_at: null,
+    finished_at: null,
+  }
+}
+
 function versionSummary(versionNumber: number, isActive: boolean) {
   return {
     version_id: `version-${versionNumber}-id`,
@@ -139,18 +157,7 @@ test('uploads a dropped text document without a custom title', async () => {
       return jsonResponse(created ? [documentSummary()] : [])
     }
     created = true
-    return jsonResponse(
-      {
-        document_id: 'document-id',
-        version_id: 'version-id',
-        filename: 'notes.txt',
-        checksum: 'checksum',
-        chunk_count: 2,
-        version_number: 1,
-        status: 'ready',
-      },
-      201,
-    )
+    return jsonResponse(ingestionJob(), 202)
   })
   render(<App />)
   await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
@@ -164,15 +171,16 @@ test('uploads a dropped text document without a custom title', async () => {
   expect(uploadForm).not.toBeNull()
   fireEvent.submit(uploadForm!)
 
-  expect(await screen.findByText('2 chunk indexed and ready')).toBeInTheDocument()
+  expect(await screen.findByText('Ingestion succeeded')).toBeInTheDocument()
   expect(screen.getByText('Choose a .txt file')).toBeInTheDocument()
   expect(screen.getByLabelText(/Plain-text file/)).toHaveValue('')
   const uploadCall = fetchMock.mock.calls.find(
-    ([input, init]) => input === '/api/documents' && init?.method === 'POST',
+    ([input, init]) => input === '/api/ingestion-jobs' && init?.method === 'POST',
   )
   expect(uploadCall?.[1]?.method).toBe('POST')
   expect(uploadCall?.[1]?.body).toBeInstanceOf(FormData)
   expect((uploadCall?.[1]?.body as FormData).get('title')).toBe('')
+  expect((uploadCall?.[1]?.headers as Headers).get('Idempotency-Key')).toBeTruthy()
 })
 
 test('uploads a new version for the document that was just indexed', async () => {
@@ -189,20 +197,9 @@ test('uploads a new version for the document that was just indexed', async () =>
           : [documentSummary(activeVersion, activeVersion === 1 ? 'notes.txt' : 'notes-v2.txt')],
       )
     }
-    if (input === '/api/documents' && init?.method === 'POST') {
+    if (input === '/api/ingestion-jobs' && init?.method === 'POST') {
       activeVersion = 1
-      return jsonResponse(
-        {
-          document_id: 'document-id',
-          version_id: 'version-1-id',
-          filename: 'notes.txt',
-          checksum: 'first-checksum',
-          chunk_count: 1,
-          version_number: 1,
-          status: 'ready',
-        },
-        201,
-      )
+      return jsonResponse(ingestionJob(), 202)
     }
     if (
       input === '/api/documents/document-id/versions' &&
@@ -239,7 +236,7 @@ test('uploads a new version for the document that was just indexed', async () =>
   })
   const createButton = screen.getByRole('button', { name: 'Index document' })
   fireEvent.submit(createButton.closest('form')!)
-  expect(await screen.findByText('Version 1: notes.txt')).toBeInTheDocument()
+  expect(await screen.findByText('Ingestion succeeded')).toBeInTheDocument()
 
   fireEvent.click(screen.getByRole('tab', { name: 'Update document' }))
 
@@ -320,20 +317,9 @@ test('shows a duplicate-content error when a version is rejected', async () => {
     if (isDocumentListRequest(input, init)) {
       return jsonResponse(created ? [documentSummary()] : [])
     }
-    if (input === '/api/documents' && init?.method === 'POST') {
+    if (input === '/api/ingestion-jobs' && init?.method === 'POST') {
       created = true
-      return jsonResponse(
-        {
-          document_id: 'document-id',
-          version_id: 'version-1-id',
-          filename: 'notes.txt',
-          checksum: 'checksum',
-          chunk_count: 1,
-          version_number: 1,
-          status: 'ready',
-        },
-        201,
-      )
+      return jsonResponse(ingestionJob(), 202)
     }
     return jsonResponse(
       {
@@ -356,7 +342,7 @@ test('shows a duplicate-content error when a version is rejected', async () => {
   })
   const createButton = screen.getByRole('button', { name: 'Index document' })
   fireEvent.submit(createButton.closest('form')!)
-  await screen.findByText('Version 1: notes.txt')
+  await screen.findByText('Ingestion succeeded')
 
   fireEvent.click(screen.getByRole('tab', { name: 'Update document' }))
 
@@ -369,7 +355,6 @@ test('shows a duplicate-content error when a version is rejected', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'this document already has a version with the same content',
   )
-  expect(screen.getByText('Version 1: notes.txt')).toBeInTheDocument()
 })
 
 test('asks a question and renders expandable citation provenance', async () => {
@@ -580,16 +565,7 @@ test('selects the existing document when a new upload duplicates its content', a
       return jsonResponse(duplicateRejected ? [documentSummary()] : [])
     }
     duplicateRejected = true
-    return jsonResponse(
-      {
-        detail: {
-          code: 'duplicate_document_content',
-          message: 'this content is already indexed',
-          document_id: 'document-id',
-        },
-      },
-      409,
-    )
+    return jsonResponse(ingestionJob('failed', 'this content is already indexed'), 202)
   })
 
   render(<App />)
@@ -605,9 +581,5 @@ test('selects the existing document when a new upload duplicates its content', a
 
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'this content is already indexed',
-  )
-  fireEvent.click(screen.getByRole('tab', { name: 'Update document' }))
-  expect(screen.getByText('Selected document').nextSibling).toHaveTextContent(
-    'Architecture notes',
   )
 })

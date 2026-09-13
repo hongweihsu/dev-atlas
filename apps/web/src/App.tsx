@@ -6,6 +6,7 @@ import {
   DocumentSummary,
   DocumentVersionSummary,
   IngestDocumentResponse,
+  IngestionJob,
   KnowledgeBaseSummary,
   SessionResponse,
   activateDocumentVersion,
@@ -14,12 +15,13 @@ import {
   checkHealth,
   createDevelopmentSession,
   createKnowledgeBase,
+  getIngestionJob,
   getSession,
   listDocuments,
   listKnowledgeBases,
   listDocumentVersions,
   restoreDocument,
-  uploadDocument,
+  submitIngestionJob,
   uploadDocumentVersion,
 } from './api'
 
@@ -37,6 +39,7 @@ export default function App() {
   const [fileInputKey, setFileInputKey] = useState(0)
   const [uploadState, setUploadState] = useState<RequestState>('idle')
   const [uploadResult, setUploadResult] = useState<IngestDocumentResponse | null>(null)
+  const [ingestionJob, setIngestionJob] = useState<IngestionJob | null>(null)
   const [uploadError, setUploadError] = useState('')
   const [documentList, setDocumentList] = useState<DocumentSummary[]>([])
   const [documentListError, setDocumentListError] = useState('')
@@ -134,10 +137,34 @@ export default function App() {
     setUploadState('submitting')
     setUploadError('')
     setUploadResult(null)
+    setIngestionJob(null)
     try {
-      const result = await uploadDocument(file, title.trim(), uploadKnowledgeBaseId)
-      setUploadResult(result)
-      await refreshDocuments(result.document_id)
+      let job = await submitIngestionJob(
+        file,
+        title.trim(),
+        uploadKnowledgeBaseId,
+        crypto.randomUUID(),
+      )
+      setIngestionJob(job)
+      for (
+        let pollCount = 0;
+        pollCount < 80 &&
+        (job.status === 'queued' || job.status === 'processing');
+        pollCount += 1
+      ) {
+        await new Promise((resolve) => window.setTimeout(resolve, 750))
+        job = await getIngestionJob(job.id)
+        setIngestionJob(job)
+      }
+      if (job.status === 'queued' || job.status === 'processing') {
+        throw new Error(
+          `Ingestion is still running. Job ${job.id} can be checked again later.`,
+        )
+      }
+      if (job.status === 'failed') {
+        throw new Error(job.error_message ?? 'Background ingestion failed')
+      }
+      await refreshDocuments(job.document_id ?? undefined)
       setFile(null)
       setFileInputKey((current) => current + 1)
       setVersionFile(null)
@@ -645,6 +672,12 @@ export default function App() {
                 </button>
               </form>
               {uploadResult && <UploadSuccess result={uploadResult} />}
+              {ingestionJob && (
+                <div className={`notice notice--${ingestionJob.status === 'failed' ? 'error' : 'success'}`} role="status">
+                  <strong>Ingestion {ingestionJob.status}</strong>
+                  <span>Attempt {ingestionJob.attempt_count} · Job {ingestionJob.id}</span>
+                </div>
+              )}
               {uploadError && (
                 <p className="notice notice--error" role="alert">{uploadError}</p>
               )}

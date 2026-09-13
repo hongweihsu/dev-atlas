@@ -73,9 +73,10 @@ class VectorStub:
         model: str,
         limit: int,
         strategy: RetrievalStrategy = "hybrid",
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[RetrievedChunk]:
         assert embedding is not None
-        del workspace_id
+        del workspace_id, knowledge_base_ids
         self.calls.append((query, tuple(embedding), model, limit))
         return self.results[:limit]
 
@@ -86,9 +87,14 @@ class LexicalStub:
         self.calls: list[tuple[str, int]] = []
 
     async def search(
-        self, query: str, *, workspace_id: UUID, limit: int
+        self,
+        query: str,
+        *,
+        workspace_id: UUID,
+        limit: int,
+        knowledge_base_ids: tuple[UUID, ...] = (),
     ) -> list[RetrievedChunk]:
-        del workspace_id
+        del workspace_id, knowledge_base_ids
         self.calls.append((query, limit))
         return self.results[:limit]
 

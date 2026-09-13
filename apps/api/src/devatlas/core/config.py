@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     app_name: str = "DevAtlas API"
     database_url: str = "postgresql+asyncpg://devatlas:devatlas@localhost:5432/devatlas"
+    redis_url: str = "redis://localhost:6379/0"
     cors_origins: list[str] = ["http://localhost:5173"]
     openai_api_key: SecretStr | None = None
     embedding_model: str = "text-embedding-3-small"

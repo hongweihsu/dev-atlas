@@ -11,3 +11,4 @@ of every library choice.
 - [ADR-003: Version documents explicitly](003-document-versioning.md)
 - [ADR-005: Reversible document archival](005-reversible-document-archival.md)
 - [ADR-006: KnowledgeBase search scope](006-knowledge-base-search-scope.md)
+- [ADR-007: PostgreSQL-backed ARQ ingestion jobs](007-postgresql-backed-arq-ingestion-jobs.md)

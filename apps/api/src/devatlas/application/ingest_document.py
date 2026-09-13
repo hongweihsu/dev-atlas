@@ -23,6 +23,7 @@ class IngestNewDocumentCommand:
     media_type: str
     content: bytes
     knowledge_base_id: UUID | None = None
+    document_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,7 +66,7 @@ class IngestNewDocument:
         if len(title) > 255:
             raise InvalidDocumentTitleError("title must not exceed 255 characters")
 
-        document_id = uuid4()
+        document_id = command.document_id or uuid4()
         record = await self._prepare_record(
             command,
             document_id=document_id,

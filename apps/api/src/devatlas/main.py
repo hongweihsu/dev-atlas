@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from arq.connections import RedisSettings, create_pool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from openai import AsyncOpenAI
@@ -12,6 +13,7 @@ from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
 from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
 from devatlas.application.manage_document_versions import ManageDocumentVersions
+from devatlas.application.manage_ingestion_jobs import ManageIngestionJobs
 from devatlas.application.manage_knowledge_bases import ManageKnowledgeBases
 from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
@@ -33,10 +35,12 @@ from devatlas.infrastructure.persistence import (
     SqlAlchemyDocumentLifecycleRepository,
     SqlAlchemyDocumentListRepository,
     SqlAlchemyDocumentVersionRepository,
+    SqlAlchemyIngestionJobRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
     SqlAlchemyKnowledgeBaseRepository,
     SqlAlchemyWorkspaceAccessRepository,
 )
+from devatlas.infrastructure.queue import ArqIngestionQueue
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -46,6 +50,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         engine = create_database_engine(app_settings.database_url)
         session_factory = create_session_factory(engine)
+        redis = await create_pool(RedisSettings.from_dsn(app_settings.redis_url))
+        application.state.manage_ingestion_jobs = ManageIngestionJobs(
+            repository=SqlAlchemyIngestionJobRepository(session_factory),
+            queue=ArqIngestionQueue(redis),
+        )
         application.state.list_documents = ListDocuments(
             SqlAlchemyDocumentListRepository(session_factory)
         )
@@ -118,6 +127,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             yield
         finally:
             del application.state.list_documents
+            del application.state.manage_ingestion_jobs
             del application.state.manage_knowledge_bases
             del application.state.manage_document_lifecycle
             del application.state.manage_document_versions
@@ -134,6 +144,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 del application.state.search_documents
                 del application.state.ingest_new_document
                 await client.close()
+            await redis.aclose()
             await engine.dispose()
 
     application = FastAPI(

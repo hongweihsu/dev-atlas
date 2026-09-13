@@ -87,6 +87,19 @@ export interface KnowledgeBaseSummary {
   document_count: number
 }
 
+export interface IngestionJob {
+  id: string
+  status: 'queued' | 'processing' | 'succeeded' | 'failed'
+  attempt_count: number
+  document_id: string | null
+  version_id: string | null
+  error_code: string | null
+  error_message: string | null
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+}
+
 export interface DocumentVersionSummary {
   version_id: string
   version_number: number
@@ -185,6 +198,29 @@ export async function uploadDocument(
   return parseResponse(
     await authorizedFetch('/api/documents', { method: 'POST', body }),
   )
+}
+
+export async function submitIngestionJob(
+  file: File,
+  title: string,
+  knowledgeBaseId: string,
+  idempotencyKey: string,
+): Promise<IngestionJob> {
+  const body = new FormData()
+  body.append('title', title)
+  body.append('knowledge_base_id', knowledgeBaseId)
+  body.append('file', file)
+  return parseResponse(
+    await authorizedFetch('/api/ingestion-jobs', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body,
+    }),
+  )
+}
+
+export async function getIngestionJob(jobId: string): Promise<IngestionJob> {
+  return parseResponse(await authorizedFetch(`/api/ingestion-jobs/${jobId}`))
 }
 
 export async function listDocuments(

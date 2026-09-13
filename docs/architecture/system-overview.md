@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 1 document-ingestion and grounded-answer vertical slice. This document
+Phase 9 permission-aware retrieval and asynchronous ingestion. This document
 distinguishes implemented components from planned architecture.
 
 ## Implemented runtime
@@ -16,13 +16,13 @@ React + Vite
   |
   | GET /health (JSON)
   v
-FastAPI
-  |
-  | async PostgreSQL connection
+FastAPI ------------------> PostgreSQL + pgvector
+  |                         job state + documents
   v
-PostgreSQL + pgvector
-  |
-  +-- Document -> DocumentVersion -> Chunk schema
+Redis / ARQ queue -------> ingestion worker
+                            |
+                            +----> OpenAI embeddings
+                            +----> PostgreSQL transaction
 ```
 
 Docker Compose runs one service for each boundary and gives them a private
@@ -36,6 +36,11 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 - **API:** HTTP contracts and the application/domain boundary.
 - **Database:** durable document/version/chunk metadata and vector storage.
 - **Alembic:** explicit, reviewable database schema evolution.
+- **Redis/ARQ:** lightweight dispatch and bounded retry scheduling; Redis does
+  not replace durable PostgreSQL job state.
+- **Ingestion worker:** claims queued jobs, invokes the existing ingestion use
+  case outside the HTTP process, records attempts and terminal result/error
+  provenance, and recognizes an already-committed deterministic document ID.
 - **Domain text processing:** deterministic line-ending normalization,
   normalized-content fingerprinting, traceable character-based chunks, and
   bounded UTF-8 plain-text preparation with stable validation codes.
@@ -112,5 +117,5 @@ unauthorized content must never enter model context.
 
 ## Planned evolution
 
-The planned system adds measured hybrid retrieval, workspace authorization,
-asynchronous workers, and cloud infrastructure in later phases.
+The planned system adds cloud infrastructure, additional content loaders,
+bounded agent workflows, and production observability in later phases.

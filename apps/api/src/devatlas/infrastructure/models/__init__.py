@@ -8,6 +8,7 @@ from devatlas.infrastructure.models.identity import (
     Workspace,
     WorkspaceMembership,
 )
+from devatlas.infrastructure.models.ingestion_job import IngestionJob
 
 __all__ = [
     "Base",
@@ -15,6 +16,7 @@ __all__ = [
     "Document",
     "DocumentVersion",
     "KnowledgeBase",
+    "IngestionJob",
     "User",
     "Workspace",
     "WorkspaceMembership",

@@ -27,6 +27,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Authorized KnowledgeBase management and selection across uploads, document
   lists, hybrid search, and grounded answers; one query can globally rank chunks
   from multiple selected bases while rejecting any cross-workspace scope ID
+- Asynchronous new-document ingestion with PostgreSQL-backed observable job
+  state, workspace-scoped idempotency keys, Redis/ARQ dispatch, a separate
+  worker, bounded retries, and result/error polling from React
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - A provider-neutral RS256/JWKS verifier can validate externally issued access
@@ -89,7 +92,7 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 
 - Persistent or cached lexical indexing when its measured review gate is reached
 - External OIDC login UX
-- Asynchronous ingestion and AWS deployment
+- AWS deployment and operational recovery automation
 - Multimodal document understanding and bounded research workflows
 
 Planned capabilities are not implemented or benchmarked yet.
@@ -101,7 +104,8 @@ Browser
   | HTTP / JSON
   v
 React + Vite  --->  FastAPI  --->  PostgreSQL + pgvector
-   web               api             database
+   web               api        \       database
+                                Redis ---> ARQ worker
 ```
 
 The browser calls the API; the API owns access to persistent data. During local
@@ -161,7 +165,9 @@ pnpm build
 Copy `.env.example` to `.env` for local defaults. `.env` is ignored by Git.
 Production credentials must be supplied through an appropriate secrets system;
 the example values are development-only. Set `OPENAI_API_KEY` to enable live
-document ingestion; leave it empty to keep the endpoint safely unavailable.
+document ingestion; leave it empty to keep the embedding-backed worker safely
+unavailable. `REDIS_URL` configures async job dispatch and defaults to the local
+Compose Redis service.
 Docker Compose enables a local development-session issuer by default. That
 issuer uses an in-memory browser token and a development signing secret; disable
 `AUTH_DEVELOPMENT_MODE` and configure a production identity adapter before any
@@ -171,19 +177,25 @@ unset.
 
 ## Future direction
 
-The current milestone is completed Phase 8 authorized search scope. Phase 9
-adds asynchronous ingestion; production identity-provider UX and cloud
-deployment follow in later milestones.
+The current milestone is completed Phase 9 asynchronous new-document
+ingestion. Phase 10 adds AWS deployment; production identity-provider UX and
+additional document loaders follow in later milestones.
 
 ## Limitations
 
-- Local token issuance is development-only; external login UX, membership
-  administration, and background ingestion do not exist yet. The
+- Local token issuance is development-only; external login UX and membership
+  administration do not exist yet. The
   hybrid comparison covers only five controlled documents and must not be
   interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Re-ingestion currently embeds content before transactional duplicate
   detection, so a rejected duplicate may still incur embedding usage.
+- Replacement-version ingestion remains synchronous. A queued job that is
+  committed while Redis dispatch is unavailable requires an identical client
+  retry; an automatic transactional-outbox recovery sweep is not implemented.
+- New-job payload bytes are stored temporarily in PostgreSQL and cleared at a
+  terminal state; production-scale object storage and retention cleanup remain
+  future work.
 - The health endpoint currently reports API liveness, not database readiness.
 - BM25 currently rebuilds an in-memory active-chunk index per search; its
   performance has not yet been benchmarked at representative corpus sizes.

@@ -71,6 +71,32 @@ async def test_ingest_new_document_commits_complete_version_one() -> None:
 
 
 @pytest.mark.asyncio
+async def test_ingest_new_document_uses_supplied_document_id() -> None:
+    factory = FakeIngestionUnitOfWorkFactory()
+    use_case = IngestNewDocument(
+        embedding_provider=DeterministicEmbeddingProvider(dimension=8),
+        unit_of_work_factory=factory,
+        expected_embedding_dimension=8,
+    )
+    intended_document_id = uuid4()
+    command = make_command()
+
+    result = await use_case.execute(
+        WORKSPACE_ID,
+        IngestNewDocumentCommand(
+            title=command.title,
+            source_filename=command.source_filename,
+            media_type=command.media_type,
+            content=command.content,
+            document_id=intended_document_id,
+        ),
+    )
+
+    assert result.document_id == intended_document_id
+    assert factory.committed_documents[0].id == intended_document_id
+
+
+@pytest.mark.asyncio
 async def test_ingest_new_document_rolls_back_failed_commit() -> None:
     factory = FakeIngestionUnitOfWorkFactory(fail_on_commit=True)
     use_case = IngestNewDocument(
