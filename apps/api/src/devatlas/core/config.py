@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     auth_jwks_url: str | None = None
     auth_jwt_issuer: str = "devatlas-local"
     auth_jwt_audience: str = "devatlas-api"
+    auth_cognito_client_id: str | None = None
     auth_development_mode: bool = False
 
     @field_validator("openai_api_key", mode="before")
@@ -54,6 +55,8 @@ class Settings(BaseSettings):
             "https://"
         ):
             raise ValueError("auth_jwks_url must use HTTPS")
+        if self.auth_cognito_client_id is not None and self.auth_jwks_url is None:
+            raise ValueError("auth_cognito_client_id requires auth_jwks_url")
         return self
 
 

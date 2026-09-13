@@ -3,6 +3,39 @@
 This runbook describes the implemented Phase 10 deployment tooling. Commands
 that mutate AWS or restore data require a separate operator decision.
 
+## Deployment order
+
+After reviewing and explicitly approving the saved Terraform plan:
+
+1. Apply the exact saved plan and confirm the SNS subscription email.
+2. Export a newly rotated `OPENAI_API_KEY` locally and run
+   `infra/aws/runtime/configure-parameters.sh`. On its first run it generates a
+   random database password; later runs reuse that value. Secrets are stored as
+   SSM `SecureString` values.
+3. Connect through Session Manager and run `deploy.sh` on EC2.
+4. Create the sole Cognito user with `aws cognito-idp admin-create-user`.
+5. Read its immutable Cognito `sub`, then run `scripts/provision_identity.py`
+   inside the `migrate` container to grant an explicit workspace role.
+6. Run `deploy-web.sh` locally. It builds with Cognito's Terraform outputs,
+   syncs the private S3 origin, and invalidates CloudFront.
+
+Creating a Cognito user alone is intentionally insufficient. Provisioning links
+the verified `(issuer, sub)` to a database workspace; rerunning it updates the
+same user and membership instead of creating duplicates.
+
+Example identity provisioning on EC2:
+
+```bash
+cd /opt/devatlas/infra/aws/runtime
+docker compose --env-file .env -f compose.yml run --rm migrate \
+  python scripts/provision_identity.py \
+  --issuer "$AUTH_JWT_ISSUER" \
+  --subject "COGNITO_SUB_FROM_ADMIN_GET_USER" \
+  --email "OWNER_EMAIL" \
+  --display-name "DevAtlas Owner" \
+  --role owner
+```
+
 ## Deploy or update the application
 
 On the EC2 instance, connect through Systems Manager Session Manager and run:
@@ -27,6 +60,9 @@ systemctl status devatlas-backup.timer
 ```
 
 No PostgreSQL or Redis port is published by the production Compose file.
+The React application uses Authorization Code with PKCE and keeps OIDC state in
+session storage. Local development stays on the explicit development-session
+endpoint unless the hosted `VITE_COGNITO_*` values are supplied.
 
 ## Backup
 

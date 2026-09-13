@@ -19,6 +19,7 @@ from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
 from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.authentication import (
+    CognitoAccessTokenVerifier,
     DevelopmentSessionIssuer,
     OidcJwksTokenVerifier,
     PyJwtTokenVerifier,
@@ -86,11 +87,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     workspace_id=LEGACY_WORKSPACE_ID,
                 )
         elif app_settings.auth_jwks_url is not None:
-            application.state.token_verifier = OidcJwksTokenVerifier(
-                jwks_url=app_settings.auth_jwks_url,
-                issuer=app_settings.auth_jwt_issuer,
-                audience=app_settings.auth_jwt_audience,
-            )
+            if app_settings.auth_cognito_client_id is not None:
+                application.state.token_verifier = CognitoAccessTokenVerifier(
+                    jwks_url=app_settings.auth_jwks_url,
+                    issuer=app_settings.auth_jwt_issuer,
+                    client_id=app_settings.auth_cognito_client_id,
+                )
+            else:
+                application.state.token_verifier = OidcJwksTokenVerifier(
+                    jwks_url=app_settings.auth_jwks_url,
+                    issuer=app_settings.auth_jwt_issuer,
+                    audience=app_settings.auth_jwt_audience,
+                )
         client: AsyncOpenAI | None = None
         if app_settings.openai_api_key is not None:
             client = AsyncOpenAI(

@@ -24,15 +24,24 @@ import {
   submitIngestionJob,
   uploadDocumentVersion,
 } from './api'
+import {
+  restoreHostedSession,
+  signIn,
+  signOut,
+  usesHostedAuthentication,
+} from './auth'
 
 type ApiState = 'checking' | 'healthy' | 'unavailable'
 type RequestState = 'idle' | 'submitting' | 'success' | 'error'
 type DocumentSort = 'updated' | 'name'
 type DocumentView = 'active' | 'archived'
 type UploadTab = 'add' | 'update'
+type AuthenticationState = 'checking' | 'signed-in' | 'signed-out'
 
 export default function App() {
   const [apiState, setApiState] = useState<ApiState>('checking')
+  const [authenticationState, setAuthenticationState] =
+    useState<AuthenticationState>('checking')
   const [session, setSession] = useState<SessionResponse | null>(null)
   const [title, setTitle] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -74,8 +83,18 @@ export default function App() {
     const controller = new AbortController()
     void checkHealth(controller.signal)
       .then(async () => {
-        await createDevelopmentSession()
+        if (usesHostedAuthentication) {
+          const restored = await restoreHostedSession()
+          if (!restored) {
+            setAuthenticationState('signed-out')
+            setApiState('healthy')
+            return
+          }
+        } else {
+          await createDevelopmentSession()
+        }
         setSession(await getSession())
+        setAuthenticationState('signed-in')
         setApiState('healthy')
         try {
           const loadedKnowledgeBases = await listKnowledgeBases()
@@ -107,8 +126,14 @@ export default function App() {
     setApiState('checking')
     try {
       await checkHealth()
-      await createDevelopmentSession()
+      if (usesHostedAuthentication && !(await restoreHostedSession())) {
+        setAuthenticationState('signed-out')
+        setApiState('healthy')
+        return
+      }
+      if (!usesHostedAuthentication) await createDevelopmentSession()
       setSession(await getSession())
+      setAuthenticationState('signed-in')
       setApiState('healthy')
       await refreshDocuments()
     } catch {
@@ -398,6 +423,9 @@ export default function App() {
           <div className="session-context" aria-label="Current workspace and role">
             <span>{session.workspace_name}</span>
             <strong>{session.role}</strong>
+            {usesHostedAuthentication && (
+              <button type="button" onClick={() => void signOut()}>Sign out</button>
+            )}
           </div>
         )}
       </header>
@@ -414,6 +442,16 @@ export default function App() {
         </div>
       )}
 
+      {apiState === 'healthy' && authenticationState === 'signed-out' && (
+        <div className="service-banner service-banner--auth" role="status">
+          <div>
+            <strong>Sign in to your private workspace</strong>
+            <span>Access is limited to accounts invited by the administrator.</span>
+          </div>
+          <button type="button" onClick={() => void signIn()}>Sign in</button>
+        </div>
+      )}
+
       <section className="hero" id="top" aria-labelledby="title">
         <p className="eyebrow">Grounded technical research</p>
         <h1 id="title">
@@ -427,7 +465,7 @@ export default function App() {
         </p>
       </section>
 
-      <section className="workspace" aria-label="Document research workspace">
+      {authenticationState === 'signed-in' && <section className="workspace" aria-label="Document research workspace">
         <article className="panel panel--upload">
           <PanelHeading step="01" kicker="Knowledge source" title="Index a document" />
           <section className="knowledge-bases" aria-labelledby="knowledge-bases-title">
@@ -824,7 +862,7 @@ export default function App() {
           )}
           {answerResult && <Answer result={answerResult} />}
         </article>
-      </section>
+      </section>}
 
       <footer>Single-user learning build · Answers are limited to indexed evidence</footer>
     </main>

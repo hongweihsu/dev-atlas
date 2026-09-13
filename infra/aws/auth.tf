@@ -1,0 +1,51 @@
+resource "aws_cognito_user_pool" "app" {
+  name = local.name
+
+  username_attributes      = ["email"]
+  auto_verified_attributes = ["email"]
+
+  admin_create_user_config {
+    allow_admin_create_user_only = true
+  }
+
+  password_policy {
+    minimum_length                   = 12
+    require_lowercase                = true
+    require_numbers                  = true
+    require_symbols                  = true
+    require_uppercase                = true
+    temporary_password_validity_days = 7
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_cognito_user_pool_domain" "app" {
+  domain       = "${local.name}-${data.aws_caller_identity.current.account_id}"
+  user_pool_id = aws_cognito_user_pool.app.id
+}
+
+resource "aws_cognito_user_pool_client" "web" {
+  name         = "${local.name}-web"
+  user_pool_id = aws_cognito_user_pool.app.id
+
+  generate_secret                      = false
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
+  supported_identity_providers         = ["COGNITO"]
+  callback_urls                        = ["https://${aws_cloudfront_distribution.app.domain_name}/auth/callback"]
+  logout_urls                          = ["https://${aws_cloudfront_distribution.app.domain_name}/"]
+
+  access_token_validity  = 60
+  id_token_validity      = 60
+  refresh_token_validity = 7
+
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
+
+  prevent_user_existence_errors = "ENABLED"
+}

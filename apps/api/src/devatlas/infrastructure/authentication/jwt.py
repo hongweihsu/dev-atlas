@@ -76,3 +76,50 @@ class OidcJwksTokenVerifier:
         if not isinstance(subject, str) or not subject:
             raise InvalidCredentialError("bearer token subject is invalid")
         return AuthenticatedPrincipal(issuer=self._issuer, subject=subject)
+
+
+class CognitoAccessTokenVerifier:
+    """Verify Cognito access tokens, whose client binding is `client_id`."""
+
+    def __init__(
+        self,
+        *,
+        jwks_url: str,
+        issuer: str,
+        client_id: str,
+        jwks_client: PyJWKClient | None = None,
+    ) -> None:
+        if not jwks_url.startswith("https://"):
+            raise ValueError("Cognito JWKS URL must use HTTPS")
+        if not client_id:
+            raise ValueError("Cognito client ID must not be empty")
+        self._jwks_client = jwks_client or PyJWKClient(jwks_url)
+        self._issuer = issuer
+        self._client_id = client_id
+
+    def verify(self, token: str) -> AuthenticatedPrincipal:
+        try:
+            signing_key: PyJWK = self._jwks_client.get_signing_key_from_jwt(token)
+            claims = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["RS256"],
+                issuer=self._issuer,
+                options={
+                    "verify_aud": False,
+                    "require": ["client_id", "exp", "iss", "sub", "token_use"],
+                },
+            )
+        except PyJWTError as error:
+            raise InvalidCredentialError(
+                "bearer token is invalid or expired"
+            ) from error
+
+        if claims.get("token_use") != "access":
+            raise InvalidCredentialError("bearer token is not an access token")
+        if claims.get("client_id") != self._client_id:
+            raise InvalidCredentialError("bearer token client is invalid")
+        subject = claims.get("sub")
+        if not isinstance(subject, str) or not subject:
+            raise InvalidCredentialError("bearer token subject is invalid")
+        return AuthenticatedPrincipal(issuer=self._issuer, subject=subject)
