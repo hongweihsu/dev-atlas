@@ -60,3 +60,17 @@ notification control, not a guaranteed resource kill switch.
   Application Load Balancer.
 - The public EC2 subnet avoids a NAT Gateway. Security groups deny arbitrary
   inbound traffic, but outbound model-provider access remains allowed.
+
+## Runtime and recovery implementation
+
+The production Compose definition does not mount source code or expose database
+ports. It enables Redis AOF persistence, waits for PostgreSQL/Redis health,
+runs Alembic as a deployment gate, and starts Uvicorn without development
+reload. EC2 reads runtime secrets from `/devatlas/demo` in SSM through its
+instance role.
+
+A daily systemd timer creates a PostgreSQL custom-format dump and uploads it to
+the private backup bucket. Restore requires an exact object URI and explicit
+`CONFIRM_RESTORE=yes`, stops API and worker, validates the archive, restores,
+reapplies migrations, and restarts the services. These procedures remain
+unverified until a disposable AWS restore rehearsal succeeds.

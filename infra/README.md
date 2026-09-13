@@ -37,6 +37,7 @@ settings will be written to SSM separately and never committed.
 
 - One EC2 instance is a documented single point of failure.
 - PostgreSQL and Redis are not managed services.
-- Application rollout, backups, restore rehearsal, Cognito, monitoring, and
-  scheduled shutdown remain Phase 10 follow-up slices.
+- Production Compose and backup/restore tooling are implemented but not yet
+  exercised on AWS. Cognito, monitoring, and scheduled shutdown remain Phase 10
+  follow-up slices.
 - A budget sends alerts; it is not a guaranteed kill switch.

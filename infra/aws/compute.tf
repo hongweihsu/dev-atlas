@@ -2,6 +2,8 @@ data "aws_ssm_parameter" "amazon_linux_arm64" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_instance" "app" {
   ami                    = data.aws_ssm_parameter.amazon_linux_arm64.value
   instance_type          = var.instance_type
