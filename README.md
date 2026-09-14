@@ -37,6 +37,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Bounded Phase 12 conversation memory with a LangGraph
   load-history → contextualize → answer → persist workflow, PostgreSQL-backed
   turn history, workspace/user ownership, and reloadable citation snapshots
+- Phase 13 bounded tool calling through the OpenAI Responses API: a strict,
+  read-only KnowledgeBase metadata tool receives server-injected workspace
+  identity, enforces a one-call budget, and exposes its execution trace in React
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - Cognito admin-only login uses OAuth Authorization Code + PKCE; a dedicated
@@ -84,6 +87,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   source/version/chunk provenance; verified through one controlled live query
 - Bounded grounded-answer generation through `POST /answers`, with citations
   mapped back to document versions, chunks, source text, and character offsets
+- Typed `POST /workspace-questions` answers live workspace-metadata questions
+  through an authorized function tool rather than document retrieval
 - React document workspace for text upload, persistent document selection,
   drag-and-drop input, tabbed create/version forms, consecutive version
   replacement, questions, answer sufficiency, and expandable citation provenance

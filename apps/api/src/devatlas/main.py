@@ -8,6 +8,7 @@ from openai import AsyncOpenAI
 
 from devatlas.api.router import api_router
 from devatlas.application.answer_documents import AnswerDocuments
+from devatlas.application.answer_workspace_question import AnswerWorkspaceQuestion
 from devatlas.application.hybrid_retrieval import HybridChunkSearchRepository
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
@@ -33,6 +34,7 @@ from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
 from devatlas.infrastructure.generation import (
     OpenAIAnswerGenerator,
     OpenAIQuestionContextualizer,
+    OpenAIWorkspaceQuestionAnswerer,
 )
 from devatlas.infrastructure.persistence import (
     SqlAlchemyBm25ChunkSearchRepository,
@@ -64,9 +66,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.list_documents = ListDocuments(
             SqlAlchemyDocumentListRepository(session_factory)
         )
-        application.state.manage_knowledge_bases = ManageKnowledgeBases(
+        manage_knowledge_bases = ManageKnowledgeBases(
             SqlAlchemyKnowledgeBaseRepository(session_factory)
         )
+        application.state.manage_knowledge_bases = manage_knowledge_bases
         application.state.manage_document_lifecycle = ManageDocumentLifecycle(
             SqlAlchemyDocumentLifecycleRepository(session_factory)
         )
@@ -144,6 +147,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 ),
                 answer_documents=answer_documents,
             )
+            application.state.answer_workspace_question = AnswerWorkspaceQuestion(
+                OpenAIWorkspaceQuestionAnswerer(
+                    client,
+                    manage_knowledge_bases,
+                    model=app_settings.answer_model,
+                )
+            )
         try:
             yield
         finally:
@@ -161,6 +171,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if app_settings.auth_development_mode:
                     del application.state.development_session_issuer
             if client is not None:
+                del application.state.answer_workspace_question
                 del application.state.manage_conversations
                 del application.state.answer_documents
                 del application.state.search_documents

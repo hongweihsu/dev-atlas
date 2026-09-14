@@ -151,6 +151,11 @@ export interface ConversationTurn extends AnswerResponse {
   created_at: string
 }
 
+export interface WorkspaceQuestionResponse {
+  answer: string
+  tools: { name: string }[]
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>
 
@@ -372,6 +377,18 @@ export async function askConversation(
         limit: 5,
         knowledge_base_ids: knowledgeBaseIds,
       }),
+    }),
+  )
+}
+
+export async function askWorkspaceQuestion(
+  question: string,
+): Promise<WorkspaceQuestionResponse> {
+  return parseResponse(
+    await authorizedFetch('/api/workspace-questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
     }),
   )
 }

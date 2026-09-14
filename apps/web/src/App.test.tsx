@@ -422,6 +422,45 @@ test('asks a question and renders expandable citation provenance', async () => {
   })
 })
 
+test('asks a workspace question and shows the executed tool', async () => {
+  const fetchMock = vi
+    .spyOn(globalThis, 'fetch')
+    .mockImplementation(async (input, init) => {
+      if (input === '/api/health') {
+        return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      }
+      if (isKnowledgeBaseListRequest(input, init)) {
+        return jsonResponse(knowledgeBases)
+      }
+      if (input === '/api/workspace-questions') {
+        return jsonResponse({
+          answer: 'General has one document.',
+          tools: [{ name: 'list_knowledge_bases' }],
+        })
+      }
+      return jsonResponse([])
+    })
+
+  render(<App />)
+  await waitFor(() =>
+    expect(screen.queryByText('Connecting…')).not.toBeInTheDocument(),
+  )
+
+  fireEvent.change(screen.getByLabelText('Workspace question'), {
+    target: { value: 'Which knowledge base has the most documents?' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Ask workspace' }))
+
+  expect(await screen.findByText('General has one document.')).toBeInTheDocument()
+  expect(screen.getByText('Tool used: list_knowledge_bases')).toBeInTheDocument()
+  const request = fetchMock.mock.calls.find(
+    ([input]) => input === '/api/workspace-questions',
+  )
+  expect(JSON.parse(String(request?.[1]?.body))).toEqual({
+    question: 'Which knowledge base has the most documents?',
+  })
+})
+
 test('shows the API error message without discarding the question', async () => {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {

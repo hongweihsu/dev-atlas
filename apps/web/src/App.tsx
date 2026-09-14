@@ -11,8 +11,10 @@ import {
   IngestionJob,
   KnowledgeBaseSummary,
   SessionResponse,
+  WorkspaceQuestionResponse,
   activateDocumentVersion,
   askConversation,
+  askWorkspaceQuestion,
   archiveDocument,
   checkHealth,
   createDevelopmentSession,
@@ -84,6 +86,12 @@ export default function App() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [conversationTurns, setConversationTurns] = useState<ConversationTurn[]>([])
   const [answerError, setAnswerError] = useState('')
+  const [workspaceQuestion, setWorkspaceQuestion] = useState('')
+  const [workspaceAnswer, setWorkspaceAnswer] =
+    useState<WorkspaceQuestionResponse | null>(null)
+  const [workspaceAnswerState, setWorkspaceAnswerState] =
+    useState<RequestState>('idle')
+  const [workspaceAnswerError, setWorkspaceAnswerError] = useState('')
   const canWrite = session?.role === 'owner' || session?.role === 'editor'
 
   useEffect(() => {
@@ -428,6 +436,24 @@ export default function App() {
     setQuestion('')
     setAnswerError('')
     setAnswerState('idle')
+  }
+
+  async function handleWorkspaceQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const submittedQuestion = workspaceQuestion.trim()
+    if (!submittedQuestion) return
+    setWorkspaceAnswerState('submitting')
+    setWorkspaceAnswerError('')
+    setWorkspaceAnswer(null)
+    try {
+      setWorkspaceAnswer(await askWorkspaceQuestion(submittedQuestion))
+      setWorkspaceAnswerState('success')
+    } catch (error) {
+      setWorkspaceAnswerError(
+        error instanceof Error ? error.message : 'Workspace question failed',
+      )
+      setWorkspaceAnswerState('error')
+    }
   }
 
   async function handleCreateKnowledgeBase(event: FormEvent<HTMLFormElement>) {
@@ -867,6 +893,48 @@ export default function App() {
 
         <article className="panel panel--answer">
           <PanelHeading step="02" kicker="Grounded answer" title="Ask the knowledge base" />
+          <section className="workspace-tools" aria-labelledby="workspace-tools-title">
+            <div>
+              <p className="kicker">Tool calling</p>
+              <h3 id="workspace-tools-title">Ask about this workspace</h3>
+              <p>Uses live workspace metadata, not document chunks.</p>
+            </div>
+            <form onSubmit={handleWorkspaceQuestion}>
+              <label htmlFor="workspace-question">Workspace question</label>
+              <input
+                id="workspace-question"
+                type="text"
+                value={workspaceQuestion}
+                maxLength={2000}
+                onChange={(event) => setWorkspaceQuestion(event.target.value)}
+                placeholder="Which knowledge base has the most documents?"
+                required
+              />
+              <button
+                type="submit"
+                disabled={
+                  apiState !== 'healthy' ||
+                  !workspaceQuestion.trim() ||
+                  workspaceAnswerState === 'submitting'
+                }
+              >
+                {workspaceAnswerState === 'submitting' ? 'Calling tool…' : 'Ask workspace'}
+              </button>
+            </form>
+            {workspaceAnswer && (
+              <div className="workspace-tools__answer" aria-live="polite">
+                <p>{workspaceAnswer.answer}</p>
+                <span>
+                  Tool used: {workspaceAnswer.tools.map((tool) => tool.name).join(', ')}
+                </span>
+              </div>
+            )}
+            {workspaceAnswerError && (
+              <p className="notice notice--error" role="alert">
+                {workspaceAnswerError}
+              </p>
+            )}
+          </section>
           <section className="conversation-list" aria-labelledby="conversations-title">
             <div className="conversation-list__heading">
               <h3 id="conversations-title">Conversations</h3>

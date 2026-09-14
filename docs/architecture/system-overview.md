@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 12 permission-aware conversational retrieval. This document
+Phase 13 bounded, permission-aware tool calling. This document
 distinguishes implemented components from planned architecture.
 
 ## Implemented runtime
@@ -102,6 +102,12 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   recent turns, rewrites only follow-up questions into standalone retrieval
   questions, executes the existing grounded-answer path, and persists the
   original question, rewrite, answer sufficiency, and citation snapshot.
+- **Workspace tool calling:** `POST /workspace-questions` requires the model to
+  call one strict, read-only `list_knowledge_bases` function before answering.
+  The function schema contains no workspace argument; FastAPI injects the
+  authenticated workspace ID and the existing repository applies its SQL scope.
+  Unknown tools, extra arguments, multiple calls, and empty final answers fail
+  closed. React displays the executed tool name alongside the answer.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A
@@ -119,9 +125,10 @@ separate readiness check can be added when deployment requirements justify it.
 ## Security boundary
 
 JWT authentication resolves a local user and workspace membership before any
-document, retrieval, answer, or conversation operation. Conversations add a
+document, retrieval, answer, conversation, or tool operation. Conversations add a
 user-owner predicate inside the authorized workspace; unknown and foreign IDs
-share the same not-found result. Development CORS is limited to local web origins.
+share the same not-found result. Tool schemas never expose tenant identity as a
+model-controlled argument. Development CORS is limited to local web origins.
 
 ## Planned evolution
 
