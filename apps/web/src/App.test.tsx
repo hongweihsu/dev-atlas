@@ -364,7 +364,24 @@ test('asks a question and renders expandable citation provenance', async () => {
     }
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) return jsonResponse([])
+    if (input === '/api/conversations' && init?.method !== 'POST') {
+      return jsonResponse([])
+    }
+    if (input === '/api/conversations' && init?.method === 'POST') {
+      return jsonResponse({
+        id: 'conversation-id',
+        title: 'How is evidence traced?',
+        created_at: '2026-09-14T00:00:00Z',
+        updated_at: '2026-09-14T00:00:00Z',
+      }, 201)
+    }
     return jsonResponse({
+      id: 'turn-id',
+      conversation_id: 'conversation-id',
+      ordinal: 0,
+      question: 'How is evidence traced?',
+      standalone_question: 'How is evidence traced?',
+      created_at: '2026-09-14T00:00:00Z',
       answer: 'Offsets connect the chunk to normalized source text.',
       has_sufficient_evidence: true,
       citations: [
@@ -397,7 +414,9 @@ test('asks a question and renders expandable citation provenance', async () => {
   expect(screen.getByText('Evidence grounded')).toBeInTheDocument()
   expect(screen.getByText('Architecture notes')).toBeInTheDocument()
   expect(screen.getByText('Characters 10–42')).toBeInTheDocument()
-  const answerCall = fetchMock.mock.calls.find(([input]) => input === '/api/answers')
+  const answerCall = fetchMock.mock.calls.find(
+    ([input]) => input === '/api/conversations/conversation-id/turns',
+  )
   expect(JSON.parse(String(answerCall?.[1]?.body))).toMatchObject({
     knowledge_base_ids: ['general-id'],
   })
@@ -410,6 +429,17 @@ test('shows the API error message without discarding the question', async () => 
     }
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) return jsonResponse([])
+    if (input === '/api/conversations' && init?.method !== 'POST') {
+      return jsonResponse([])
+    }
+    if (input === '/api/conversations' && init?.method === 'POST') {
+      return jsonResponse({
+        id: 'conversation-id',
+        title: 'What happened?',
+        created_at: '2026-09-14T00:00:00Z',
+        updated_at: '2026-09-14T00:00:00Z',
+      }, 201)
+    }
     return jsonResponse({ detail: { message: 'answer provider request failed' } }, 503)
   })
   render(<App />)

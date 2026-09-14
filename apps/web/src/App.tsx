@@ -3,6 +3,8 @@ import { DragEvent, FormEvent, useEffect, useState } from 'react'
 import {
   AnswerResponse,
   ApiRequestError,
+  ConversationSummary,
+  ConversationTurn,
   DocumentSummary,
   DocumentVersionSummary,
   IngestDocumentResponse,
@@ -10,14 +12,17 @@ import {
   KnowledgeBaseSummary,
   SessionResponse,
   activateDocumentVersion,
-  answerQuestion,
+  askConversation,
   archiveDocument,
   checkHealth,
   createDevelopmentSession,
+  createConversation,
   createKnowledgeBase,
   getIngestionJob,
   getSession,
   listDocuments,
+  listConversations,
+  listConversationTurns,
   listKnowledgeBases,
   listDocumentVersions,
   restoreDocument,
@@ -75,7 +80,9 @@ export default function App() {
     useState<RequestState>('idle')
   const [question, setQuestion] = useState('')
   const [answerState, setAnswerState] = useState<RequestState>('idle')
-  const [answerResult, setAnswerResult] = useState<AnswerResponse | null>(null)
+  const [conversations, setConversations] = useState<ConversationSummary[]>([])
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const [conversationTurns, setConversationTurns] = useState<ConversationTurn[]>([])
   const [answerError, setAnswerError] = useState('')
   const canWrite = session?.role === 'owner' || session?.role === 'editor'
 
@@ -108,6 +115,8 @@ export default function App() {
           const loaded = await listDocuments()
           setDocumentList(loaded)
           setSelectedDocumentId((current) => current ?? loaded[0]?.document_id ?? null)
+          const loadedConversations = await listConversations()
+          setConversations(loadedConversations)
         } catch (error) {
           setDocumentListError(
             error instanceof Error ? error.message : 'Document list failed',
@@ -369,15 +378,56 @@ export default function App() {
 
     setAnswerState('submitting')
     setAnswerError('')
-    setAnswerResult(null)
     try {
-      const result = await answerQuestion(question.trim(), searchKnowledgeBaseIds)
-      setAnswerResult(result)
+      const submittedQuestion = question.trim()
+      let conversationId = activeConversationId
+      if (!conversationId) {
+        const created = await createConversation(submittedQuestion.slice(0, 120))
+        conversationId = created.id
+        setActiveConversationId(created.id)
+        setConversations((current) => [created, ...current])
+      }
+      const turn = await askConversation(
+        conversationId,
+        submittedQuestion,
+        searchKnowledgeBaseIds,
+      )
+      setConversationTurns((current) => [...current, turn])
+      setQuestion('')
+      setConversations((current) => {
+        const active = current.find((item) => item.id === conversationId)
+        return active
+          ? [active, ...current.filter((item) => item.id !== conversationId)]
+          : current
+      })
       setAnswerState('success')
     } catch (error) {
       setAnswerError(error instanceof Error ? error.message : 'Answer request failed')
       setAnswerState('error')
     }
+  }
+
+  async function handleSelectConversation(conversationId: string) {
+    setActiveConversationId(conversationId)
+    setAnswerError('')
+    setAnswerState('submitting')
+    try {
+      setConversationTurns(await listConversationTurns(conversationId))
+      setAnswerState('success')
+    } catch (error) {
+      setAnswerError(
+        error instanceof Error ? error.message : 'Conversation history failed',
+      )
+      setAnswerState('error')
+    }
+  }
+
+  function handleNewConversation() {
+    setActiveConversationId(null)
+    setConversationTurns([])
+    setQuestion('')
+    setAnswerError('')
+    setAnswerState('idle')
   }
 
   async function handleCreateKnowledgeBase(event: FormEvent<HTMLFormElement>) {
@@ -817,6 +867,41 @@ export default function App() {
 
         <article className="panel panel--answer">
           <PanelHeading step="02" kicker="Grounded answer" title="Ask the knowledge base" />
+          <section className="conversation-list" aria-labelledby="conversations-title">
+            <div className="conversation-list__heading">
+              <h3 id="conversations-title">Conversations</h3>
+              <button type="button" onClick={handleNewConversation}>New conversation</button>
+            </div>
+            {conversations.length > 0 && (
+              <div className="conversation-list__items">
+                {conversations.map((conversation) => (
+                  <button
+                    type="button"
+                    key={conversation.id}
+                    aria-pressed={conversation.id === activeConversationId}
+                    onClick={() => void handleSelectConversation(conversation.id)}
+                  >
+                    <strong>{conversation.title}</strong>
+                    <span>{new Date(conversation.updated_at).toLocaleString()}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+          <div className="conversation-transcript" aria-live="polite">
+            {conversationTurns.map((turn) => (
+              <article className="conversation-turn" key={turn.id}>
+                <p className="conversation-turn__question">{turn.question}</p>
+                {turn.standalone_question !== turn.question && (
+                  <details className="conversation-turn__rewrite">
+                    <summary>Resolved follow-up</summary>
+                    <p>{turn.standalone_question}</p>
+                  </details>
+                )}
+                <Answer result={turn} />
+              </article>
+            ))}
+          </div>
           <form onSubmit={handleQuestion} className="question-form">
             <fieldset className="scope-picker">
               <legend>Search scope</legend>
@@ -860,7 +945,6 @@ export default function App() {
           {answerError && (
             <p className="notice notice--error" role="alert">{answerError}</p>
           )}
-          {answerResult && <Answer result={answerResult} />}
         </article>
       </section>}
 

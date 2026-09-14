@@ -119,6 +119,24 @@ button[type='submit']:disabled { cursor: not-allowed; opacity: 0.42; }
 .question-form__footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.8rem; }
 .question-form__footer > span { color: #718079; font: 0.7rem ui-monospace, monospace; }
 
+.conversation-list { margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid #2a3933; }
+.conversation-list__heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.7rem; }
+.conversation-list__heading h3 { margin: 0; color: #91a19b; font: 500 0.72rem ui-monospace, monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+.conversation-list__heading button { padding: 0.45rem 0.65rem; border: 1px solid #3c5148; color: #76d99e; background: transparent; font-size: 0.7rem; }
+.conversation-list__items { display: flex; gap: 0.5rem; padding-bottom: 0.35rem; overflow-x: auto; scrollbar-color: #4a6459 #0a1512; scrollbar-width: thin; }
+.conversation-list__items > button { display: grid; flex: 0 0 12rem; gap: 0.25rem; padding: 0.65rem; border: 1px solid #31423b; color: #b7c2be; background: #0a1512; text-align: left; }
+.conversation-list__items > button[aria-pressed='true'] { border-color: #76d99e; background: rgba(118, 217, 158, 0.06); }
+.conversation-list__items strong { overflow: hidden; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-list__items span { color: #718079; font: 0.62rem ui-monospace, monospace; }
+.conversation-transcript { display: grid; gap: 1.5rem; max-height: 42rem; margin-bottom: 1.5rem; padding-right: 0.45rem; overflow-y: auto; scrollbar-color: #4a6459 #0a1512; scrollbar-width: thin; }
+.conversation-turn { padding: 1rem; border: 1px solid #2a3933; background: rgba(10, 21, 18, 0.55); }
+.conversation-turn__question { margin: 0; color: #dce5e1; font-weight: 650; line-height: 1.55; }
+.conversation-turn__question::before { content: 'YOU'; margin-right: 0.65rem; color: #76d99e; font: 0.62rem ui-monospace, monospace; letter-spacing: 0.08em; }
+.conversation-turn__rewrite { margin-top: 0.7rem; color: #718079; font-size: 0.7rem; }
+.conversation-turn__rewrite summary { cursor: pointer; }
+.conversation-turn__rewrite p { margin: 0.45rem 0 0; line-height: 1.5; }
+.conversation-turn .answer { margin-top: 1rem; padding-top: 1rem; }
+
 .notice { display: grid; gap: 0.25rem; margin: 1.25rem 0 0; padding: 1rem; border-left: 2px solid; color: #aebbb6; background: #0a1512; font-size: 0.82rem; }
 .notice--success { border-color: #76d99e; }
 .notice--error { border-color: #f08278; color: #ffc2bc; }

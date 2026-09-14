@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 9 permission-aware retrieval and asynchronous ingestion. This document
+Phase 12 permission-aware conversational retrieval. This document
 distinguishes implemented components from planned architecture.
 
 ## Implemented runtime
@@ -31,8 +31,8 @@ network. A named volume preserves PostgreSQL data between normal restarts.
 ## Responsibilities
 
 - **Web:** persistent document catalog and selection, document upload and
-  replacement-version forms, questions, grounded answers, expandable citation
-  provenance, and actionable API availability feedback.
+  replacement-version forms, reloadable conversations, grounded answers,
+  expandable citation provenance, and actionable API availability feedback.
 - **API:** HTTP contracts and the application/domain boundary.
 - **Database:** durable document/version/chunk metadata and vector storage.
 - **Alembic:** explicit, reviewable database schema evolution.
@@ -97,6 +97,11 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   model for structured output, validates citation identifiers, and returns
   source text plus document/version/chunk/offset provenance. Empty retrieval
   returns a deterministic insufficient-evidence response without generation.
+- **Conversation workflow:** PostgreSQL stores user-owned, workspace-scoped
+  conversations and immutable turns. A LangGraph state graph loads at most six
+  recent turns, rewrites only follow-up questions into standalone retrieval
+  questions, executes the existing grounded-answer path, and persists the
+  original question, rewrite, answer sufficiency, and citation snapshot.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A
@@ -113,9 +118,10 @@ separate readiness check can be added when deployment requirements justify it.
 
 ## Security boundary
 
-There is no user authentication in Phase 0. Development CORS is limited to local
-web origins. Future authorization must be enforced before or during retrieval;
-unauthorized content must never enter model context.
+JWT authentication resolves a local user and workspace membership before any
+document, retrieval, answer, or conversation operation. Conversations add a
+user-owner predicate inside the authorized workspace; unknown and foreign IDs
+share the same not-found result. Development CORS is limited to local web origins.
 
 ## Planned evolution
 

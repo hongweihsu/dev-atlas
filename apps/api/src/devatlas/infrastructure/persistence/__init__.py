@@ -1,3 +1,6 @@
+from devatlas.infrastructure.persistence.conversations import (
+    SqlAlchemyConversationRepository,
+)
 from devatlas.infrastructure.persistence.document_lifecycle import (
     SqlAlchemyDocumentLifecycleRepository,
 )
@@ -29,6 +32,7 @@ from devatlas.infrastructure.persistence.workspace_access import (
 )
 
 __all__ = [
+    "SqlAlchemyConversationRepository",
     "SqlAlchemyBm25ChunkSearchRepository",
     "SqlAlchemyDocumentListRepository",
     "SqlAlchemyDocumentLifecycleRepository",

@@ -34,6 +34,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   delivery, a single ARM EC2 Docker host, CloudFront-only API ingress, SSM
   administration, encrypted gp3 storage, private backups, monitoring, and USD
   30 budget alerts
+- Bounded Phase 12 conversation memory with a LangGraph
+  load-history → contextualize → answer → persist workflow, PostgreSQL-backed
+  turn history, workspace/user ownership, and reloadable citation snapshots
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - Cognito admin-only login uses OAuth Authorization Code + PKCE; a dedicated
@@ -186,9 +189,9 @@ unset.
 
 ## Future direction
 
-The current milestone is completed Phase 9 asynchronous new-document
-ingestion. Phase 10 adds AWS deployment; production identity-provider UX and
-additional document loaders follow in later milestones.
+The current local milestone is Phase 12 bounded conversation memory. AWS
+infrastructure and the frontend are live; deploying the PDF and conversation
+slices still awaits a rotated production OpenAI key.
 
 ## Limitations
 
@@ -197,6 +200,9 @@ additional document loaders follow in later milestones.
   hybrid comparison covers only five controlled documents and must not be
   interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
+- Follow-up conversation turns add one model request for standalone-question
+  rewriting. Only the six latest turns enter memory; long-term user-profile
+  memory and automatic history summarization are intentionally absent.
 - Re-ingestion currently embeds content before transactional duplicate
   detection, so a rejected duplicate may still incur embedding usage.
 - Replacement-version ingestion remains synchronous. A queued job that is

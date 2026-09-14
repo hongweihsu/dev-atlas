@@ -11,6 +11,7 @@ from devatlas.application.answer_documents import AnswerDocuments
 from devatlas.application.hybrid_retrieval import HybridChunkSearchRepository
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
+from devatlas.application.manage_conversations import ManageConversations
 from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
 from devatlas.application.manage_document_versions import ManageDocumentVersions
 from devatlas.application.manage_ingestion_jobs import ManageIngestionJobs
@@ -29,10 +30,14 @@ from devatlas.infrastructure.database import (
     create_session_factory,
 )
 from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
-from devatlas.infrastructure.generation import OpenAIAnswerGenerator
+from devatlas.infrastructure.generation import (
+    OpenAIAnswerGenerator,
+    OpenAIQuestionContextualizer,
+)
 from devatlas.infrastructure.persistence import (
     SqlAlchemyBm25ChunkSearchRepository,
     SqlAlchemyChunkSearchRepository,
+    SqlAlchemyConversationRepository,
     SqlAlchemyDocumentLifecycleRepository,
     SqlAlchemyDocumentListRepository,
     SqlAlchemyDocumentVersionRepository,
@@ -124,12 +129,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 ),
             )
             application.state.search_documents = search_documents
-            application.state.answer_documents = AnswerDocuments(
+            answer_documents = AnswerDocuments(
                 search_documents=search_documents,
                 generator=OpenAIAnswerGenerator(
                     client,
                     model=app_settings.answer_model,
                 ),
+            )
+            application.state.answer_documents = answer_documents
+            application.state.manage_conversations = ManageConversations(
+                repository=SqlAlchemyConversationRepository(session_factory),
+                contextualizer=OpenAIQuestionContextualizer(
+                    client, model=app_settings.answer_model
+                ),
+                answer_documents=answer_documents,
             )
         try:
             yield
@@ -148,6 +161,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if app_settings.auth_development_mode:
                     del application.state.development_session_issuer
             if client is not None:
+                del application.state.manage_conversations
                 del application.state.answer_documents
                 del application.state.search_documents
                 del application.state.ingest_new_document

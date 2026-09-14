@@ -135,6 +135,22 @@ export interface AnswerResponse {
   citations: AnswerCitation[]
 }
 
+export interface ConversationSummary {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ConversationTurn extends AnswerResponse {
+  id: string
+  conversation_id: string
+  ordinal: number
+  question: string
+  standalone_question: string
+  created_at: string
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>
 
@@ -307,6 +323,48 @@ export async function answerQuestion(
 ): Promise<AnswerResponse> {
   return parseResponse(
     await authorizedFetch('/api/answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        limit: 5,
+        knowledge_base_ids: knowledgeBaseIds,
+      }),
+    }),
+  )
+}
+
+export async function createConversation(
+  title: string,
+): Promise<ConversationSummary> {
+  return parseResponse(
+    await authorizedFetch('/api/conversations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    }),
+  )
+}
+
+export async function listConversations(): Promise<ConversationSummary[]> {
+  return parseResponse(await authorizedFetch('/api/conversations'))
+}
+
+export async function listConversationTurns(
+  conversationId: string,
+): Promise<ConversationTurn[]> {
+  return parseResponse(
+    await authorizedFetch(`/api/conversations/${conversationId}/turns`),
+  )
+}
+
+export async function askConversation(
+  conversationId: string,
+  question: string,
+  knowledgeBaseIds: string[],
+): Promise<ConversationTurn> {
+  return parseResponse(
+    await authorizedFetch(`/api/conversations/${conversationId}/turns`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
