@@ -24,6 +24,7 @@ from devatlas.application.ports.generation import (
 )
 from devatlas.application.ports.knowledge_bases import InvalidKnowledgeBaseScopeError
 from devatlas.application.search_documents import InvalidSearchQueryError
+from devatlas.infrastructure.observability import HttpMetrics
 
 
 class CorrectiveAnswerRequest(BaseModel):
@@ -83,11 +84,13 @@ async def corrective_answer(
             )
         )
     except (InvalidKnowledgeBaseScopeError, InvalidSearchQueryError) as error:
+        _record_outcome(request, "invalid_request")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "invalid_corrective_answer", "message": str(error)},
         ) from error
     except (EmbeddingBatchError, InvalidGeneratedAnswerError) as error:
+        _record_outcome(request, "invalid_provider_response")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"code": "invalid_corrective_response", "message": str(error)},
@@ -97,12 +100,26 @@ async def corrective_answer(
         CorrectiveQueryProviderUnavailableError,
         EmbeddingProviderUnavailableError,
     ) as error:
+        _record_outcome(request, "provider_unavailable")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": "corrective_provider_unavailable", "message": str(error)},
         ) from error
 
     answer = result.result
+    if result.correction_applied:
+        outcome = (
+            "corrected_sufficient"
+            if answer.has_sufficient_evidence
+            else "corrected_insufficient"
+        )
+    else:
+        outcome = (
+            "first_pass_sufficient"
+            if answer.has_sufficient_evidence
+            else "uncorrected_insufficient"
+        )
+    _record_outcome(request, outcome)
     return CorrectiveAnswerResponse(
         answer=answer.answer,
         has_sufficient_evidence=answer.has_sufficient_evidence,
@@ -126,3 +143,8 @@ async def corrective_answer(
             for item in answer.citations
         ],
     )
+
+
+def _record_outcome(request: Request, outcome: str) -> None:
+    metrics: HttpMetrics = request.app.state.http_metrics
+    metrics.record_workflow(workflow="corrective_answer", outcome=outcome)

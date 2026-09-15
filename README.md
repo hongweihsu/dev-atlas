@@ -46,6 +46,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Phase 15 corrective RAG retries retrieval once only after a validated
   insufficient-evidence result, preserving authorization and exposing the
   alternative query without charging successful first-pass questions
+- Phase 16 adds privacy-bounded request/workflow correlation, Prometheus HTTP
+  latency/status and AI outcome metrics, a protected operator endpoint, initial
+  SLO targets, transient failure/recovery evidence, and CloudFront 5xx alerting
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - Cognito admin-only login uses OAuth Authorization Code + PKCE; a dedicated
@@ -115,9 +118,10 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- External OIDC login UX
-- AWS deployment and operational recovery automation
-- Multimodal document understanding and bounded research workflows
+- Reconcile current application changes with the live AWS demo and exercise the
+  documented operator diagnostics and rollback path
+- Portfolio case-study polish using only reproducible architecture, evaluation,
+  test, and deployment evidence
 
 Planned capabilities are not implemented or benchmarked yet.
 
@@ -137,7 +141,10 @@ development, Vite proxies `/api` requests to FastAPI. See the
 [system overview](docs/architecture/system-overview.md) and
 [domain model](docs/architecture/domain-model.md). The planned low-cost cloud
 topology is documented in the
-[AWS demo deployment](docs/architecture/aws-demo-deployment.md). Phase 1
+[AWS demo deployment](docs/architecture/aws-demo-deployment.md), and the
+sensitive-data boundary, metrics, initial SLOs, and recovery workflow are in
+[observability and production hardening](docs/architecture/observability.md).
+Phase 1
 verification is recorded in the
 [acceptance record](docs/verification/phase-1-acceptance.md).
 

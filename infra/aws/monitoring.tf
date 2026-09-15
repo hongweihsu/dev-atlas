@@ -25,3 +25,23 @@ resource "aws_cloudwatch_metric_alarm" "instance_status" {
   ok_actions          = [aws_sns_topic.operations.arn]
   tags                = local.common_tags
 }
+
+resource "aws_cloudwatch_metric_alarm" "cloudfront_5xx" {
+  alarm_name          = "${local.name}-cloudfront-5xx"
+  alarm_description   = "DevAtlas CloudFront 5xx error rate exceeded five percent for ten minutes."
+  namespace           = "AWS/CloudFront"
+  metric_name         = "5xxErrorRate"
+  statistic           = "Average"
+  period              = 300
+  evaluation_periods  = 2
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  threshold           = 5
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    DistributionId = aws_cloudfront_distribution.app.id
+    Region         = "Global"
+  }
+  alarm_actions = [aws_sns_topic.operations.arn]
+  ok_actions    = [aws_sns_topic.operations.arn]
+  tags          = local.common_tags
+}

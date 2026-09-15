@@ -40,6 +40,10 @@ from devatlas.infrastructure.generation import (
     OpenAIResearchAgent,
     OpenAIWorkspaceQuestionAnswerer,
 )
+from devatlas.infrastructure.observability import (
+    HttpMetrics,
+    RequestObservabilityMiddleware,
+)
 from devatlas.infrastructure.persistence import (
     SqlAlchemyBm25ChunkSearchRepository,
     SqlAlchemyChunkSearchRepository,
@@ -57,6 +61,7 @@ from devatlas.infrastructure.queue import ArqIngestionQueue
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     app_settings = settings or get_settings()
+    http_metrics = HttpMetrics.create()
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
@@ -205,12 +210,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+    application.state.settings = app_settings
+    application.state.http_metrics = http_metrics
     application.add_middleware(
         CORSMiddleware,
         allow_origins=app_settings.cors_origins,
         allow_credentials=False,
         allow_methods=["DELETE", "GET", "POST"],
         allow_headers=["*"],
+    )
+    application.add_middleware(
+        RequestObservabilityMiddleware,
+        metrics=http_metrics,
     )
     application.include_router(api_router)
     return application

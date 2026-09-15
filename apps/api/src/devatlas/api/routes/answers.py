@@ -20,6 +20,7 @@ from devatlas.application.ports.generation import (
 )
 from devatlas.application.ports.knowledge_bases import InvalidKnowledgeBaseScopeError
 from devatlas.application.search_documents import InvalidSearchQueryError
+from devatlas.infrastructure.observability import HttpMetrics
 
 
 class AnswerRequest(BaseModel):
@@ -90,36 +91,48 @@ async def answer_documents(
             )
         )
     except InvalidKnowledgeBaseScopeError as error:
+        _record_outcome(request, "invalid_scope")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "invalid_knowledge_base_scope", "message": str(error)},
         ) from error
     except InvalidSearchQueryError as error:
+        _record_outcome(request, "invalid_question")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "invalid_question", "message": str(error)},
         ) from error
     except EmbeddingBatchError as error:
+        _record_outcome(request, "invalid_embedding_response")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"code": "invalid_embedding_response", "message": str(error)},
         ) from error
     except InvalidGeneratedAnswerError as error:
+        _record_outcome(request, "invalid_answer_response")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"code": "invalid_answer_response", "message": str(error)},
         ) from error
     except EmbeddingProviderUnavailableError as error:
+        _record_outcome(request, "embedding_unavailable")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": "embedding_unavailable", "message": str(error)},
         ) from error
     except AnswerGeneratorUnavailableError as error:
+        _record_outcome(request, "answer_provider_unavailable")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": "answer_provider_unavailable", "message": str(error)},
         ) from error
 
+    _record_outcome(
+        request,
+        "sufficient_evidence"
+        if result.has_sufficient_evidence
+        else "insufficient_evidence",
+    )
     return AnswerResponse(
         answer=result.answer,
         has_sufficient_evidence=result.has_sufficient_evidence,
@@ -141,3 +154,8 @@ async def answer_documents(
             for citation in result.citations
         ],
     )
+
+
+def _record_outcome(request: Request, outcome: str) -> None:
+    metrics: HttpMetrics = request.app.state.http_metrics
+    metrics.record_workflow(workflow="answer", outcome=outcome)

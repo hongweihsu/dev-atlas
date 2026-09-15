@@ -43,6 +43,7 @@ services:
       AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:?AUTH_JWT_ISSUER is required}
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:?AUTH_JWT_AUDIENCE is required}
       AUTH_COGNITO_CLIENT_ID: ${AUTH_COGNITO_CLIENT_ID:?AUTH_COGNITO_CLIENT_ID is required}
+      OBSERVABILITY_METRICS_TOKEN: ${OBSERVABILITY_METRICS_TOKEN:?OBSERVABILITY_METRICS_TOKEN is required}
     depends_on:
       postgres:
         condition: service_healthy

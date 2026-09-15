@@ -19,6 +19,7 @@ from devatlas.application.run_agentic_research import (
     RunAgenticResearchCommand,
 )
 from devatlas.application.search_documents import InvalidSearchQueryError
+from devatlas.infrastructure.observability import HttpMetrics
 
 
 class ResearchRequest(BaseModel):
@@ -61,6 +62,7 @@ ResearchService = Annotated[RunAgenticResearch, Depends(get_run_agentic_research
 @router.post("", response_model=ResearchResponse)
 async def run_research(
     payload: ResearchRequest,
+    request: Request,
     service: ResearchService,
     workspace: CurrentWorkspace,
 ) -> ResearchResponse:
@@ -72,11 +74,13 @@ async def run_research(
             )
         )
     except (InvalidResearchQuestionError, InvalidSearchQueryError) as error:
+        _record_outcome(request, "invalid_question")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "invalid_research_question", "message": str(error)},
         ) from error
     except (InvalidResearchResponseError, EmbeddingBatchError) as error:
+        _record_outcome(request, "invalid_provider_response")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"code": "invalid_research_response", "message": str(error)},
@@ -85,11 +89,13 @@ async def run_research(
         ResearchProviderUnavailableError,
         EmbeddingProviderUnavailableError,
     ) as error:
+        _record_outcome(request, "provider_unavailable")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": "research_provider_unavailable", "message": str(error)},
         ) from error
 
+    _record_outcome(request, result.stop_reason)
     return ResearchResponse(
         answer=result.answer,
         has_sufficient_evidence=result.has_sufficient_evidence,
@@ -116,3 +122,8 @@ async def run_research(
             for item in result.citations
         ],
     )
+
+
+def _record_outcome(request: Request, outcome: str) -> None:
+    metrics: HttpMetrics = request.app.state.http_metrics
+    metrics.record_workflow(workflow="agentic_research", outcome=outcome)

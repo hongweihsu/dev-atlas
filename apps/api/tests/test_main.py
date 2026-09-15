@@ -23,6 +23,14 @@ def test_settings_parse_schema_dimension_from_environment(
     assert Settings().embedding_dimension == 1536
 
 
+def test_settings_treat_empty_metrics_token_as_unconfigured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OBSERVABILITY_METRICS_TOKEN", "")
+
+    assert Settings().observability_metrics_token is None
+
+
 def test_settings_reject_mixed_local_and_oidc_authentication() -> None:
     with pytest.raises(ValueError, match="either auth_jwt_secret or auth_jwks_url"):
         Settings(

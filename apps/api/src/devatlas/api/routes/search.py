@@ -16,6 +16,7 @@ from devatlas.application.search_documents import (
     SearchDocuments,
     SearchDocumentsCommand,
 )
+from devatlas.infrastructure.observability import HttpMetrics
 
 
 class SearchRequest(BaseModel):
@@ -87,26 +88,31 @@ async def search_documents(
             )
         )
     except InvalidKnowledgeBaseScopeError as error:
+        _record_outcome(request, "invalid_scope")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "invalid_knowledge_base_scope", "message": str(error)},
         ) from error
     except InvalidSearchQueryError as error:
+        _record_outcome(request, "invalid_query")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "invalid_search", "message": str(error)},
         ) from error
     except EmbeddingBatchError as error:
+        _record_outcome(request, "invalid_provider_response")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"code": "invalid_embedding_response", "message": str(error)},
         ) from error
     except EmbeddingProviderUnavailableError as error:
+        _record_outcome(request, "provider_unavailable")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": "embedding_unavailable", "message": str(error)},
         ) from error
 
+    _record_outcome(request, "results" if results else "no_results")
     return SearchResponse(
         results=[
             SearchChunkResponse(
@@ -127,3 +133,8 @@ async def search_documents(
             for result in results
         ]
     )
+
+
+def _record_outcome(request: Request, outcome: str) -> None:
+    metrics: HttpMetrics = request.app.state.http_metrics
+    metrics.record_workflow(workflow="search", outcome=outcome)

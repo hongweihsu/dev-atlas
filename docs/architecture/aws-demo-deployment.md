@@ -76,6 +76,9 @@ notification control, not a guaranteed resource kill switch.
   Application Load Balancer.
 - The EC2 instance status alarm notifies through SNS after two failed five-minute
   checks. The email subscription must be confirmed before it can deliver.
+- A separate CloudFront alarm notifies when the average 5xx error rate reaches
+  5% for two consecutive five-minute periods. Missing traffic is healthy for
+  this intentionally low-traffic demo.
 - The public EC2 subnet avoids a NAT Gateway. Security groups deny arbitrary
   inbound traffic, but outbound model-provider access remains allowed.
 
@@ -85,7 +88,9 @@ The production Compose definition does not mount source code or expose database
 ports. It enables Redis AOF persistence, waits for PostgreSQL/Redis health,
 runs Alembic as a deployment gate, and starts Uvicorn without development
 reload. EC2 reads runtime secrets from `/devatlas/demo` in SSM through its
-instance role.
+instance role. This includes a generated, independently scoped bearer token for
+the protected Prometheus-format `/metrics` endpoint; the token is never sent to
+the React application.
 
 A daily systemd timer creates a PostgreSQL custom-format dump and uploads it to
 the private backup bucket. Restore requires an exact object URI and explicit

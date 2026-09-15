@@ -30,6 +30,20 @@ else
   echo "Reusing the existing PostgreSQL password from SSM."
 fi
 
+metrics_token=$(aws ssm get-parameter \
+  --name "$parameter_path/OBSERVABILITY_METRICS_TOKEN" \
+  --with-decryption \
+  --query 'Parameter.Value' \
+  --output text \
+  --profile "$profile" \
+  --region "$region" 2>/dev/null || true)
+if [ -z "$metrics_token" ]; then
+  metrics_token=$(openssl rand -hex 32)
+  echo "Generated the initial observability metrics token."
+else
+  echo "Reusing the existing observability metrics token from SSM."
+fi
+
 put_parameter() {
   local name=$1
   local value=$2
@@ -57,6 +71,7 @@ put_parameter AUTH_JWKS_URL "$issuer/.well-known/jwks.json"
 put_parameter AUTH_JWT_ISSUER "$issuer"
 put_parameter AUTH_JWT_AUDIENCE "$client_id"
 put_parameter AUTH_COGNITO_CLIENT_ID "$client_id"
+put_parameter OBSERVABILITY_METRICS_TOKEN "$metrics_token" SecureString
 put_parameter BACKUP_BUCKET "$backup_bucket"
 
 echo "Stored encrypted production configuration under $parameter_path."
