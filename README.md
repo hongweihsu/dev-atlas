@@ -6,6 +6,9 @@ DevAtlas is a learning-first, production-oriented AI engineering project for
 organizing and researching technical knowledge. It will grow deliberately from
 a full-stack foundation into a measured, permission-aware retrieval system.
 
+For the implementation narrative, measured results, trade-offs, and intentional
+limitations, see the [engineering case study](docs/case-study.md).
+
 ## Current status
 
 ### Implemented

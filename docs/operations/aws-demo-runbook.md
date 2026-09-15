@@ -59,6 +59,23 @@ docker compose --env-file .env -f compose.yml logs --tail=100 api worker
 systemctl status devatlas-backup.timer
 ```
 
+Inspect privacy-bounded application metrics without exposing the operator token
+to the browser:
+
+```bash
+curl --fail-with-body \
+  -H "Authorization: Bearer $OBSERVABILITY_METRICS_TOKEN" \
+  http://localhost:8000/metrics
+```
+
+When a request fails, preserve its `X-Request-ID` and search both correlated
+HTTP and workflow events:
+
+```bash
+docker compose --env-file .env -f compose.yml logs api \
+  | grep 'REQUEST_ID_FROM_RESPONSE'
+```
+
 No PostgreSQL or Redis port is published by the production Compose file.
 The React application uses Authorization Code with PKCE and keeps OIDC state in
 session storage. Local development stays on the explicit development-session

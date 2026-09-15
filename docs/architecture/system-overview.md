@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 15 evidence-triggered corrective retrieval. This document
+Phase 16 privacy-bounded observability and production hardening. This document
 distinguishes implemented components from planned architecture.
 
 ## Implemented runtime
@@ -118,6 +118,12 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   authorized grounded-answer path. Only an insufficient result triggers one
   query rewrite and one retry in the same KnowledgeBase scope. The API and React
   expose whether correction ran and the exact alternative query.
+- **Observability:** every HTTP response receives a validated or generated
+  `X-Request-ID`. Structured HTTP and workflow events share that ID, while
+  Prometheus counters/histograms expose route status, latency, evidence,
+  correction, tool, and agent outcomes through an operator-token-protected
+  endpoint. Raw paths, identities, questions, prompts, chunks, and answers are
+  intentionally excluded.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A
@@ -142,5 +148,7 @@ model-controlled argument. Development CORS is limited to local web origins.
 
 ## Planned evolution
 
-The planned system adds cloud infrastructure, additional content loaders,
-bounded agent workflows, and production observability in later phases.
+The next milestone reconciles current code with the live AWS demo, rehearses
+operator diagnostics and recovery, and packages reproducible evidence as a
+portfolio case study. LangSmith remains an optional future development/evaluation
+trace sink after an explicit sensitive-data and sampling policy is implemented.
