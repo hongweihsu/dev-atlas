@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 13 bounded, permission-aware tool calling. This document
+Phase 14 bounded, permission-aware agentic research. This document
 distinguishes implemented components from planned architecture.
 
 ## Implemented runtime
@@ -108,6 +108,12 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   authenticated workspace ID and the existing repository applies its SQL scope.
   Unknown tools, extra arguments, multiple calls, and empty final answers fail
   closed. React displays the executed tool name alongside the answer.
+- **Agentic research:** `POST /research` lets the model choose between listing
+  KnowledgeBases, searching authorized document chunks, or finishing. The
+  server permits one sequential tool call per turn and three per run, then
+  forces final synthesis. Scope IDs are re-authorized, citation IDs must match
+  retrieved chunks, and React exposes ordered steps, stop reason, and complete
+  source provenance.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A

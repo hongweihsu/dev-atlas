@@ -17,6 +17,7 @@ from devatlas.application.manage_document_lifecycle import ManageDocumentLifecyc
 from devatlas.application.manage_document_versions import ManageDocumentVersions
 from devatlas.application.manage_ingestion_jobs import ManageIngestionJobs
 from devatlas.application.manage_knowledge_bases import ManageKnowledgeBases
+from devatlas.application.run_agentic_research import RunAgenticResearch
 from devatlas.application.search_documents import SearchDocuments
 from devatlas.core.config import Settings, get_settings
 from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
@@ -34,6 +35,7 @@ from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
 from devatlas.infrastructure.generation import (
     OpenAIAnswerGenerator,
     OpenAIQuestionContextualizer,
+    OpenAIResearchAgent,
     OpenAIWorkspaceQuestionAnswerer,
 )
 from devatlas.infrastructure.persistence import (
@@ -154,6 +156,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     model=app_settings.answer_model,
                 )
             )
+            application.state.run_agentic_research = RunAgenticResearch(
+                OpenAIResearchAgent(
+                    client,
+                    knowledge_bases=manage_knowledge_bases,
+                    search_documents=search_documents,
+                    model=app_settings.answer_model,
+                )
+            )
         try:
             yield
         finally:
@@ -172,6 +182,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     del application.state.development_session_issuer
             if client is not None:
                 del application.state.answer_workspace_question
+                del application.state.run_agentic_research
                 del application.state.manage_conversations
                 del application.state.answer_documents
                 del application.state.search_documents

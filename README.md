@@ -40,6 +40,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Phase 13 bounded tool calling through the OpenAI Responses API: a strict,
   read-only KnowledgeBase metadata tool receives server-injected workspace
   identity, enforces a one-call budget, and exposes its execution trace in React
+- Phase 14 bounded agentic research lets the model sequentially select
+  KnowledgeBase discovery or authorized hybrid search, while the server enforces
+  a three-call budget, citation provenance, and an explicit stop reason
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - Cognito admin-only login uses OAuth Authorization Code + PKCE; a dedicated
@@ -89,6 +92,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   mapped back to document versions, chunks, source text, and character offsets
 - Typed `POST /workspace-questions` answers live workspace-metadata questions
   through an authorized function tool rather than document retrieval
+- Typed `POST /research` returns a cited synthesis plus inspectable tool steps
+  and distinguishes normal completion from a forced tool-budget stop
 - React document workspace for text upload, persistent document selection,
   drag-and-drop input, tabbed create/version forms, consecutive version
   replacement, questions, answer sufficiency, and expandable citation provenance

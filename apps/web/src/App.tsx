@@ -10,6 +10,7 @@ import {
   IngestDocumentResponse,
   IngestionJob,
   KnowledgeBaseSummary,
+  ResearchResponse,
   SessionResponse,
   WorkspaceQuestionResponse,
   activateDocumentVersion,
@@ -28,6 +29,7 @@ import {
   listKnowledgeBases,
   listDocumentVersions,
   restoreDocument,
+  runResearch,
   submitIngestionJob,
   uploadDocumentVersion,
 } from './api'
@@ -92,6 +94,10 @@ export default function App() {
   const [workspaceAnswerState, setWorkspaceAnswerState] =
     useState<RequestState>('idle')
   const [workspaceAnswerError, setWorkspaceAnswerError] = useState('')
+  const [researchQuestion, setResearchQuestion] = useState('')
+  const [researchResult, setResearchResult] = useState<ResearchResponse | null>(null)
+  const [researchState, setResearchState] = useState<RequestState>('idle')
+  const [researchError, setResearchError] = useState('')
   const canWrite = session?.role === 'owner' || session?.role === 'editor'
 
   useEffect(() => {
@@ -453,6 +459,24 @@ export default function App() {
         error instanceof Error ? error.message : 'Workspace question failed',
       )
       setWorkspaceAnswerState('error')
+    }
+  }
+
+  async function handleResearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const submittedQuestion = researchQuestion.trim()
+    if (!submittedQuestion) return
+    setResearchState('submitting')
+    setResearchError('')
+    setResearchResult(null)
+    try {
+      setResearchResult(await runResearch(submittedQuestion))
+      setResearchState('success')
+    } catch (error) {
+      setResearchError(
+        error instanceof Error ? error.message : 'Research request failed',
+      )
+      setResearchState('error')
     }
   }
 
@@ -932,6 +956,59 @@ export default function App() {
             {workspaceAnswerError && (
               <p className="notice notice--error" role="alert">
                 {workspaceAnswerError}
+              </p>
+            )}
+          </section>
+          <section className="research-agent" aria-labelledby="research-agent-title">
+            <div>
+              <p className="kicker">Bounded agent</p>
+              <h3 id="research-agent-title">Research across knowledge bases</h3>
+              <p>The model may choose up to three read-only tool calls.</p>
+            </div>
+            <form className="question-form" onSubmit={handleResearch}>
+              <label htmlFor="research-question">Research question</label>
+              <textarea
+                id="research-question"
+                value={researchQuestion}
+                maxLength={2000}
+                onChange={(event) => setResearchQuestion(event.target.value)}
+                placeholder="Compare how the indexed notes describe authorization and transaction boundaries."
+                rows={3}
+                required
+              />
+              <div className="question-form__footer">
+                <span>{researchQuestion.length} / 2,000</span>
+                <button
+                  type="submit"
+                  disabled={
+                    apiState !== 'healthy' ||
+                    !researchQuestion.trim() ||
+                    researchState === 'submitting'
+                  }
+                >
+                  {researchState === 'submitting' ? 'Researching…' : 'Run research'}
+                </button>
+              </div>
+            </form>
+            {researchResult && (
+              <div aria-live="polite">
+                <ol className="research-agent__steps">
+                  {researchResult.steps.map((step) => (
+                    <li key={`${step.ordinal}-${step.tool_name}`}>
+                      <strong>{step.tool_name}</strong>
+                      <span>{step.summary}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="research-agent__stop">
+                  Stop reason: {researchResult.stop_reason}
+                </p>
+                <Answer result={researchResult} />
+              </div>
+            )}
+            {researchError && (
+              <p className="notice notice--error" role="alert">
+                {researchError}
               </p>
             )}
           </section>

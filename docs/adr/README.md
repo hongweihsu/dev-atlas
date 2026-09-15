@@ -16,3 +16,4 @@ of every library choice.
 - [ADR-008: Cost-bounded AWS demo](008-cost-bounded-aws-demo.md)
 - [ADR-009: Product conversations with LangGraph orchestration](009-product-conversations-with-langgraph-orchestration.md)
 - [ADR-010: Server-authorized bounded tool calling](010-server-authorized-tool-calling.md)
+- [ADR-011: Bounded agentic research loop](011-bounded-agentic-research-loop.md)

@@ -156,6 +156,15 @@ export interface WorkspaceQuestionResponse {
   tools: { name: string }[]
 }
 
+export interface ResearchResponse extends AnswerResponse {
+  stop_reason: 'completed' | 'tool_budget_reached'
+  steps: {
+    ordinal: number
+    tool_name: string
+    summary: string
+  }[]
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>
 
@@ -386,6 +395,16 @@ export async function askWorkspaceQuestion(
 ): Promise<WorkspaceQuestionResponse> {
   return parseResponse(
     await authorizedFetch('/api/workspace-questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    }),
+  )
+}
+
+export async function runResearch(question: string): Promise<ResearchResponse> {
+  return parseResponse(
+    await authorizedFetch('/api/research', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question }),

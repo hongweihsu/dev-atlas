@@ -2,6 +2,7 @@ from devatlas.infrastructure.generation.openai import OpenAIAnswerGenerator
 from devatlas.infrastructure.generation.openai_contextualizer import (
     OpenAIQuestionContextualizer,
 )
+from devatlas.infrastructure.generation.openai_research_agent import OpenAIResearchAgent
 from devatlas.infrastructure.generation.openai_tool_calling import (
     OpenAIWorkspaceQuestionAnswerer,
 )
@@ -9,5 +10,6 @@ from devatlas.infrastructure.generation.openai_tool_calling import (
 __all__ = [
     "OpenAIAnswerGenerator",
     "OpenAIQuestionContextualizer",
+    "OpenAIResearchAgent",
     "OpenAIWorkspaceQuestionAnswerer",
 ]

@@ -461,6 +461,60 @@ test('asks a workspace question and shows the executed tool', async () => {
   })
 })
 
+test('runs bounded research and renders steps, stop reason, and evidence', async () => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
+    if (input === '/api/research') {
+      return jsonResponse({
+        answer: 'The unit of work commits once.',
+        has_sufficient_evidence: true,
+        stop_reason: 'completed',
+        steps: [
+          {
+            ordinal: 0,
+            tool_name: 'search_documents',
+            summary: 'Searched documents and found 1 chunks',
+          },
+        ],
+        citations: [
+          {
+            citation_id: 'C1',
+            document_id: 'document-id',
+            document_title: 'Transactions',
+            version_id: 'version-id',
+            version_number: 1,
+            chunk_id: 'chunk-id',
+            ordinal: 0,
+            text: 'A unit of work commits once.',
+            start_offset: 0,
+            end_offset: 28,
+            page_start: null,
+            page_end: null,
+          },
+        ],
+      })
+    }
+    return jsonResponse([])
+  })
+
+  render(<App />)
+  await waitFor(() =>
+    expect(screen.queryByText('Connecting…')).not.toBeInTheDocument(),
+  )
+  fireEvent.change(screen.getByLabelText('Research question'), {
+    target: { value: 'Explain transaction boundaries' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Run research' }))
+
+  expect(await screen.findByText('The unit of work commits once.')).toBeInTheDocument()
+  expect(screen.getByText('search_documents')).toBeInTheDocument()
+  expect(screen.getByText('Stop reason: completed')).toBeInTheDocument()
+  expect(screen.getByText('Transactions')).toBeInTheDocument()
+})
+
 test('shows the API error message without discarding the question', async () => {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
