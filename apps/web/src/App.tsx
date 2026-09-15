@@ -5,6 +5,7 @@ import {
   ApiRequestError,
   ConversationSummary,
   ConversationTurn,
+  CorrectiveAnswerResponse,
   DocumentSummary,
   DocumentVersionSummary,
   IngestDocumentResponse,
@@ -15,6 +16,7 @@ import {
   WorkspaceQuestionResponse,
   activateDocumentVersion,
   askConversation,
+  askCorrectiveQuestion,
   askWorkspaceQuestion,
   archiveDocument,
   checkHealth,
@@ -98,6 +100,11 @@ export default function App() {
   const [researchResult, setResearchResult] = useState<ResearchResponse | null>(null)
   const [researchState, setResearchState] = useState<RequestState>('idle')
   const [researchError, setResearchError] = useState('')
+  const [correctiveQuestion, setCorrectiveQuestion] = useState('')
+  const [correctiveResult, setCorrectiveResult] =
+    useState<CorrectiveAnswerResponse | null>(null)
+  const [correctiveState, setCorrectiveState] = useState<RequestState>('idle')
+  const [correctiveError, setCorrectiveError] = useState('')
   const canWrite = session?.role === 'owner' || session?.role === 'editor'
 
   useEffect(() => {
@@ -477,6 +484,26 @@ export default function App() {
         error instanceof Error ? error.message : 'Research request failed',
       )
       setResearchState('error')
+    }
+  }
+
+  async function handleCorrectiveQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const submittedQuestion = correctiveQuestion.trim()
+    if (!submittedQuestion || searchKnowledgeBaseIds.length === 0) return
+    setCorrectiveState('submitting')
+    setCorrectiveError('')
+    setCorrectiveResult(null)
+    try {
+      setCorrectiveResult(
+        await askCorrectiveQuestion(submittedQuestion, searchKnowledgeBaseIds),
+      )
+      setCorrectiveState('success')
+    } catch (error) {
+      setCorrectiveError(
+        error instanceof Error ? error.message : 'Corrective answer failed',
+      )
+      setCorrectiveState('error')
     }
   }
 
@@ -1009,6 +1036,55 @@ export default function App() {
             {researchError && (
               <p className="notice notice--error" role="alert">
                 {researchError}
+              </p>
+            )}
+          </section>
+          <section className="corrective-rag" aria-labelledby="corrective-rag-title">
+            <div>
+              <p className="kicker">Corrective RAG</p>
+              <h3 id="corrective-rag-title">Retry only when evidence is insufficient</h3>
+              <p>At most one alternative retrieval query is generated.</p>
+            </div>
+            <form className="question-form" onSubmit={handleCorrectiveQuestion}>
+              <label htmlFor="corrective-question">Corrective RAG question</label>
+              <textarea
+                id="corrective-question"
+                value={correctiveQuestion}
+                maxLength={2000}
+                onChange={(event) => setCorrectiveQuestion(event.target.value)}
+                rows={3}
+                required
+              />
+              <div className="question-form__footer">
+                <span>{correctiveQuestion.length} / 2,000</span>
+                <button
+                  type="submit"
+                  disabled={
+                    apiState !== 'healthy' ||
+                    !correctiveQuestion.trim() ||
+                    searchKnowledgeBaseIds.length === 0 ||
+                    correctiveState === 'submitting'
+                  }
+                >
+                  {correctiveState === 'submitting'
+                    ? 'Checking evidence…'
+                    : 'Run corrective answer'}
+                </button>
+              </div>
+            </form>
+            {correctiveResult && (
+              <div aria-live="polite">
+                <p className="corrective-rag__status">
+                  {correctiveResult.correction_applied
+                    ? `Correction applied: ${correctiveResult.corrective_query}`
+                    : 'Correction not needed'}
+                </p>
+                <Answer result={correctiveResult} />
+              </div>
+            )}
+            {correctiveError && (
+              <p className="notice notice--error" role="alert">
+                {correctiveError}
               </p>
             )}
           </section>

@@ -515,6 +515,40 @@ test('runs bounded research and renders steps, stop reason, and evidence', async
   expect(screen.getByText('Transactions')).toBeInTheDocument()
 })
 
+test('shows when corrective retrieval changed the query', async () => {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    if (input === '/api/health') {
+      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+    }
+    if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
+    if (input === '/api/corrective-answers') {
+      return jsonResponse({
+        answer: 'The indexed evidence is still insufficient.',
+        has_sufficient_evidence: false,
+        citations: [],
+        correction_applied: true,
+        corrective_query: 'transaction boundary unit of work',
+      })
+    }
+    return jsonResponse([])
+  })
+
+  render(<App />)
+  await waitFor(() =>
+    expect(screen.queryByText('Connecting…')).not.toBeInTheDocument(),
+  )
+  fireEvent.change(screen.getByLabelText('Corrective RAG question'), {
+    target: { value: 'Why does it matter?' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Run corrective answer' }))
+
+  expect(
+    await screen.findByText(
+      'Correction applied: transaction boundary unit of work',
+    ),
+  ).toBeInTheDocument()
+})
+
 test('shows the API error message without discarding the question', async () => {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {

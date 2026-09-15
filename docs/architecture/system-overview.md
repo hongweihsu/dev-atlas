@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 14 bounded, permission-aware agentic research. This document
+Phase 15 evidence-triggered corrective retrieval. This document
 distinguishes implemented components from planned architecture.
 
 ## Implemented runtime
@@ -114,6 +114,10 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   forces final synthesis. Scope IDs are re-authorized, citation IDs must match
   retrieved chunks, and React exposes ordered steps, stop reason, and complete
   source provenance.
+- **Corrective answers:** `POST /corrective-answers` first runs the normal
+  authorized grounded-answer path. Only an insufficient result triggers one
+  query rewrite and one retry in the same KnowledgeBase scope. The API and React
+  expose whether correction ran and the exact alternative query.
 
 The health endpoint is a liveness signal. It intentionally has no database query,
 so a database incident does not make the API process itself appear dead. A

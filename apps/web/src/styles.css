@@ -138,6 +138,11 @@ button[type='submit']:disabled { cursor: not-allowed; opacity: 0.42; }
 .research-agent__steps span, .research-agent__stop { color: #718079; font: 0.68rem ui-monospace, monospace; }
 .research-agent__stop { margin: 0.65rem 0 0; text-transform: uppercase; }
 
+.corrective-rag { display: grid; gap: 1rem; margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #31423b; background: rgba(243, 187, 114, 0.035); }
+.corrective-rag h3 { margin: 0.3rem 0 0; color: #dce5e1; font-size: 1rem; }
+.corrective-rag > div > p:last-child { margin: 0.4rem 0 0; color: #718079; font-size: 0.75rem; }
+.corrective-rag__status { margin: 1rem 0 0; padding: 0.65rem; border-left: 2px solid #f3bb72; color: #f3bb72; background: #0a1512; font: 0.68rem ui-monospace, monospace; }
+
 .conversation-list { margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid #2a3933; }
 .conversation-list__heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.7rem; }
 .conversation-list__heading h3 { margin: 0; color: #91a19b; font: 500 0.72rem ui-monospace, monospace; letter-spacing: 0.1em; text-transform: uppercase; }

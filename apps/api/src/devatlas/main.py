@@ -9,6 +9,7 @@ from openai import AsyncOpenAI
 from devatlas.api.router import api_router
 from devatlas.application.answer_documents import AnswerDocuments
 from devatlas.application.answer_workspace_question import AnswerWorkspaceQuestion
+from devatlas.application.corrective_answer_documents import CorrectiveAnswerDocuments
 from devatlas.application.hybrid_retrieval import HybridChunkSearchRepository
 from devatlas.application.ingest_document import IngestNewDocument
 from devatlas.application.list_documents import ListDocuments
@@ -34,6 +35,7 @@ from devatlas.infrastructure.database import (
 from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
 from devatlas.infrastructure.generation import (
     OpenAIAnswerGenerator,
+    OpenAICorrectiveQueryGenerator,
     OpenAIQuestionContextualizer,
     OpenAIResearchAgent,
     OpenAIWorkspaceQuestionAnswerer,
@@ -142,6 +144,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 ),
             )
             application.state.answer_documents = answer_documents
+            application.state.corrective_answer_documents = CorrectiveAnswerDocuments(
+                answer_documents=answer_documents,
+                query_generator=OpenAICorrectiveQueryGenerator(
+                    client, model=app_settings.answer_model
+                ),
+            )
             application.state.manage_conversations = ManageConversations(
                 repository=SqlAlchemyConversationRepository(session_factory),
                 contextualizer=OpenAIQuestionContextualizer(
@@ -185,6 +193,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 del application.state.run_agentic_research
                 del application.state.manage_conversations
                 del application.state.answer_documents
+                del application.state.corrective_answer_documents
                 del application.state.search_documents
                 del application.state.ingest_new_document
                 await client.close()

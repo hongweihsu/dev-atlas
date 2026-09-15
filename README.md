@@ -43,6 +43,9 @@ a full-stack foundation into a measured, permission-aware retrieval system.
 - Phase 14 bounded agentic research lets the model sequentially select
   KnowledgeBase discovery or authorized hybrid search, while the server enforces
   a three-call budget, citation provenance, and an explicit stop reason
+- Phase 15 corrective RAG retries retrieval once only after a validated
+  insufficient-evidence result, preserving authorization and exposing the
+  alternative query without charging successful first-pass questions
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
 - Cognito admin-only login uses OAuth Authorization Code + PKCE; a dedicated
@@ -94,6 +97,8 @@ a full-stack foundation into a measured, permission-aware retrieval system.
   through an authorized function tool rather than document retrieval
 - Typed `POST /research` returns a cited synthesis plus inspectable tool steps
   and distinguishes normal completion from a forced tool-budget stop
+- Typed `POST /corrective-answers` reports whether evidence-triggered query
+  correction ran and still permits an honest insufficient-evidence result
 - React document workspace for text upload, persistent document selection,
   drag-and-drop input, tabbed create/version forms, consecutive version
   replacement, questions, answer sufficiency, and expandable citation provenance

@@ -165,6 +165,11 @@ export interface ResearchResponse extends AnswerResponse {
   }[]
 }
 
+export interface CorrectiveAnswerResponse extends AnswerResponse {
+  correction_applied: boolean
+  corrective_query: string | null
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.ok) return response.json() as Promise<T>
 
@@ -408,6 +413,23 @@ export async function runResearch(question: string): Promise<ResearchResponse> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question }),
+    }),
+  )
+}
+
+export async function askCorrectiveQuestion(
+  question: string,
+  knowledgeBaseIds: string[],
+): Promise<CorrectiveAnswerResponse> {
+  return parseResponse(
+    await authorizedFetch('/api/corrective-answers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        limit: 5,
+        knowledge_base_ids: knowledgeBaseIds,
+      }),
     }),
   )
 }
