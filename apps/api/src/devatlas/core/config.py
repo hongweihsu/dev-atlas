@@ -23,9 +23,14 @@ class Settings(BaseSettings):
     auth_development_mode: bool = False
     observability_metrics_token: SecretStr | None = None
 
-    @field_validator("openai_api_key", "observability_metrics_token", mode="before")
+    @field_validator(
+        "openai_api_key",
+        "auth_jwt_secret",
+        "observability_metrics_token",
+        mode="before",
+    )
     @classmethod
-    def empty_openai_key_is_unconfigured(cls, value: object) -> object:
+    def empty_secret_is_unconfigured(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip():
             return None
         return value

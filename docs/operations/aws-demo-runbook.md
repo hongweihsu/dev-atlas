@@ -52,6 +52,12 @@ instance role, verify its checksum, extract it into a staging directory, and
 atomically replace `/opt/devatlas`. Keep the previous directory until the smoke
 test passes.
 
+EC2 bootstrap installs pinned Docker Compose and Buildx CLI plugins from
+Docker's official releases and verifies both ARM64 binaries against their
+published SHA-256 checksums. This is required because the Amazon Linux 2023
+repository used by the demo does not currently provide a compatible Compose
+package, and its bundled Buildx is older than current Compose requires.
+
 Then run on EC2:
 
 ```bash
