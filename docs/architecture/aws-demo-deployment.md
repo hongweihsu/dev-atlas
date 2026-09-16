@@ -6,7 +6,7 @@ Phase 10 targets an always-available learning demo in Sydney with a user limit
 of AUD 50 per month and an AWS budget of USD 30. The architecture optimizes for
 explainability and cost control rather than high availability.
 
-## Planned topology
+## Deployed topology
 
 ```text
 Browser
@@ -95,5 +95,13 @@ the React application.
 A daily systemd timer creates a PostgreSQL custom-format dump and uploads it to
 the private backup bucket. Restore requires an exact object URI and explicit
 `CONFIRM_RESTORE=yes`, stops API and worker, validates the archive, restores,
-reapplies migrations, and restarts the services. These procedures remain
-unverified until a disposable AWS restore rehearsal succeeds.
+reapplies migrations, and restarts the services. The timer is installed and
+active in production; the destructive restore procedure remains unverified
+until a disposable AWS rehearsal succeeds.
+
+Production deployment packages one Git commit as a private S3 source artifact,
+records its SHA-256 checksum, and grants the instance role read access only to
+the artifact prefix. EC2 verifies the checksum before extraction, runs Alembic
+as a gate, and then starts the production Compose services. The deployed host
+has passed local health and protected-metrics checks, CloudFront API health, and
+automatic container recovery after an EC2 stop/start.

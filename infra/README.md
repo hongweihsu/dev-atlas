@@ -33,11 +33,14 @@ terraform plan -var-file=dev.tfvars -var='budget_alert_email=you@example.com'
 The checked-in variables contain no secrets. OpenAI and production identity
 settings will be written to SSM separately and never committed.
 
-## Known first-slice limitations
+## Deployed demo status and limitations
 
 - One EC2 instance is a documented single point of failure.
 - PostgreSQL and Redis are not managed services.
-- Production Compose and backup/restore tooling are implemented but not yet
-  exercised on AWS. Cognito, monitoring, and scheduled shutdown remain Phase 10
-  follow-up slices.
+- Production Compose, Cognito login, SSM runtime parameters, CloudWatch alarms,
+  a protected metrics endpoint, and the daily backup timer are live on AWS.
+- Backup upload and destructive restore still require a disposable recovery
+  rehearsal before recovery-time claims can be made.
+- Deployment uses a private, checksum-verified S3 source artifact and builds
+  images on EC2; a mature pipeline would build and scan immutable images in CI.
 - A budget sends alerts; it is not a guaranteed kill switch.

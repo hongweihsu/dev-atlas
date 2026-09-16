@@ -93,13 +93,14 @@ the application counters.
 
 ## Verification evidence
 
-- Backend quality gate: Ruff, strict mypy, and 213 passing tests, with five
+- Backend quality gate: Ruff, strict mypy, and 214 passing tests, with five
   environment-gated integration skips.
 - Frontend quality gate: ESLint, TypeScript, 16 component tests, and production
   Vite build.
 - Infrastructure gate: valid Terraform, renderable production Compose, checked
-  shell syntax, cost constraints, encrypted runtime parameters, and explicit
-  backup/restore procedures.
+  shell syntax, cost constraints, encrypted runtime parameters, a deployed
+  checksum-verified source artifact, successful migrations, post-reboot health,
+  protected metrics, and an active backup timer.
 - Retrieval evidence: reviewed project fixtures plus three public NanoBEIR
   tasks, with reports retaining configuration, limitations, and per-strategy
   results.
@@ -111,6 +112,10 @@ the application counters.
   by a continuous scraper; SLO targets are not achievement claims.
 - Text-layer PDFs are supported; OCR and general multimodal understanding are
   not.
+- Cognito users and workspace memberships are operator-provisioned; self-service
+  invitations, workspace creation, and workspace selection are not implemented.
+- Backup automation is installed, but a disposable restore rehearsal has not
+  yet established a measured recovery time.
 - LangSmith is not enabled. Before exporting detailed AI traces, the project
   needs an explicit redaction, sampling, retention, and environment policy.
 - BM25 currently rebuilds from active chunks per request; a measured threshold,

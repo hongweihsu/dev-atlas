@@ -3,7 +3,7 @@
 **AI Technical Research & Knowledge Platform**
 
 DevAtlas is a learning-first, production-oriented AI engineering project for
-organizing and researching technical knowledge. It will grow deliberately from
+organizing and researching technical knowledge. It has grown deliberately from
 a full-stack foundation into a measured, permission-aware retrieval system.
 
 For the implementation narrative, measured results, trade-offs, and intentional
@@ -37,6 +37,10 @@ limitations, see the [engineering case study](docs/case-study.md).
   delivery, a single ARM EC2 Docker host, CloudFront-only API ingress, SSM
   administration, encrypted gp3 storage, private backups, monitoring, and USD
   30 budget alerts
+- Checksum-verified private S3 source artifacts deploy the current application
+  to EC2 without exposing repository credentials; Alembic gates startup and
+  production Compose restores the API, worker, Redis, and PostgreSQL after a
+  host restart
 - Bounded Phase 12 conversation memory with a LangGraph
   load-history → contextualize → answer → persist workflow, PostgreSQL-backed
   turn history, workspace/user ownership, and reloadable citation snapshots
@@ -121,10 +125,12 @@ limitations, see the [engineering case study](docs/case-study.md).
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- Reconcile current application changes with the live AWS demo and exercise the
-  documented operator diagnostics and rollback path
-- Portfolio case-study polish using only reproducible architecture, evaluation,
-  test, and deployment evidence
+- OCR and structure-preserving table extraction for PDFs that cannot be handled
+  faithfully by the current text-layer parser
+- Optional workspace onboarding and selection beyond the current
+  operator-provisioned demo workspace
+- Final authenticated browser workflow recording, screenshots, and short demo
+  video for portfolio presentation
 
 Planned capabilities are not implemented or benchmarked yet.
 
@@ -142,7 +148,7 @@ React + Vite  --->  FastAPI  --->  PostgreSQL + pgvector
 The browser calls the API; the API owns access to persistent data. During local
 development, Vite proxies `/api` requests to FastAPI. See the
 [system overview](docs/architecture/system-overview.md) and
-[domain model](docs/architecture/domain-model.md). The planned low-cost cloud
+[domain model](docs/architecture/domain-model.md). The deployed low-cost cloud
 topology is documented in the
 [AWS demo deployment](docs/architecture/aws-demo-deployment.md), and the
 sensitive-data boundary, metrics, initial SLOs, and recovery workflow are in
@@ -214,15 +220,17 @@ unset.
 
 ## Future direction
 
-The current local milestone is Phase 12 bounded conversation memory. AWS
-infrastructure and the frontend are live; deploying the PDF and conversation
-slices still awaits a rotated production OpenAI key.
+Phases 1–17 are implemented together in the AWS demo. The next product slice is
+measured PDF extraction improvement: detect pages that lack usable text, add a
+bounded OCR path, and preserve table structure before considering general image
+or diagram understanding.
 
 ## Limitations
 
-- Local token issuance is development-only; external login UX and membership
-  administration do not exist yet. The
-  hybrid comparison covers only five controlled documents and must not be
+- Local token issuance is development-only. Production uses Cognito hosted
+  login and operator-provisioned database membership; self-service invitations,
+  workspace creation, and workspace selection are not implemented. The hybrid
+  comparison covers only five controlled documents and must not be
   interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Follow-up conversation turns add one model request for standalone-question
@@ -239,3 +247,5 @@ slices still awaits a rotated production OpenAI key.
 - The health endpoint currently reports API liveness, not database readiness.
 - BM25 currently rebuilds an in-memory active-chunk index per search; its
   performance has not yet been benchmarked at representative corpus sizes.
+- PDF support reads text layers and preserves page provenance, but it does not
+  perform OCR or reliably reconstruct tables, figures, or flow diagrams.
