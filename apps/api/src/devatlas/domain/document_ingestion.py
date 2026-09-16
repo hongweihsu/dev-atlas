@@ -41,6 +41,7 @@ class PreparedTextDocument:
     byte_size: int
     character_count: int
     page_spans: tuple["PageSpan", ...] = ()
+    pages_without_text: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +68,20 @@ def prepare_document(
     )
 
 
+def validate_document_upload(
+    *, content: bytes, source_filename: str, media_type: str
+) -> None:
+    """Validate an upload envelope without requiring PDF text extraction."""
+    if source_filename.lower().endswith(".pdf") and media_type == "application/pdf":
+        _validated_pdf_reader(content, max_bytes=DEFAULT_MAX_PDF_BYTES)
+        return
+    prepare_text_document(
+        content=content,
+        source_filename=source_filename,
+        media_type=media_type,
+    )
+
+
 def prepare_pdf_document(
     *,
     content: bytes,
@@ -74,31 +89,19 @@ def prepare_pdf_document(
     media_type: str,
     max_bytes: int = DEFAULT_MAX_PDF_BYTES,
 ) -> PreparedTextDocument:
-    if len(content) > max_bytes:
-        raise DocumentValidationError(
-            DocumentValidationCode.FILE_TOO_LARGE,
-            f"file exceeds the {max_bytes}-byte limit",
-        )
-    try:
-        reader = PdfReader(BytesIO(content))
-    except PdfReadError as error:
-        raise DocumentValidationError(
-            DocumentValidationCode.INVALID_PDF, "file is not a readable PDF"
-        ) from error
-    if reader.is_encrypted:
-        raise DocumentValidationError(
-            DocumentValidationCode.ENCRYPTED_PDF,
-            "encrypted PDF files are not supported",
-        )
+    reader = _validated_pdf_reader(content, max_bytes=max_bytes)
 
     page_texts = [normalize_text(page.extract_text() or "") for page in reader.pages]
+    pages_without_text = tuple(
+        number for number, text in enumerate(page_texts, start=1) if not text
+    )
     nonempty_pages = [
         (number, text) for number, text in enumerate(page_texts, start=1) if text
     ]
     if not nonempty_pages:
         raise DocumentValidationError(
             DocumentValidationCode.NO_EXTRACTABLE_TEXT,
-            "PDF contains no extractable text; scanned-image OCR is not supported yet",
+            "PDF contains no extractable text; multimodal extraction is required",
         )
 
     parts: list[str] = []
@@ -121,7 +124,29 @@ def prepare_pdf_document(
         byte_size=len(content),
         character_count=len(normalized_text),
         page_spans=tuple(spans),
+        pages_without_text=pages_without_text,
     )
+
+
+def _validated_pdf_reader(content: bytes, *, max_bytes: int) -> PdfReader:
+    if len(content) > max_bytes:
+        raise DocumentValidationError(
+            DocumentValidationCode.FILE_TOO_LARGE,
+            f"file exceeds the {max_bytes}-byte limit",
+        )
+    try:
+        reader = PdfReader(BytesIO(content))
+    except PdfReadError as error:
+        raise DocumentValidationError(
+            DocumentValidationCode.INVALID_PDF, "file is not a readable PDF"
+        ) from error
+    if reader.is_encrypted:
+        raise DocumentValidationError(
+            DocumentValidationCode.ENCRYPTED_PDF,
+            "encrypted PDF files are not supported",
+        )
+
+    return reader
 
 
 def prepare_text_document(

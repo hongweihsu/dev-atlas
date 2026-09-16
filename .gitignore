@@ -18,6 +18,9 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# Generated local artifacts
+output/
+
 # Manual browser upload fixture retained locally
 phase-1-browser-check.txt
 

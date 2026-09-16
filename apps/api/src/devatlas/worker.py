@@ -11,6 +11,9 @@ from devatlas.application.ingest_document import (
     IngestNewDocument,
     IngestNewDocumentCommand,
 )
+from devatlas.application.ports.document_extraction import (
+    DocumentExtractionUnavailableError,
+)
 from devatlas.application.ports.embedding import EmbeddingProviderUnavailableError
 from devatlas.application.ports.persistence import DuplicateDocumentContentError
 from devatlas.core.config import get_settings
@@ -20,6 +23,7 @@ from devatlas.infrastructure.database import (
     create_session_factory,
 )
 from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
+from devatlas.infrastructure.extraction import OpenAIMultimodalDocumentExtractor
 from devatlas.infrastructure.models import DocumentVersion, IngestionJob
 from devatlas.infrastructure.persistence import SqlAlchemyIngestionUnitOfWorkFactory
 
@@ -42,6 +46,9 @@ async def startup(ctx: dict[str, Any]) -> None:
         client=client,
         ingestion=IngestNewDocument(
             embedding_provider=provider,
+            document_extractor=OpenAIMultimodalDocumentExtractor(
+                client, model=settings.answer_model
+            ),
             unit_of_work_factory=SqlAlchemyIngestionUnitOfWorkFactory(session_factory),
             expected_embedding_dimension=settings.embedding_dimension,
         ),
@@ -84,6 +91,16 @@ async def process_ingestion_job(ctx: dict[str, Any], job_id: str) -> None:
             ctx,
             identifier,
             "embedding_unavailable",
+            str(error),
+            final=attempt >= MAX_JOB_ATTEMPTS,
+        )
+        if attempt < MAX_JOB_ATTEMPTS:
+            raise Retry(defer=2**attempt) from error
+    except DocumentExtractionUnavailableError as error:
+        await _record_failure(
+            ctx,
+            identifier,
+            "document_extraction_unavailable",
             str(error),
             final=attempt >= MAX_JOB_ATTEMPTS,
         )

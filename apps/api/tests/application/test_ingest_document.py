@@ -14,6 +14,8 @@ from devatlas.application.ports.persistence import (
     DuplicateDocumentContentError,
     IngestionUnitOfWorkFactory,
 )
+from devatlas.domain.document_ingestion import PreparedTextDocument
+from devatlas.domain.text_processing import content_checksum
 from tests.fakes import (
     DeterministicEmbeddingProvider,
     FakeIngestionUnitOfWorkFactory,
@@ -94,6 +96,43 @@ async def test_ingest_new_document_uses_supplied_document_id() -> None:
 
     assert result.document_id == intended_document_id
     assert factory.committed_documents[0].id == intended_document_id
+
+
+@pytest.mark.asyncio
+async def test_ingestion_uses_injected_document_extractor() -> None:
+    class Extractor:
+        calls = 0
+
+        async def prepare(
+            self, *, content: bytes, source_filename: str, media_type: str
+        ) -> PreparedTextDocument:
+            self.calls += 1
+            text = "Extracted table: DA-42 is ready."
+            return PreparedTextDocument(
+                source_filename=source_filename,
+                media_type=media_type,
+                normalized_text=text,
+                content_checksum=content_checksum(text),
+                byte_size=len(content),
+                character_count=len(text),
+            )
+
+    extractor = Extractor()
+    factory = FakeIngestionUnitOfWorkFactory()
+    use_case = IngestNewDocument(
+        embedding_provider=DeterministicEmbeddingProvider(dimension=8),
+        document_extractor=extractor,
+        unit_of_work_factory=factory,
+        expected_embedding_dimension=8,
+    )
+
+    await use_case.execute(WORKSPACE_ID, make_command())
+
+    assert extractor.calls == 1
+    assert (
+        factory.committed_documents[0].version.normalized_text
+        == "Extracted table: DA-42 is ready."
+    )
 
 
 @pytest.mark.asyncio

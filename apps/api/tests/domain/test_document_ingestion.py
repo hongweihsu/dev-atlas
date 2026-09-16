@@ -9,6 +9,7 @@ from devatlas.domain.document_ingestion import (
     prepare_document,
     prepare_pdf_document,
     prepare_text_document,
+    validate_document_upload,
 )
 from devatlas.domain.text_processing import content_checksum
 
@@ -151,6 +152,7 @@ def test_prepare_pdf_document_preserves_one_based_page_spans(
         PageSpan(page_number=1, start_offset=0, end_offset=11),
         PageSpan(page_number=3, start_offset=13, end_offset=24),
     )
+    assert prepared.pages_without_text == (2,)
 
 
 def test_prepare_document_dispatches_pdf_and_rejects_scanned_only_pdf(
@@ -176,3 +178,25 @@ def test_prepare_document_dispatches_pdf_and_rejects_scanned_only_pdf(
         )
 
     assert captured.value.code is DocumentValidationCode.NO_EXTRACTABLE_TEXT
+
+
+def test_upload_validation_accepts_scanned_pdf_for_later_extraction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class EmptyPage:
+        def extract_text(self) -> str:
+            return ""
+
+    class Reader:
+        is_encrypted = False
+        pages = [EmptyPage()]
+
+    monkeypatch.setattr(
+        "devatlas.domain.document_ingestion.PdfReader", lambda _stream: Reader()
+    )
+
+    validate_document_upload(
+        content=b"scanned-pdf",
+        source_filename="scan.pdf",
+        media_type="application/pdf",
+    )

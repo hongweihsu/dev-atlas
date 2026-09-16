@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
+from devatlas.application.ports.document_extraction import DocumentExtractor
 from devatlas.application.ports.embedding import (
     EmbeddingProvider,
     validate_embedding_batch,
@@ -12,7 +13,11 @@ from devatlas.application.ports.persistence import (
     NewDocumentVersionRecord,
     chunk_embeddings,
 )
-from devatlas.domain.document_ingestion import PageSpan, prepare_document
+from devatlas.domain.document_ingestion import (
+    PageSpan,
+    PreparedTextDocument,
+    prepare_document,
+)
 from devatlas.domain.text_processing import chunk_text
 
 
@@ -47,6 +52,7 @@ class IngestNewDocument:
         *,
         embedding_provider: EmbeddingProvider,
         unit_of_work_factory: IngestionUnitOfWorkFactory,
+        document_extractor: DocumentExtractor | None = None,
         expected_embedding_dimension: int = 1536,
     ) -> None:
         if embedding_provider.dimension != expected_embedding_dimension:
@@ -56,6 +62,7 @@ class IngestNewDocument:
             )
         self._embedding_provider = embedding_provider
         self._unit_of_work_factory = unit_of_work_factory
+        self._document_extractor = document_extractor
 
     async def execute(
         self, workspace_id: UUID, command: IngestNewDocumentCommand
@@ -110,11 +117,19 @@ class IngestNewDocument:
         document_id: UUID,
         title: str,
     ) -> NewDocumentRecord:
-        prepared = prepare_document(
-            content=command.content,
-            source_filename=command.source_filename,
-            media_type=command.media_type,
-        )
+        prepared: PreparedTextDocument
+        if self._document_extractor is None:
+            prepared = prepare_document(
+                content=command.content,
+                source_filename=command.source_filename,
+                media_type=command.media_type,
+            )
+        else:
+            prepared = await self._document_extractor.prepare(
+                content=command.content,
+                source_filename=command.source_filename,
+                media_type=command.media_type,
+            )
         chunks = chunk_text(prepared.normalized_text)
         embeddings = await self._embedding_provider.embed(
             [chunk.text for chunk in chunks]

@@ -67,8 +67,10 @@ limitations, see the [engineering case study](docs/case-study.md).
   enforces the same mutation boundary
 - Deterministic text normalization, SHA-256 fingerprinting, and traceable
   character-based chunking
-- Package-backed extraction for bounded UTF-8 text and text-based PDFs, with
-  one-based PDF page provenance carried through chunks, search, and citations
+- Package-backed extraction for bounded UTF-8 text and text-based PDFs, plus a
+  native-first OpenAI multimodal fallback for scanned PDFs or PDFs containing
+  textless pages. Extracted Markdown tables and concise figure descriptions
+  retain one-based page provenance through chunks, search, and citations
 - Provider-independent new-document ingestion orchestration with an atomic
   persistence boundary and deterministic test doubles
 - Async SQLAlchemy repository and Unit of Work adapters, verified against a
@@ -125,8 +127,8 @@ limitations, see the [engineering case study](docs/case-study.md).
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- OCR and structure-preserving table extraction for PDFs that cannot be handled
-  faithfully by the current text-layer parser
+- Measured detection and selective re-extraction of malformed tables or figures
+  on pages that contain a text layer but lose structure in native extraction
 - Optional workspace onboarding and selection beyond the current
   operator-provisioned demo workspace
 - Final authenticated browser workflow recording, screenshots, and short demo
@@ -220,10 +222,12 @@ unset.
 
 ## Future direction
 
-Phases 1–17 are implemented together in the AWS demo. The next product slice is
-measured PDF extraction improvement: detect pages that lack usable text, add a
-bounded OCR path, and preserve table structure before considering general image
-or diagram understanding.
+Phases 1–17 are implemented together in the AWS demo. Phase 18 has started with
+a native-first PDF pipeline: inexpensive deterministic text extraction remains
+the default, while scanned PDFs and PDFs with textless pages use structured
+multimodal extraction. The next slice will detect malformed tables or figures
+even when a page technically has a text layer, then measure retrieval on a small
+representative PDF set.
 
 ## Limitations
 
@@ -247,5 +251,8 @@ or diagram understanding.
 - The health endpoint currently reports API liveness, not database readiness.
 - BM25 currently rebuilds an in-memory active-chunk index per search; its
   performance has not yet been benchmarked at representative corpus sizes.
-- PDF support reads text layers and preserves page provenance, but it does not
-  perform OCR or reliably reconstruct tables, figures, or flow diagrams.
+- The multimodal PDF fallback is triggered by missing text, not by measured
+  layout quality. A text-layer page whose table or diagram is badly flattened
+  can therefore remain on the native path. Multimodal extraction also adds
+  provider cost and latency, and its generated transcription can vary; no
+  retrieval-quality claim is made until the Phase 18 PDF evaluation is run.

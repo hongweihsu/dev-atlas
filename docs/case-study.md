@@ -21,7 +21,7 @@ Browser / React / TypeScript
 CloudFront ----> FastAPI
                     |-- PostgreSQL + pgvector
                     |-- Redis / ARQ ingestion worker
-                    |-- OpenAI embedding and generation adapters
+                    |-- OpenAI embedding, generation, and PDF vision adapters
                     `-- request/workflow telemetry
 ```
 
@@ -82,6 +82,26 @@ questions, prompts, user/workspace identifiers, retrieved chunks, and answers.
 CloudWatch watches EC2 health and CloudFront 5xx rate; service objectives remain
 targets until enough continuously retained traffic exists to measure them.
 
+### Native-first multimodal ingestion
+
+PDF ingestion keeps deterministic `pypdf` text extraction as its default. A
+fully scanned PDF or any PDF with a textless page is instead sent through a
+structured OpenAI file-input adapter that returns every page in order, renders
+tables as Markdown, and describes meaningful figures without answering or
+following document instructions. The request uses high-detail PDF vision and
+disables provider-side response storage. Page spans remain attached to chunks,
+so retrieval citations still point back to their source pages.
+
+This trigger controls cost but does not yet detect a malformed table on a page
+that contains some native text. Phase 18 will evaluate that boundary before
+expanding it.
+
+A one-page image-only fixture exercised the live local worker. Structured
+extraction preserved the `MM-731` table row and the four-step flow diagram;
+hybrid retrieval returned that page, and the grounded answer identified
+`AI Systems` / `Pilot` with a page-1 citation. This is vertical-slice evidence,
+not a general PDF accuracy benchmark.
+
 ## Failure that changed the design
 
 A live corrective-RAG request safely returned a provider-contract `502`; the
@@ -93,7 +113,7 @@ the application counters.
 
 ## Verification evidence
 
-- Backend quality gate: Ruff, strict mypy, and 214 passing tests, with five
+- Backend quality gate: Ruff, strict mypy, and 219 passing tests, with five
   environment-gated integration skips.
 - Frontend quality gate: ESLint, TypeScript, 16 component tests, and production
   Vite build.
@@ -104,14 +124,18 @@ the application counters.
 - Retrieval evidence: reviewed project fixtures plus three public NanoBEIR
   tasks, with reports retaining configuration, limitations, and per-strategy
   results.
+- PDF evidence: a visually inspected image-only table/flow fixture, successful
+  queued ingestion in one attempt, exact-identifier retrieval, and a grounded
+  page-1 citation.
 
 ## Intentional limitations
 
 - The demo is single-node and not highly available.
 - Prometheus metrics are exposed for operator snapshots but are not yet retained
   by a continuous scraper; SLO targets are not achievement claims.
-- Text-layer PDFs are supported; OCR and general multimodal understanding are
-  not.
+- Scanned and partially textless PDFs have a multimodal fallback, but native
+  pages with degraded layout are not yet automatically re-extracted or
+  retrieval-benchmarked.
 - Cognito users and workspace memberships are operator-provisioned; self-service
   invitations, workspace creation, and workspace selection are not implemented.
 - Backup automation is installed, but a disposable restore rehearsal has not

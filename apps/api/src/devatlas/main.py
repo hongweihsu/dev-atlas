@@ -33,6 +33,7 @@ from devatlas.infrastructure.database import (
     create_session_factory,
 )
 from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
+from devatlas.infrastructure.extraction import OpenAIMultimodalDocumentExtractor
 from devatlas.infrastructure.generation import (
     OpenAIAnswerGenerator,
     OpenAICorrectiveQueryGenerator,
@@ -128,6 +129,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
             application.state.ingest_new_document = IngestNewDocument(
                 embedding_provider=provider,
+                document_extractor=OpenAIMultimodalDocumentExtractor(
+                    client, model=app_settings.answer_model
+                ),
                 unit_of_work_factory=SqlAlchemyIngestionUnitOfWorkFactory(
                     session_factory
                 ),

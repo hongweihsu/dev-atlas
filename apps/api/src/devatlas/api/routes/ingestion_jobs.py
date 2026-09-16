@@ -33,7 +33,7 @@ from devatlas.domain.document_ingestion import (
     DEFAULT_MAX_UPLOAD_BYTES,
     DocumentValidationCode,
     DocumentValidationError,
-    prepare_document,
+    validate_document_upload,
 )
 
 
@@ -106,7 +106,7 @@ async def submit_ingestion_job(
             },
         )
     try:
-        prepare_document(
+        validate_document_upload(
             content=content, source_filename=filename, media_type=media_type
         )
         scope = await get_manage_knowledge_bases(request).resolve_scope(

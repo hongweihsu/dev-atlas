@@ -28,6 +28,9 @@ from devatlas.application.ingest_document import (
 from devatlas.application.list_documents import ListDocuments
 from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
 from devatlas.application.manage_document_versions import ManageDocumentVersions
+from devatlas.application.ports.document_extraction import (
+    DocumentExtractionUnavailableError,
+)
 from devatlas.application.ports.document_versions import DocumentVersionNotFoundError
 from devatlas.application.ports.embedding import (
     EmbeddingBatchError,
@@ -399,6 +402,11 @@ async def _ingest(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": "embedding_unavailable", "message": str(error)},
+        ) from error
+    except DocumentExtractionUnavailableError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": "document_extraction_unavailable", "message": str(error)},
         ) from error
     except DocumentNotFoundError as error:
         raise HTTPException(
