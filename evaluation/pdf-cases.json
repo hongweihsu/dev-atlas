@@ -1,0 +1,38 @@
+[
+  {
+    "case_id": "native-table",
+    "filename": "native-table.pdf",
+    "category": "native_text",
+    "expected_path": "native",
+    "expected_pages": [1],
+    "evidence": ["OBS-117", "Reliability"],
+    "structure_evidence": ["Telemetry agent OBS-117 Active Reliability"]
+  },
+  {
+    "case_id": "scanned-table",
+    "filename": "scanned-table.pdf",
+    "category": "scanned_table",
+    "expected_path": "multimodal",
+    "expected_pages": [1],
+    "evidence": ["MM-731", "AI Systems"],
+    "structure_evidence": ["Vision gateway MM-731 Pilot AI Systems"]
+  },
+  {
+    "case_id": "mixed-pages",
+    "filename": "mixed-pages.pdf",
+    "category": "mixed_document",
+    "expected_path": "multimodal",
+    "expected_pages": [1, 2],
+    "evidence": ["MIX-201", "MM-731"],
+    "structure_evidence": ["Vision gateway MM-731 Pilot AI Systems"]
+  },
+  {
+    "case_id": "column-order-table",
+    "filename": "column-order-table.pdf",
+    "category": "known_boundary",
+    "expected_path": "native",
+    "expected_pages": [1],
+    "evidence": ["IDX-440", "Degraded", "Search"],
+    "structure_evidence": ["Index builder IDX-440 Degraded Search"]
+  }
+]

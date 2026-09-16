@@ -37,6 +37,8 @@ dev = [
 evaluation = [
   "httpx>=0.28,<1",
   "ir-measures>=0.4.3,<1",
+  "pillow>=12,<13",
+  "reportlab>=4,<5",
 ]
 benchmark = [
   "ir-measures>=0.4.3,<1",

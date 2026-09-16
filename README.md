@@ -123,6 +123,10 @@ limitations, see the [engineering case study](docs/case-study.md).
   1.000, and 0.938 respectively; the lexical-heavy corpus limitation is explicit
 - Reproducible BM25S lifecycle benchmark with an explicit cache-review gate at
   1,000 active chunks or 25 ms measured rebuild p95
+- Four-case reviewed PDF extraction suite separates route selection, page
+  coverage, exact evidence, and table relationships. The first live baseline
+  measured 1.00/1.00/1.00/0.75 respectively and identified a concrete
+  text-present but row-structure-broken native extraction failure
 
 ### Planned
 

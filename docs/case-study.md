@@ -102,6 +102,14 @@ hybrid retrieval returned that page, and the grounded answer identified
 `AI Systems` / `Pilot` with a page-1 citation. This is vertical-slice evidence,
 not a general PDF accuracy benchmark.
 
+A follow-up four-case reviewed extraction suite measured `PathAccuracy=1.00`,
+`PageCoverage=1.00`, `EvidenceRetention=1.00`, and
+`StructureRetention=0.75`. The single structural failure was intentionally
+diagnostic: a visual table with column-major PDF operators contained all exact
+tokens, but native extraction broke their row relationship. This supports a
+selective layout-quality trigger as the next experiment, not unconditional
+vision processing.
+
 ## Failure that changed the design
 
 A live corrective-RAG request safely returned a provider-contract `502`; the
