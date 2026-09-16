@@ -38,15 +38,30 @@ docker compose --env-file .env -f compose.yml run --rm migrate \
 
 ## Deploy or update the application
 
-On the EC2 instance, connect through Systems Manager Session Manager and run:
+The repository is private, so production does not store a personal GitHub token.
+Publish an immutable archive containing only files tracked by the current Git
+commit:
+
+```bash
+./infra/aws/runtime/publish-artifact.sh
+```
+
+The command prints the S3 URI, SHA-256 checksum, and Git revision. Through
+Systems Manager, download that exact private `artifacts/*` object with the EC2
+instance role, verify its checksum, extract it into a staging directory, and
+atomically replace `/opt/devatlas`. Keep the previous directory until the smoke
+test passes.
+
+Then run on EC2:
 
 ```bash
 cd /opt/devatlas/infra/aws/runtime
 ./deploy.sh
 ```
 
-The script fast-forwards `main`, renders a mode-600 `.env` from the
-`/devatlas/demo` SSM path, builds the API image, runs Alembic to `head`, then
+For a Git checkout the script first fast-forwards `main`; for an immutable
+artifact it skips Git. It then renders a mode-600 `.env` from the
+`/devatlas/demo` SSM path, builds the API image, runs Alembic to `head`, and
 starts API, ARQ worker, Redis, and PostgreSQL. A migration failure stops the
 rollout before API/worker replacement.
 

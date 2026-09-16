@@ -43,6 +43,12 @@ data "aws_iam_policy_document" "runtime" {
     actions   = ["s3:GetObject", "s3:PutObject"]
     resources = ["${aws_s3_bucket.backup.arn}/postgres/*"]
   }
+
+  statement {
+    sid       = "ReadDeploymentArtifacts"
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.backup.arn}/artifacts/*"]
+  }
 }
 
 resource "aws_iam_role_policy" "runtime" {

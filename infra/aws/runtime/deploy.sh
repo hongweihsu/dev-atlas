@@ -1,11 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
-repository_root=$(git rev-parse --show-toplevel)
-runtime_directory="$repository_root/infra/aws/runtime"
+script_directory=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repository_root=$(cd "$script_directory/../../.." && pwd)
+runtime_directory="$script_directory"
 
-cd "$repository_root"
-git pull --ff-only origin main
+if [ -d "$repository_root/.git" ]; then
+  git -C "$repository_root" pull --ff-only origin main
+else
+  echo "Deploying immutable source artifact without a Git checkout."
+fi
 
 cd "$runtime_directory"
 ./render-env.sh /devatlas/demo .env
