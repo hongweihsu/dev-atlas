@@ -30,7 +30,9 @@ all subsequent APIs continue to require `X-Workspace-ID` and database membership
   operator editing the database.
 - A valid Cognito token does not grant access to another user's workspace.
 - The former fixed production `VITE_WORKSPACE_ID` is removed.
-- Invitations, accepting another workspace, and workspace selection remain
-  separate future features.
+- Invitations, accepting another workspace, workspace selection, and
+  editor/viewer administration were implemented as the collaboration follow-up.
 - Public signup increases abuse and provider-cost exposure. Budget alarms remain
-  required, and rate limits are needed before promotion beyond a low-traffic demo.
+  required. Shared Redis fixed-window limits now protect workspace creation,
+  invitations, and ingestion; broader distributed abuse controls remain beyond
+  the low-traffic demo scope.

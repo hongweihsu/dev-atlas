@@ -125,8 +125,9 @@ the application counters.
 
 ## Verification evidence
 
-- Backend quality gate: Ruff, strict mypy, and 238 passing tests, with seven
-  environment-gated integration skips.
+- Backend quality gate: Ruff, strict mypy, and 241 passing tests, with eight
+  environment-gated integration skips; focused PostgreSQL retention verification
+  also passes.
 - Frontend quality gate: ESLint, TypeScript, 19 component tests, and production
   Vite build.
 - Infrastructure gate: valid Terraform, renderable production Compose, checked

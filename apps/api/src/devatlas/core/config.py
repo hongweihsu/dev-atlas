@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     auth_cognito_client_id: str | None = None
     auth_development_mode: bool = False
     observability_metrics_token: SecretStr | None = None
+    mutation_rate_window_seconds: int = 3600
+    workspace_create_rate_limit: int = 5
+    invitation_create_rate_limit: int = 20
+    ingestion_create_rate_limit: int = 30
+    terminal_job_retention_days: int = 30
+    accepted_invitation_retention_days: int = 30
 
     @field_validator(
         "openai_api_key",
@@ -40,6 +46,20 @@ class Settings(BaseSettings):
     def dimension_matches_schema(cls, value: int) -> int:
         if value != 1536:
             raise ValueError("embedding_dimension must be 1536 for the current schema")
+        return value
+
+    @field_validator(
+        "mutation_rate_window_seconds",
+        "workspace_create_rate_limit",
+        "invitation_create_rate_limit",
+        "ingestion_create_rate_limit",
+        "terminal_job_retention_days",
+        "accepted_invitation_retention_days",
+    )
+    @classmethod
+    def operational_limits_are_positive(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("operational limits must be positive")
         return value
 
     @field_validator("cors_origins", mode="before")

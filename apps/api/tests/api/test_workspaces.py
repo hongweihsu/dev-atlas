@@ -19,6 +19,8 @@ from devatlas.application.ports.workspace_access import (
     WorkspaceInvitationSummary,
     WorkspaceMember,
 )
+from devatlas.core.config import Settings
+from devatlas.infrastructure.rate_limit import RateLimitExceededError
 
 
 @pytest.fixture
@@ -28,7 +30,11 @@ def workspace_api() -> Iterator[tuple[TestClient, AsyncMock, AuthorizedWorkspace
     principal = AuthenticatedPrincipal("https://identity.example", "user-subject")
     workspace = AuthorizedWorkspace(uuid4(), uuid4(), "Engineering", "owner")
     repository = AsyncMock()
+    limiter = AsyncMock()
+    repository.rate_limiter = limiter
     application.state.workspace_access_repository = repository
+    application.state.settings = Settings()
+    application.state.mutation_rate_limiter = limiter
     application.dependency_overrides[get_authenticated_principal] = lambda: principal
     application.dependency_overrides[get_authorized_workspace] = lambda: workspace
     with TestClient(application) as client:
@@ -57,6 +63,21 @@ def test_user_can_list_and_create_workspaces(
         AuthenticatedPrincipal("https://identity.example", "user-subject"),
         "Research",
     )
+
+
+def test_workspace_creation_returns_retry_after_when_rate_limited(
+    workspace_api: tuple[TestClient, AsyncMock, AuthorizedWorkspace],
+) -> None:
+    client, repository, _ = workspace_api
+    limiter = repository.rate_limiter
+    limiter.check.side_effect = RateLimitExceededError(42)
+
+    response = client.post("/workspaces", json={"name": "Too many"})
+
+    assert response.status_code == 429
+    assert response.headers["Retry-After"] == "42"
+    assert response.json()["detail"]["code"] == "rate_limit_exceeded"
+    repository.create_workspace.assert_not_awaited()
 
 
 def test_owner_can_create_email_bound_invitation(

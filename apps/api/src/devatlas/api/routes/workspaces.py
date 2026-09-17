@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 
 from devatlas.api.dependencies.authentication import CurrentPrincipal, OwnedWorkspace
+from devatlas.api.dependencies.rate_limit import enforce_mutation_rate_limit
 from devatlas.application.ports.workspace_access import (
     AuthorizedWorkspace,
     WorkspaceAccessRepository,
@@ -144,6 +145,13 @@ async def list_workspaces(
 async def create_workspace(
     body: CreateWorkspaceRequest, request: Request, principal: CurrentPrincipal
 ) -> WorkspaceResponse:
+    settings = request.app.state.settings
+    await enforce_mutation_rate_limit(
+        request,
+        identity=f"{principal.issuer}:{principal.subject}",
+        action="workspace-create",
+        limit=settings.workspace_create_rate_limit,
+    )
     return _response(await _repository(request).create_workspace(principal, body.name))
 
 
@@ -159,6 +167,13 @@ async def create_invitation(
     workspace: OwnedWorkspace,
 ) -> InvitationResponse:
     _require_matching_workspace(target_workspace_id, workspace)
+    settings = request.app.state.settings
+    await enforce_mutation_rate_limit(
+        request,
+        identity=str(workspace.user_id),
+        action="invitation-create",
+        limit=settings.invitation_create_rate_limit,
+    )
     try:
         result = await _repository(request).create_invitation(
             workspace, body.email, body.role

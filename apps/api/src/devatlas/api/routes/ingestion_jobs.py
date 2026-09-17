@@ -16,6 +16,7 @@ from fastapi import (
 from pydantic import BaseModel
 
 from devatlas.api.dependencies.authentication import CurrentWorkspace, WritableWorkspace
+from devatlas.api.dependencies.rate_limit import enforce_mutation_rate_limit
 from devatlas.api.routes.knowledge_bases import get_manage_knowledge_bases
 from devatlas.application.manage_ingestion_jobs import (
     InvalidIdempotencyKeyError,
@@ -93,6 +94,13 @@ async def submit_ingestion_job(
     knowledge_base_id: Annotated[UUID, Form()],
     title: Annotated[str, Form()] = "",
 ) -> IngestionJobResponse:
+    settings = request.app.state.settings
+    await enforce_mutation_rate_limit(
+        request,
+        identity=str(workspace.user_id),
+        action="ingestion-create",
+        limit=settings.ingestion_create_rate_limit,
+    )
     content = await file.read(DEFAULT_MAX_UPLOAD_BYTES + 1)
     filename = file.filename or ""
     media_type = file.content_type or ""

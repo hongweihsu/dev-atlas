@@ -1,8 +1,9 @@
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from arq import Retry
+from arq import Retry, cron
 from arq.connections import RedisSettings
 from openai import AsyncOpenAI
 from sqlalchemy import select
@@ -24,6 +25,7 @@ from devatlas.infrastructure.database import (
 )
 from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
 from devatlas.infrastructure.extraction import OpenAIMultimodalDocumentExtractor
+from devatlas.infrastructure.maintenance import SqlAlchemyRetentionCleaner
 from devatlas.infrastructure.models import DocumentVersion, IngestionJob
 from devatlas.infrastructure.persistence import SqlAlchemyIngestionUnitOfWorkFactory
 
@@ -149,6 +151,23 @@ async def process_ingestion_job(ctx: dict[str, Any], job_id: str) -> None:
                 await session.commit()
 
 
+async def cleanup_expired_operational_data(ctx: dict[str, Any]) -> None:
+    settings = get_settings()
+    result = await SqlAlchemyRetentionCleaner(ctx["session_factory"]).run(
+        terminal_job_retention_days=settings.terminal_job_retention_days,
+        accepted_invitation_retention_days=(
+            settings.accepted_invitation_retention_days
+        ),
+    )
+    logging.getLogger("devatlas.maintenance").info(
+        "retention_cleanup_completed",
+        extra={
+            "ingestion_jobs_deleted": result.ingestion_jobs_deleted,
+            "invitations_deleted": result.invitations_deleted,
+        },
+    )
+
+
 async def _record_failure(
     ctx: dict[str, Any],
     job_id: UUID,
@@ -175,3 +194,4 @@ class WorkerSettings:
     on_shutdown = shutdown
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)
     max_tries = MAX_JOB_ATTEMPTS
+    cron_jobs = [cron(cleanup_expired_operational_data, hour=3, minute=30)]

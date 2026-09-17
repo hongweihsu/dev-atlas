@@ -245,10 +245,10 @@ next cost optimization is selective page-only extraction and merge.
 
 - Local token issuance is development-only. Production uses Cognito hosted
   login; a verified first login idempotently creates a personal workspace.
-  Invitations, shared-workspace acceptance, and workspace selection are not
-  implemented. The hybrid
-  comparison covers only five controlled documents and must not be
-  interpreted as general, large-scale, or multilingual search accuracy.
+  Owners can create workspaces, invite editor/viewer members, and administer
+  those memberships; ownership transfer and workspace deletion are not
+  implemented. The hybrid comparison covers only five controlled documents and
+  must not be interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Follow-up conversation turns add one model request for standalone-question
   rewriting. Only the six latest turns enter memory; long-term user-profile
@@ -259,8 +259,11 @@ next cost optimization is selective page-only extraction and merge.
   committed while Redis dispatch is unavailable requires an identical client
   retry; an automatic transactional-outbox recovery sweep is not implemented.
 - New-job payload bytes are stored temporarily in PostgreSQL and cleared at a
-  terminal state; production-scale object storage and retention cleanup remain
-  future work.
+  terminal state. Daily retention cleanup removes terminal job rows older than
+  30 days; production-scale object storage remains future work.
+- Redis-backed limits bound workspace creation, invitations, and ingestion
+  submissions per authenticated identity. The current fixed-window thresholds
+  suit a low-traffic demo rather than a globally distributed service.
 - The health endpoint currently reports API liveness, not database readiness.
 - BM25 currently rebuilds an in-memory active-chunk index per search; its
   performance has not yet been benchmarked at representative corpus sizes.

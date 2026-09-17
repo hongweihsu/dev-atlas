@@ -1,4 +1,7 @@
 import os
+from datetime import UTC, datetime, timedelta
+from hashlib import sha256
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import delete, select, update
@@ -20,12 +23,15 @@ from devatlas.application.search_documents import (
 )
 from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.database import create_session_factory
+from devatlas.infrastructure.maintenance import SqlAlchemyRetentionCleaner
 from devatlas.infrastructure.models import (
     Document,
     DocumentVersion,
+    IngestionJob,
     KnowledgeBase,
     User,
     Workspace,
+    WorkspaceInvitation,
     WorkspaceMembership,
 )
 from devatlas.infrastructure.persistence import (
@@ -47,6 +53,108 @@ pytestmark = [
         reason="DEVATLAS_TEST_DATABASE_URL is not configured",
     ),
 ]
+
+
+@pytest.mark.asyncio
+async def test_retention_cleanup_removes_only_expired_operational_data() -> None:
+    assert TEST_DATABASE_URL is not None
+    engine = create_async_engine(TEST_DATABASE_URL)
+    session_factory = create_session_factory(engine)
+    repository = SqlAlchemyWorkspaceAccessRepository(session_factory)
+    principal = AuthenticatedPrincipal(
+        issuer="https://retention.integration.example",
+        subject="cleanup-owner",
+        email="cleanup@example.com",
+    )
+    workspace_id = None
+    now = datetime.now(UTC)
+
+    try:
+        workspace = await repository.bootstrap_personal_workspace(principal)
+        workspace_id = workspace.workspace_id
+        expired = await repository.create_invitation(
+            workspace, "expired@example.com", "viewer"
+        )
+        active = await repository.create_invitation(
+            workspace, "active@example.com", "viewer"
+        )
+        async with session_factory.begin() as session:
+            expired_row = await session.get(WorkspaceInvitation, expired.invitation_id)
+            assert expired_row is not None
+            expired_row.expires_at = now - timedelta(days=1)
+            knowledge_base_id = await session.scalar(
+                select(KnowledgeBase.id).where(
+                    KnowledgeBase.workspace_id == workspace.workspace_id
+                )
+            )
+            assert knowledge_base_id is not None
+            for status_value, finished_at in (
+                ("succeeded", now - timedelta(days=31)),
+                ("failed", now - timedelta(days=1)),
+                ("processing", now - timedelta(days=31)),
+            ):
+                content = f"{status_value}-{finished_at}".encode()
+                session.add(
+                    IngestionJob(
+                        workspace_id=workspace.workspace_id,
+                        knowledge_base_id=knowledge_base_id,
+                        idempotency_key=str(uuid4()),
+                        status=status_value,
+                        attempt_count=1,
+                        title="Retention test",
+                        source_filename="retention.txt",
+                        media_type="text/plain",
+                        content=content,
+                        content_checksum=sha256(content).hexdigest(),
+                        finished_at=finished_at,
+                    )
+                )
+
+        result = await SqlAlchemyRetentionCleaner(session_factory).run(
+            terminal_job_retention_days=30,
+            accepted_invitation_retention_days=30,
+            now=now,
+        )
+
+        async with session_factory() as session:
+            remaining_statuses = set(
+                await session.scalars(
+                    select(IngestionJob.status).where(
+                        IngestionJob.workspace_id == workspace.workspace_id
+                    )
+                )
+            )
+            remaining_invitation_ids = set(
+                await session.scalars(
+                    select(WorkspaceInvitation.id).where(
+                        WorkspaceInvitation.workspace_id == workspace.workspace_id
+                    )
+                )
+            )
+        assert result.ingestion_jobs_deleted == 1
+        assert result.invitations_deleted == 1
+        assert remaining_statuses == {"failed", "processing"}
+        assert remaining_invitation_ids == {active.invitation_id}
+    finally:
+        if workspace_id is not None:
+            async with session_factory.begin() as session:
+                await session.execute(
+                    delete(IngestionJob).where(
+                        IngestionJob.workspace_id == workspace_id
+                    )
+                )
+                await session.execute(
+                    delete(KnowledgeBase).where(
+                        KnowledgeBase.workspace_id == workspace_id
+                    )
+                )
+                await session.execute(
+                    delete(Workspace).where(Workspace.id == workspace_id)
+                )
+                await session.execute(
+                    delete(User).where(User.identity_issuer == principal.issuer)
+                )
+        await engine.dispose()
 
 
 @pytest.mark.asyncio
