@@ -100,9 +100,10 @@ docker compose --env-file .env -f compose.yml logs api \
 ```
 
 No PostgreSQL or Redis port is published by the production Compose file.
-The React application uses Authorization Code with PKCE and keeps OIDC state in
+The React application uses Amplify Auth's Cognito SRP flow and keeps tokens in
 session storage. Local development stays on the explicit development-session
-endpoint unless the hosted `VITE_COGNITO_*` values are supplied.
+endpoint unless `VITE_COGNITO_USER_POOL_ID` and `VITE_COGNITO_CLIENT_ID` are
+supplied.
 
 ## Backup
 

@@ -35,11 +35,11 @@ import {
   submitIngestionJob,
   uploadDocumentVersion,
 } from './api'
+import { AuthPanel } from './AuthPanel'
 import {
-  restoreHostedSession,
-  signIn,
+  restoreCognitoSession,
   signOut,
-  usesHostedAuthentication,
+  usesCognitoAuthentication,
 } from './auth'
 
 type ApiState = 'checking' | 'healthy' | 'unavailable'
@@ -111,8 +111,8 @@ export default function App() {
     const controller = new AbortController()
     void checkHealth(controller.signal)
       .then(async () => {
-        if (usesHostedAuthentication) {
-          const restored = await restoreHostedSession()
+        if (usesCognitoAuthentication) {
+          const restored = await restoreCognitoSession()
           if (!restored) {
             setAuthenticationState('signed-out')
             setApiState('healthy')
@@ -156,12 +156,12 @@ export default function App() {
     setApiState('checking')
     try {
       await checkHealth()
-      if (usesHostedAuthentication && !(await restoreHostedSession())) {
+      if (usesCognitoAuthentication && !(await restoreCognitoSession())) {
         setAuthenticationState('signed-out')
         setApiState('healthy')
         return
       }
-      if (!usesHostedAuthentication) await createDevelopmentSession()
+      if (!usesCognitoAuthentication) await createDevelopmentSession()
       setSession(await getSession())
       setAuthenticationState('signed-in')
       setApiState('healthy')
@@ -183,6 +183,23 @@ export default function App() {
       )
       setVersionHistoryState('error')
     }
+  }
+
+  async function handleAuthenticated() {
+    setSession(await getSession())
+    setAuthenticationState('signed-in')
+    const loadedKnowledgeBases = await listKnowledgeBases()
+    setKnowledgeBases(loadedKnowledgeBases)
+    setUploadKnowledgeBaseId(
+      loadedKnowledgeBases.find((item) => item.is_default)?.id ??
+        loadedKnowledgeBases[0]?.id ??
+        '',
+    )
+    setSearchKnowledgeBaseIds(loadedKnowledgeBases.map((item) => item.id))
+    const loadedDocuments = await listDocuments()
+    setDocumentList(loadedDocuments)
+    setSelectedDocumentId(loadedDocuments[0]?.document_id ?? null)
+    setConversations(await listConversations())
   }
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
@@ -550,7 +567,7 @@ export default function App() {
           <div className="session-context" aria-label="Current workspace and role">
             <span>{session.workspace_name}</span>
             <strong>{session.role}</strong>
-            {usesHostedAuthentication && (
+            {usesCognitoAuthentication && (
               <button type="button" onClick={() => void signOut()}>Sign out</button>
             )}
           </div>
@@ -569,16 +586,6 @@ export default function App() {
         </div>
       )}
 
-      {apiState === 'healthy' && authenticationState === 'signed-out' && (
-        <div className="service-banner service-banner--auth" role="status">
-          <div>
-            <strong>Sign in to your private workspace</strong>
-            <span>Access is limited to accounts invited by the administrator.</span>
-          </div>
-          <button type="button" onClick={() => void signIn()}>Sign in</button>
-        </div>
-      )}
-
       <section className="hero" id="top" aria-labelledby="title">
         <p className="eyebrow">Grounded technical research</p>
         <h1 id="title">
@@ -591,6 +598,10 @@ export default function App() {
           and source offsets.
         </p>
       </section>
+
+      {apiState === 'healthy' && authenticationState === 'signed-out' && (
+        <AuthPanel onAuthenticated={handleAuthenticated} />
+      )}
 
       {authenticationState === 'signed-in' && <section className="workspace" aria-label="Document research workspace">
         <article className="panel panel--upload">
@@ -1169,7 +1180,7 @@ export default function App() {
         </article>
       </section>}
 
-      <footer>Single-user learning build · Answers are limited to indexed evidence</footer>
+      <footer>Private workspace build · Answers are limited to indexed evidence</footer>
     </main>
   )
 }

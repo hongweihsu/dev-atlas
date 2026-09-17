@@ -64,6 +64,9 @@ limitations, see the [engineering case study](docs/case-study.md).
 - Verified Cognito users can self-register; first-login bootstrap idempotently
   creates an isolated Personal Workspace, owner membership, and default scope
   without accepting a caller-selected role or workspace
+- DevAtlas-native sign-in, registration, email confirmation, and password
+  recovery use the official Amplify Auth SRP client; passwords go directly to
+  Cognito and never pass through the DevAtlas API
 - The React header displays the workspace name and role resolved by the server,
   making the active authorization context visible to the user
 - Viewer sessions enter an explained read-only UI while the API independently

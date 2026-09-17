@@ -34,6 +34,7 @@ resource "aws_cognito_user_pool_client" "web" {
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_scopes                 = ["email", "openid", "profile"]
   supported_identity_providers         = ["COGNITO"]
+  explicit_auth_flows                  = ["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
   callback_urls                        = ["https://${aws_cloudfront_distribution.app.domain_name}/auth/callback"]
   logout_urls                          = ["https://${aws_cloudfront_distribution.app.domain_name}/"]
 

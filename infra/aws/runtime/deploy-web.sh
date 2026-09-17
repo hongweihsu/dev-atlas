@@ -8,12 +8,10 @@ cloudfront_url=$(terraform -chdir="$terraform_directory" output -raw cloudfront_
 distribution_id=$(terraform -chdir="$terraform_directory" output -raw cloudfront_distribution_id)
 web_bucket=$(terraform -chdir="$terraform_directory" output -raw web_bucket_name)
 
-export VITE_COGNITO_AUTHORITY
 export VITE_COGNITO_CLIENT_ID
-export VITE_COGNITO_DOMAIN
-VITE_COGNITO_AUTHORITY=$(terraform -chdir="$terraform_directory" output -raw cognito_authority)
+export VITE_COGNITO_USER_POOL_ID
 VITE_COGNITO_CLIENT_ID=$(terraform -chdir="$terraform_directory" output -raw cognito_client_id)
-VITE_COGNITO_DOMAIN=$(terraform -chdir="$terraform_directory" output -raw cognito_domain)
+VITE_COGNITO_USER_POOL_ID=$(terraform -chdir="$terraform_directory" output -raw cognito_user_pool_id)
 
 cd "$repository_root/apps/web"
 pnpm install --frozen-lockfile

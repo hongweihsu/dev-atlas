@@ -47,6 +47,19 @@ button { cursor: pointer; }
 h1 { margin: 1rem 0 0; max-width: 62rem; font-size: clamp(3rem, 7.2vw, 6.5rem); line-height: 0.98; letter-spacing: -0.065em; font-weight: 500; }
 .subtitle { max-width: 44rem; margin: 1.8rem 0 0; color: #9aa9a3; font-size: clamp(1rem, 2vw, 1.25rem); line-height: 1.7; }
 
+.auth-card { width: min(100%, 34rem); margin: -2rem 0 6rem auto; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid #2a3933; background: rgba(12, 23, 20, 0.96); box-shadow: 1.2rem 1.2rem 0 rgba(118, 217, 158, 0.045); }
+.auth-card h2 { margin: 0.75rem 0 0; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+.auth-card__intro { margin: 0.8rem 0 1.8rem; color: #91a19b; line-height: 1.6; }
+.auth-form { display: grid; gap: 1rem; }
+.auth-form input { width: 100%; height: 3rem; padding: 0 0.9rem; border: 1px solid #31423b; border-radius: 0; outline: none; color: #eef2f0; background: #0a1512; }
+.auth-form input:focus { border-color: #76d99e; box-shadow: 0 0 0 3px rgba(118, 217, 158, 0.08); }
+.auth-message { margin: 0; padding: 0.75rem; border-left: 2px solid; background: #0a1512; font-size: 0.78rem; line-height: 1.5; }
+.auth-message--success { border-color: #76d99e; color: #9be8b9; }
+.auth-message--error { border-color: #f08278; color: #ffc2bc; }
+.auth-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin-top: 1rem; }
+.auth-actions button { padding: 0.35rem 0; border: 0; color: #91a19b; background: transparent; font-size: 0.74rem; }
+.auth-actions button:hover { color: #76d99e; }
+
 .workspace { display: grid; grid-template-columns: minmax(18rem, 0.72fr) minmax(24rem, 1.28fr); gap: 1px; max-width: 86rem; margin: 0 auto 5rem; background: #2a3933; border: 1px solid #2a3933; }
 .panel { padding: clamp(1.5rem, 4vw, 3rem); background: rgba(12, 23, 20, 0.96); }
 .panel__heading { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 2.2rem; }
@@ -212,6 +225,7 @@ footer { max-width: 86rem; margin: 0 auto; color: #607069; font: 0.68rem ui-mono
   .sources summary small { grid-column: 2; }
   .service-banner { align-items: stretch; flex-direction: column; }
   .workspace-tools form { grid-template-columns: 1fr; }
+  .auth-card { margin: -1rem auto 4rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -12,7 +12,7 @@ explainability and cost control rather than high availability.
 Browser
   |
   v
-Amazon Cognito (self-registration + verified email, OAuth code + PKCE)
+Amazon Cognito (self-registration + verified email, Amplify Auth SRP)
   |
   v
 CloudFront default HTTPS domain
@@ -31,7 +31,9 @@ CloudFront default HTTPS domain
                └── PostgreSQL + pgvector
 ```
 
-The SPA sends the Cognito access token to FastAPI. FastAPI verifies its RS256
+The SPA uses a DevAtlas-native authentication UI while the official Amplify Auth
+client performs SRP, confirmation, recovery, and token refresh directly with
+Cognito. It sends the resulting access token to FastAPI. FastAPI verifies its RS256
 signature, issuer, expiry, `token_use=access`, client ID, and subject against
 Cognito JWKS. A valid
 token proves identity only. On first login, authenticated bootstrap creates an

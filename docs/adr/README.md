@@ -21,3 +21,4 @@ of every library choice.
 - [ADR-013: Native-first multimodal PDF extraction](013-native-first-multimodal-pdf-extraction.md)
 - [ADR-014: Conservative PDF layout trigger](014-conservative-pdf-layout-trigger.md)
 - [ADR-015: Self-service personal workspace onboarding](015-self-service-personal-workspace-onboarding.md)
+- [ADR-016: Custom Cognito authentication UI](016-custom-cognito-authentication-ui.md)
