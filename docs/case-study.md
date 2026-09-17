@@ -84,17 +84,18 @@ targets until enough continuously retained traffic exists to measure them.
 
 ### Native-first multimodal ingestion
 
-PDF ingestion keeps deterministic `pypdf` text extraction as its default. A
-fully scanned PDF or any PDF with a textless page is instead sent through a
+PDF ingestion keeps deterministic `pypdf` text extraction for ordinary prose.
+A local geometry pass flags textless pages, table-like rectangles, large images,
+and suspicious jumps back toward the top of a page. A flagged document is sent through a
 structured OpenAI file-input adapter that returns every page in order, renders
 tables as Markdown, and describes meaningful figures without answering or
 following document instructions. The request uses high-detail PDF vision and
 disables provider-side response storage. Page spans remain attached to chunks,
 so retrieval citations still point back to their source pages.
 
-This trigger controls cost but does not yet detect a malformed table on a page
-that contains some native text. Phase 18 will evaluate that boundary before
-expanding it.
+This conservative trigger controls the quality boundary while leaving a pure
+text path free of provider cost. It records reason codes so future evaluation
+can tune false positives rather than hiding the routing decision.
 
 A one-page image-only fixture exercised the live local worker. Structured
 extraction preserved the `MM-731` table row and the four-step flow diagram;
@@ -102,13 +103,16 @@ hybrid retrieval returned that page, and the grounded answer identified
 `AI Systems` / `Pilot` with a page-1 citation. This is vertical-slice evidence,
 not a general PDF accuracy benchmark.
 
-A follow-up four-case reviewed extraction suite measured `PathAccuracy=1.00`,
+A first four-case reviewed extraction suite measured `PathAccuracy=1.00`,
 `PageCoverage=1.00`, `EvidenceRetention=1.00`, and
 `StructureRetention=0.75`. The single structural failure was intentionally
 diagnostic: a visual table with column-major PDF operators contained all exact
 tokens, but native extraction broke their row relationship. This supports a
 selective layout-quality trigger as the next experiment, not unconditional
-vision processing.
+vision processing. A subsequent five-case run added a pure-text control and the
+implemented layout trigger; all four metrics reached 1.00, including recovery of
+the column-major row relationship. This is diagnostic evidence, not a general
+accuracy claim.
 
 ## Failure that changed the design
 
@@ -141,9 +145,8 @@ the application counters.
 - The demo is single-node and not highly available.
 - Prometheus metrics are exposed for operator snapshots but are not yet retained
   by a continuous scraper; SLO targets are not achievement claims.
-- Scanned and partially textless PDFs have a multimodal fallback, but native
-  pages with degraded layout are not yet automatically re-extracted or
-  retrieval-benchmarked.
+- Suspicious PDF layout triggers whole-document multimodal extraction; selective
+  page-only extraction and merge are not yet implemented.
 - Cognito users and workspace memberships are operator-provisioned; self-service
   invitations, workspace creation, and workspace selection are not implemented.
 - Backup automation is installed, but a disposable restore rehearsal has not

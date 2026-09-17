@@ -1,9 +1,18 @@
 [
   {
-    "case_id": "native-table",
-    "filename": "native-table.pdf",
+    "case_id": "native-text",
+    "filename": "native-text.pdf",
     "category": "native_text",
     "expected_path": "native",
+    "expected_pages": [1],
+    "evidence": ["TXT-101", "health check before deployment"],
+    "structure_evidence": []
+  },
+  {
+    "case_id": "native-table",
+    "filename": "native-table.pdf",
+    "category": "text_table",
+    "expected_path": "multimodal",
     "expected_pages": [1],
     "evidence": ["OBS-117", "Reliability"],
     "structure_evidence": ["Telemetry agent OBS-117 Active Reliability"]
@@ -30,7 +39,7 @@
     "case_id": "column-order-table",
     "filename": "column-order-table.pdf",
     "category": "known_boundary",
-    "expected_path": "native",
+    "expected_path": "multimodal",
     "expected_pages": [1],
     "evidence": ["IDX-440", "Degraded", "Search"],
     "structure_evidence": ["Index builder IDX-440 Degraded Search"]

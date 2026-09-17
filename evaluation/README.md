@@ -131,10 +131,11 @@ uv run --extra evaluation python -m devatlas.evaluation.retrieval \
 - [2026-09-11 Phase 4 adversarial context hybrid comparison](reports/2026-09-11-phase-4-context-hybrid-comparison.md)
 - [2026-09-11 NanoBEIR three-task baseline](reports/2026-09-11-nanobeir-three-task-baseline.md)
 - [2026-09-17 Phase 18 PDF extraction baseline](reports/2026-09-17-phase-18-pdf-extraction.md)
+- [2026-09-17 Phase 18 PDF layout-trigger comparison](reports/2026-09-17-phase-18-layout-trigger.md)
 
 ## Phase 18 PDF extraction suite
 
-`pdf-cases.json` is a four-case, human-reviewed extraction suite rather than a
+`pdf-cases.json` is a five-case, human-reviewed extraction suite rather than a
 large synthetic benchmark. It separates path selection, page coverage, token
 retention, and row/relationship structure so an exact identifier hit cannot hide
 a broken table relationship.
@@ -151,9 +152,10 @@ uv run --extra evaluation python -m devatlas.evaluation.pdf_extraction \
   --report ../../evaluation/runs/phase18-pdf-extraction.json
 ```
 
-Only the scanned and mixed-document cases call the multimodal provider. The
-generated PDFs and JSON run report remain local; reviewed judgments, generator,
-runner, tests, and the dated result interpretation are versioned.
+Pure prose stays native. Tables, large images, textless pages, and suspicious
+reading order call the multimodal provider. The generated PDFs and JSON run
+report remain local; reviewed judgments, generator, runner, tests, and dated
+result interpretations are versioned.
 
 ## Planned public benchmark
 

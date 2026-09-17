@@ -67,9 +67,9 @@ limitations, see the [engineering case study](docs/case-study.md).
   enforces the same mutation boundary
 - Deterministic text normalization, SHA-256 fingerprinting, and traceable
   character-based chunking
-- Package-backed extraction for bounded UTF-8 text and text-based PDFs, plus a
-  native-first OpenAI multimodal fallback for scanned PDFs or PDFs containing
-  textless pages. Extracted Markdown tables and concise figure descriptions
+- Package-backed extraction for bounded UTF-8 text and PDFs, plus a native-first
+  OpenAI multimodal fallback for scanned pages and pages with table graphics,
+  large images, or suspicious reading order. Extracted Markdown tables and concise figure descriptions
   retain one-based page provenance through chunks, search, and citations
 - Provider-independent new-document ingestion orchestration with an atomic
   persistence boundary and deterministic test doubles
@@ -123,16 +123,15 @@ limitations, see the [engineering case study](docs/case-study.md).
   1.000, and 0.938 respectively; the lexical-heavy corpus limitation is explicit
 - Reproducible BM25S lifecycle benchmark with an explicit cache-review gate at
   1,000 active chunks or 25 ms measured rebuild p95
-- Four-case reviewed PDF extraction suite separates route selection, page
-  coverage, exact evidence, and table relationships. The first live baseline
-  measured 1.00/1.00/1.00/0.75 respectively and identified a concrete
-  text-present but row-structure-broken native extraction failure
+- Five-case reviewed PDF extraction suite separates route selection, page
+  coverage, exact evidence, and table relationships. A conservative layout
+  trigger raised reviewed StructureRetention from 0.75 to 1.00 while keeping a
+  pure-text control on the native path
 
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- Measured detection and selective re-extraction of malformed tables or figures
-  on pages that contain a text layer but lose structure in native extraction
+- Selective page-only multimodal extraction and merge for suspicious mixed PDFs
 - Optional workspace onboarding and selection beyond the current
   operator-provisioned demo workspace
 - Final authenticated browser workflow recording, screenshots, and short demo
@@ -226,12 +225,11 @@ unset.
 
 ## Future direction
 
-Phases 1–17 are implemented together in the AWS demo. Phase 18 has started with
-a native-first PDF pipeline: inexpensive deterministic text extraction remains
-the default, while scanned PDFs and PDFs with textless pages use structured
-multimodal extraction. The next slice will detect malformed tables or figures
-even when a page technically has a text layer, then measure retrieval on a small
-representative PDF set.
+Phases 1–17 are implemented together in the AWS demo. Phase 18 now has a
+native-first PDF pipeline with a conservative local layout detector. Pure prose
+uses deterministic extraction; scanned pages, table graphics, large images, and
+suspicious reading-order jumps trigger structured multimodal extraction. The
+next cost optimization is selective page-only extraction and merge.
 
 ## Limitations
 
@@ -255,8 +253,8 @@ representative PDF set.
 - The health endpoint currently reports API liveness, not database readiness.
 - BM25 currently rebuilds an in-memory active-chunk index per search; its
   performance has not yet been benchmarked at representative corpus sizes.
-- The multimodal PDF fallback is triggered by missing text, not by measured
-  layout quality. A text-layer page whose table or diagram is badly flattened
-  can therefore remain on the native path. Multimodal extraction also adds
-  provider cost and latency, and its generated transcription can vary; no
-  retrieval-quality claim is made until the Phase 18 PDF evaluation is run.
+- PDF layout routing uses conservative rectangle, image-area, and reading-order
+  heuristics. It can send decorative or non-linear pages through multimodal
+  extraction unnecessarily, adding provider cost and latency; generated
+  transcription can also vary. Five reviewed fixtures justify the current
+  decision but do not establish general PDF accuracy.

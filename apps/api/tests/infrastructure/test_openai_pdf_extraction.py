@@ -12,6 +12,7 @@ from devatlas.domain.document_ingestion import PageSpan, PreparedTextDocument
 from devatlas.infrastructure.extraction.openai_pdf import (
     OpenAIMultimodalDocumentExtractor,
 )
+from devatlas.infrastructure.extraction.pdf_layout import PdfPageLayout
 
 
 def make_client() -> tuple[AsyncOpenAI, AsyncMock]:
@@ -19,6 +20,19 @@ def make_client() -> tuple[AsyncOpenAI, AsyncMock]:
     client = MagicMock(spec=AsyncOpenAI)
     client.responses.parse = parse
     return cast(AsyncOpenAI, client), parse
+
+
+def layout(*reasons: str) -> tuple[PdfPageLayout, ...]:
+    return (
+        PdfPageLayout(
+            page_number=1,
+            has_text=True,
+            table_rectangle_count=4 if "table_graphics" in reasons else 0,
+            largest_image_area_ratio=0.0,
+            suspicious_reading_order="suspicious_reading_order" in reasons,
+            reasons=reasons,
+        ),
+    )
 
 
 @pytest.mark.asyncio
@@ -38,6 +52,10 @@ async def test_native_pdf_text_does_not_call_multimodal_api(
     monkeypatch.setattr(
         "devatlas.infrastructure.extraction.openai_pdf.prepare_document",
         lambda **_kwargs: native,
+    )
+    monkeypatch.setattr(
+        "devatlas.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
+        lambda _content: layout(),
     )
     extractor = OpenAIMultimodalDocumentExtractor(client)
 
@@ -66,6 +84,10 @@ async def test_textless_pdf_uses_structured_multimodal_extraction(
             page_spans=(PageSpan(1, 0, 7),),
             pages_without_text=(2,),
         ),
+    )
+    monkeypatch.setattr(
+        "devatlas.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
+        lambda _content: layout("no_text"),
     )
     parse.return_value = SimpleNamespace(
         output_parsed=SimpleNamespace(
@@ -109,6 +131,10 @@ async def test_multimodal_extraction_rejects_duplicate_page_numbers(
             pages_without_text=(2,),
         ),
     )
+    monkeypatch.setattr(
+        "devatlas.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
+        lambda _content: layout("no_text"),
+    )
     parse.return_value = SimpleNamespace(
         output_parsed=SimpleNamespace(
             pages=[
@@ -123,3 +149,39 @@ async def test_multimodal_extraction_rejects_duplicate_page_numbers(
         await extractor.prepare(
             content=b"pdf", source_filename="scan.pdf", media_type="application/pdf"
         )
+
+
+@pytest.mark.asyncio
+async def test_text_layer_table_still_uses_multimodal_extraction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, parse = make_client()
+    monkeypatch.setattr(
+        "devatlas.infrastructure.extraction.openai_pdf.prepare_document",
+        lambda **_kwargs: PreparedTextDocument(
+            source_filename="table.pdf",
+            media_type="application/pdf",
+            normalized_text="Component Code State Owner",
+            content_checksum="checksum",
+            byte_size=3,
+            character_count=26,
+            page_spans=(PageSpan(1, 0, 26),),
+        ),
+    )
+    monkeypatch.setattr(
+        "devatlas.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
+        lambda _content: layout("table_graphics"),
+    )
+    parse.return_value = SimpleNamespace(
+        output_parsed=SimpleNamespace(
+            pages=[SimpleNamespace(page_number=1, markdown="| A | B |")]
+        )
+    )
+    extractor = OpenAIMultimodalDocumentExtractor(client)
+
+    result = await extractor.prepare(
+        content=b"pdf", source_filename="table.pdf", media_type="application/pdf"
+    )
+
+    assert result.normalized_text == "| A | B |"
+    parse.assert_awaited_once()

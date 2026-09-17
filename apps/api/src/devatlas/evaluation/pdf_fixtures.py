@@ -15,16 +15,39 @@ from reportlab.pdfgen import canvas  # type: ignore[import-untyped]
 
 def generate_pdf_fixtures(output: Path) -> tuple[Path, ...]:
     output.mkdir(parents=True, exist_ok=True)
+    native_text = output / "native-text.pdf"
     native = output / "native-table.pdf"
     scanned = output / "scanned-table.pdf"
     mixed = output / "mixed-pages.pdf"
     column_order = output / "column-order-table.pdf"
+    _native_text(native_text)
     _native_table(native)
     scanned_page = _scanned_table_page()
     _image_pdf(scanned, scanned_page)
     _mixed_pdf(mixed, scanned_page)
     _column_order_table(column_order)
-    return native, scanned, mixed, column_order
+    return native_text, native, scanned, mixed, column_order
+
+
+def _native_text(path: Path) -> None:
+    document = canvas.Canvas(str(path), pagesize=A4)
+    _paint_white_page(document)
+    document.setTitle("Native text fixture")
+    document.setFillColor(colors.HexColor("#102a43"))
+    document.setFont("Helvetica-Bold", 22)
+    document.drawString(24 * mm, 270 * mm, "Plain-text Operations Note")
+    document.setFont("Helvetica", 12)
+    document.drawString(
+        24 * mm,
+        250 * mm,
+        "Runbook code TXT-101 requires a health check before deployment.",
+    )
+    document.drawString(
+        24 * mm,
+        240 * mm,
+        "The release coordinator records the result in the incident timeline.",
+    )
+    document.save()
 
 
 def _native_table(path: Path) -> None:

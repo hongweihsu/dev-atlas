@@ -17,6 +17,7 @@ from devatlas.domain.document_ingestion import (
     prepare_document,
 )
 from devatlas.infrastructure.extraction import OpenAIMultimodalDocumentExtractor
+from devatlas.infrastructure.extraction.pdf_layout import analyze_pdf_pages
 
 ExtractionPath = Literal["native", "multimodal"]
 
@@ -92,7 +93,7 @@ def load_pdf_cases(path: Path) -> list[PdfExtractionCase]:
 
 def detect_extraction_path(content: bytes, filename: str) -> ExtractionPath:
     try:
-        prepared = prepare_document(
+        prepare_document(
             content=content,
             source_filename=filename,
             media_type="application/pdf",
@@ -101,7 +102,11 @@ def detect_extraction_path(content: bytes, filename: str) -> ExtractionPath:
         if error.code is DocumentValidationCode.NO_EXTRACTABLE_TEXT:
             return "multimodal"
         raise
-    return "multimodal" if prepared.pages_without_text else "native"
+    return (
+        "multimodal"
+        if any(page.requires_multimodal for page in analyze_pdf_pages(content))
+        else "native"
+    )
 
 
 def score_pdf_case(

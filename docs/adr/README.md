@@ -18,3 +18,5 @@ of every library choice.
 - [ADR-010: Server-authorized bounded tool calling](010-server-authorized-tool-calling.md)
 - [ADR-011: Bounded agentic research loop](011-bounded-agentic-research-loop.md)
 - [ADR-012: Evidence-triggered single corrective retrieval](012-evidence-triggered-single-correction.md)
+- [ADR-013: Native-first multimodal PDF extraction](013-native-first-multimodal-pdf-extraction.md)
+- [ADR-014: Conservative PDF layout trigger](014-conservative-pdf-layout-trigger.md)

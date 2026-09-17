@@ -14,6 +14,7 @@ from devatlas.domain.document_ingestion import (
     prepare_document,
 )
 from devatlas.domain.text_processing import content_checksum, normalize_text
+from devatlas.infrastructure.extraction.pdf_layout import analyze_pdf_pages
 
 _INSTRUCTIONS = """Extract this PDF faithfully for retrieval.
 Return every page in order using its one-based page number. Transcribe visible
@@ -53,6 +54,7 @@ class OpenAIMultimodalDocumentExtractor:
     async def prepare(
         self, *, content: bytes, source_filename: str, media_type: str
     ) -> PreparedTextDocument:
+        native: PreparedTextDocument | None = None
         try:
             native = prepare_document(
                 content=content,
@@ -63,7 +65,7 @@ class OpenAIMultimodalDocumentExtractor:
             if error.code is not DocumentValidationCode.NO_EXTRACTABLE_TEXT:
                 raise
         else:
-            if not native.pages_without_text:
+            if media_type != "application/pdf":
                 return native
 
         if media_type != "application/pdf":
@@ -71,6 +73,11 @@ class OpenAIMultimodalDocumentExtractor:
                 DocumentValidationCode.NO_EXTRACTABLE_TEXT,
                 "document contains no extractable text",
             )
+        page_layouts = analyze_pdf_pages(content)
+        if native is not None and not any(
+            page.requires_multimodal for page in page_layouts
+        ):
+            return native
         encoded = base64.b64encode(content).decode("ascii")
         try:
             response = await self._client.responses.parse(
