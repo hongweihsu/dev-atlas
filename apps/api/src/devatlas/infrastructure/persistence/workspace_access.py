@@ -4,13 +4,15 @@ from secrets import token_urlsafe
 from typing import cast
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from devatlas.application.ports.authentication import AuthenticatedPrincipal
 from devatlas.application.ports.workspace_access import (
     AuthorizedWorkspace,
     WorkspaceInvitationResult,
+    WorkspaceInvitationSummary,
+    WorkspaceMember,
     WorkspaceRole,
 )
 from devatlas.infrastructure.models import (
@@ -192,16 +194,37 @@ class SqlAlchemyWorkspaceAccessRepository:
     ) -> WorkspaceInvitationResult:
         if role == "owner":
             raise ValueError("invitations may grant editor or viewer access")
+        normalized_email = email.strip().casefold()
         raw_token = token_urlsafe(32)
         invitation = WorkspaceInvitation(
             workspace_id=workspace.workspace_id,
             invited_by_user_id=workspace.user_id,
-            email=email.strip().casefold(),
+            email=normalized_email,
             role=role,
             token_hash=sha256(raw_token.encode()).hexdigest(),
             expires_at=datetime.now(UTC) + timedelta(days=7),
         )
         async with self._session_factory() as session, session.begin():
+            existing_member = await session.scalar(
+                select(User.id)
+                .join(WorkspaceMembership, WorkspaceMembership.user_id == User.id)
+                .where(
+                    WorkspaceMembership.workspace_id == workspace.workspace_id,
+                    func.lower(User.email) == normalized_email,
+                )
+            )
+            if existing_member is not None:
+                raise ValueError("email already belongs to a workspace member")
+            existing_invitation = await session.scalar(
+                select(WorkspaceInvitation.id).where(
+                    WorkspaceInvitation.workspace_id == workspace.workspace_id,
+                    WorkspaceInvitation.email == normalized_email,
+                    WorkspaceInvitation.accepted_at.is_(None),
+                    WorkspaceInvitation.expires_at > datetime.now(UTC),
+                )
+            )
+            if existing_invitation is not None:
+                raise ValueError("an active invitation already exists for this email")
             session.add(invitation)
         return WorkspaceInvitationResult(
             invitation.id, raw_token, workspace.workspace_name, invitation.email, role
@@ -252,3 +275,109 @@ class SqlAlchemyWorkspaceAccessRepository:
                 workspace.name,
                 cast(WorkspaceRole, invitation.role),
             )
+
+    async def list_members(
+        self, workspace: AuthorizedWorkspace
+    ) -> tuple[WorkspaceMember, ...]:
+        statement = (
+            select(User, WorkspaceMembership)
+            .join(WorkspaceMembership, WorkspaceMembership.user_id == User.id)
+            .where(WorkspaceMembership.workspace_id == workspace.workspace_id)
+            .order_by(WorkspaceMembership.created_at, User.id)
+        )
+        async with self._session_factory() as session:
+            rows = (await session.execute(statement)).all()
+        return tuple(self._member(user, membership) for user, membership in rows)
+
+    async def update_member_role(
+        self,
+        workspace: AuthorizedWorkspace,
+        user_id: UUID,
+        role: WorkspaceRole,
+    ) -> WorkspaceMember:
+        if role == "owner":
+            raise ValueError("ownership transfer is not supported")
+        async with self._session_factory() as session, session.begin():
+            membership = await session.get(
+                WorkspaceMembership,
+                {"workspace_id": workspace.workspace_id, "user_id": user_id},
+                with_for_update=True,
+            )
+            if membership is None:
+                raise LookupError("workspace member was not found")
+            if membership.role == "owner":
+                raise ValueError("owner membership cannot be changed")
+            membership.role = role
+            user = await session.get(User, user_id)
+            if user is None:  # pragma: no cover - protected by the foreign key
+                raise LookupError("workspace member was not found")
+            return self._member(user, membership)
+
+    async def remove_member(
+        self, workspace: AuthorizedWorkspace, user_id: UUID
+    ) -> None:
+        async with self._session_factory() as session, session.begin():
+            membership = await session.get(
+                WorkspaceMembership,
+                {"workspace_id": workspace.workspace_id, "user_id": user_id},
+                with_for_update=True,
+            )
+            if membership is None:
+                raise LookupError("workspace member was not found")
+            if membership.role == "owner":
+                raise ValueError("owner membership cannot be removed")
+            await session.delete(membership)
+
+    async def list_invitations(
+        self, workspace: AuthorizedWorkspace
+    ) -> tuple[WorkspaceInvitationSummary, ...]:
+        statement = (
+            select(WorkspaceInvitation)
+            .where(WorkspaceInvitation.workspace_id == workspace.workspace_id)
+            .order_by(WorkspaceInvitation.created_at.desc(), WorkspaceInvitation.id)
+        )
+        async with self._session_factory() as session:
+            invitations = (await session.scalars(statement)).all()
+        return tuple(
+            WorkspaceInvitationSummary(
+                invitation.id,
+                invitation.email,
+                cast(WorkspaceRole, invitation.role),
+                invitation.expires_at,
+                invitation.accepted_at,
+                invitation.created_at,
+            )
+            for invitation in invitations
+        )
+
+    async def revoke_invitation(
+        self, workspace: AuthorizedWorkspace, invitation_id: UUID
+    ) -> None:
+        async with self._session_factory() as session, session.begin():
+            invitation = await session.scalar(
+                select(WorkspaceInvitation)
+                .where(
+                    WorkspaceInvitation.id == invitation_id,
+                    WorkspaceInvitation.workspace_id == workspace.workspace_id,
+                )
+                .with_for_update()
+            )
+            if invitation is None:
+                raise LookupError("workspace invitation was not found")
+            if invitation.accepted_at is not None:
+                raise ValueError("accepted invitation cannot be revoked")
+            await session.execute(
+                delete(WorkspaceInvitation).where(
+                    WorkspaceInvitation.id == invitation.id
+                )
+            )
+
+    @staticmethod
+    def _member(user: User, membership: WorkspaceMembership) -> WorkspaceMember:
+        return WorkspaceMember(
+            user.id,
+            user.email,
+            user.display_name,
+            cast(WorkspaceRole, membership.role),
+            membership.created_at,
+        )

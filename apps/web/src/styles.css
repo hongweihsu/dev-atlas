@@ -43,6 +43,15 @@ button { cursor: pointer; }
 .workspace-controls__link { top: calc(100% + 6.7rem); }
 .workspace-controls__link input { min-width: 22rem; font: 0.68rem ui-monospace, monospace; }
 .workspace-controls__error { position: absolute; top: calc(100% + 6.7rem); right: 0; z-index: 11; min-width: 28rem; margin: 0; padding: 0.65rem; color: #ffc2bc; background: #24110f; }
+.workspace-members { position: absolute; z-index: 10; top: calc(100% + 0.75rem); right: 0; width: min(34rem, calc(100vw - 2rem)); max-height: 32rem; padding: 1rem; overflow-y: auto; border: 1px solid #3c5148; background: #0b1613; box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4); }
+.workspace-members__heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; color: #dce5e1; }
+.workspace-members__heading--invitations { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid #25322e; }
+.workspace-members__row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 0.55rem; padding: 0.65rem 0; border-bottom: 1px solid #1d2a25; }
+.workspace-members__row > div { display: grid; min-width: 0; gap: 0.2rem; }
+.workspace-members__row > div strong, .workspace-members__row > div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-members__row > div span, .workspace-members > p { margin: 0; color: #718079; font-size: 0.68rem; }
+.workspace-members__row select { width: 6.5rem; height: 2rem; }
+.workspace-members__role { color: #76d99e; text-transform: uppercase; }
 .service-banner { max-width: 86rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem auto 0; padding: 1rem 1.1rem; border: 1px solid rgba(240, 130, 120, 0.42); background: rgba(240, 130, 120, 0.08); }
 .service-banner > div { display: grid; gap: 0.2rem; }
 .service-banner strong { color: #ffc2bc; font-size: 0.84rem; }
@@ -230,6 +239,9 @@ footer { max-width: 86rem; margin: 0 auto; color: #607069; font: 0.68rem ui-mono
 
 @media (max-width: 780px) {
   .shell { padding-inline: 1rem; }
+  .topbar { align-items: flex-start; gap: 1rem; padding-block: 1rem; }
+  .session-context, .workspace-controls__summary { flex-wrap: wrap; justify-content: flex-end; }
+  .workspace-controls__summary { max-width: 15rem; }
   .workspace { grid-template-columns: 1fr; }
   .hero { padding-top: 4rem; }
   h1 { font-size: clamp(2.8rem, 13vw, 4.5rem); }

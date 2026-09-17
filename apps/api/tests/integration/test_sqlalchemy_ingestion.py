@@ -151,8 +151,40 @@ async def test_workspace_invitation_is_email_bound_and_single_use() -> None:
         assert shared.workspace_id in {
             item.workspace_id for item in await repository.list_for_principal(reader)
         }
+        members = await repository.list_members(shared)
+        assert [(item.email, item.role) for item in members] == [
+            ("owner@example.com", "owner"),
+            ("reader@example.com", "viewer"),
+        ]
+        updated = await repository.update_member_role(
+            shared, membership.user_id, "editor"
+        )
+        assert updated.role == "editor"
+        with pytest.raises(ValueError, match="already belongs"):
+            await repository.create_invitation(shared, reader.email or "", "viewer")
+        summaries = await repository.list_invitations(shared)
+        assert summaries[0].accepted_at is not None
+        with pytest.raises(ValueError, match="cannot be revoked"):
+            await repository.revoke_invitation(shared, invitation.invitation_id)
         with pytest.raises(ValueError, match="invalid or expired"):
             await repository.accept_invitation(reader, invitation.token)
+
+        pending = await repository.create_invitation(
+            shared, "pending@example.com", "viewer"
+        )
+        with pytest.raises(ValueError, match="active invitation"):
+            await repository.create_invitation(shared, "pending@example.com", "editor")
+        await repository.revoke_invitation(shared, pending.invitation_id)
+        assert pending.invitation_id not in {
+            item.invitation_id for item in await repository.list_invitations(shared)
+        }
+
+        await repository.remove_member(shared, membership.user_id)
+        assert membership.user_id not in {
+            item.user_id for item in await repository.list_members(shared)
+        }
+        with pytest.raises(ValueError, match="owner membership cannot be removed"):
+            await repository.remove_member(shared, shared.user_id)
     finally:
         if workspace_ids:
             async with session_factory.begin() as session:

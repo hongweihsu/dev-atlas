@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -15,6 +16,8 @@ from devatlas.application.ports.authentication import AuthenticatedPrincipal
 from devatlas.application.ports.workspace_access import (
     AuthorizedWorkspace,
     WorkspaceInvitationResult,
+    WorkspaceInvitationSummary,
+    WorkspaceMember,
 )
 
 
@@ -103,3 +106,64 @@ def test_invitation_rejects_a_different_verified_email(
 
     assert response.status_code == 403
     assert response.json()["detail"]["code"] == "invitation_email_mismatch"
+
+
+def test_owner_lists_members_and_invitation_status(
+    workspace_api: tuple[TestClient, AsyncMock, AuthorizedWorkspace],
+) -> None:
+    client, repository, workspace = workspace_api
+    now = datetime.now(UTC)
+    repository.list_members.return_value = (
+        WorkspaceMember(
+            workspace.user_id,
+            "owner@example.com",
+            "Owner",
+            "owner",
+            now,
+        ),
+    )
+    repository.list_invitations.return_value = (
+        WorkspaceInvitationSummary(
+            uuid4(),
+            "reader@example.com",
+            "viewer",
+            now + timedelta(days=1),
+            None,
+            now,
+        ),
+    )
+
+    members = client.get(f"/workspaces/{workspace.workspace_id}/members")
+    invitations = client.get(f"/workspaces/{workspace.workspace_id}/invitations")
+
+    assert members.status_code == 200
+    assert members.json()[0]["email"] == "owner@example.com"
+    assert members.json()[0]["role"] == "owner"
+    assert invitations.status_code == 200
+    assert invitations.json()[0]["status"] == "pending"
+    assert "token" not in invitations.json()[0]
+
+
+def test_owner_membership_cannot_be_changed_or_removed(
+    workspace_api: tuple[TestClient, AsyncMock, AuthorizedWorkspace],
+) -> None:
+    client, repository, workspace = workspace_api
+    repository.update_member_role.side_effect = ValueError(
+        "owner membership cannot be changed"
+    )
+    repository.remove_member.side_effect = ValueError(
+        "owner membership cannot be removed"
+    )
+
+    changed = client.patch(
+        f"/workspaces/{workspace.workspace_id}/members/{workspace.user_id}",
+        json={"role": "viewer"},
+    )
+    removed = client.delete(
+        f"/workspaces/{workspace.workspace_id}/members/{workspace.user_id}"
+    )
+
+    assert changed.status_code == 409
+    assert changed.json()["detail"]["code"] == "protected_membership"
+    assert removed.status_code == 409
+    assert removed.json()["detail"]["code"] == "protected_membership"

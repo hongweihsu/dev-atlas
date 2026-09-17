@@ -230,7 +230,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=app_settings.cors_origins,
         allow_credentials=False,
-        allow_methods=["DELETE", "GET", "POST"],
+        allow_methods=["DELETE", "GET", "PATCH", "POST"],
         allow_headers=["*"],
     )
     application.add_middleware(

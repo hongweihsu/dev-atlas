@@ -51,6 +51,24 @@ export interface WorkspaceInvitationResponse {
   role: 'editor' | 'viewer'
 }
 
+export interface WorkspaceMember {
+  user_id: string
+  email: string | null
+  display_name: string | null
+  role: 'owner' | 'editor' | 'viewer'
+  joined_at: string
+}
+
+export interface WorkspaceInvitationSummary {
+  invitation_id: string
+  email: string
+  role: 'editor' | 'viewer'
+  status: 'pending' | 'accepted' | 'expired'
+  expires_at: string
+  accepted_at: string | null
+  created_at: string
+}
+
 export function configureApiSession(
   accessToken: string,
   workspaceId: string,
@@ -278,6 +296,59 @@ export async function acceptWorkspaceInvitation(token: string): Promise<SessionR
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token }),
     }),
+  )
+}
+
+export async function listWorkspaceMembers(
+  workspaceId: string,
+): Promise<WorkspaceMember[]> {
+  return parseResponse(
+    await authorizedFetch(`/api/workspaces/${workspaceId}/members`),
+  )
+}
+
+export async function updateWorkspaceMemberRole(
+  workspaceId: string,
+  userId: string,
+  role: 'editor' | 'viewer',
+): Promise<WorkspaceMember> {
+  return parseResponse(
+    await authorizedFetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    }),
+  )
+}
+
+export async function removeWorkspaceMember(
+  workspaceId: string,
+  userId: string,
+): Promise<void> {
+  await parseNoContent(
+    await authorizedFetch(`/api/workspaces/${workspaceId}/members/${userId}`, {
+      method: 'DELETE',
+    }),
+  )
+}
+
+export async function listWorkspaceInvitations(
+  workspaceId: string,
+): Promise<WorkspaceInvitationSummary[]> {
+  return parseResponse(
+    await authorizedFetch(`/api/workspaces/${workspaceId}/invitations`),
+  )
+}
+
+export async function revokeWorkspaceInvitation(
+  workspaceId: string,
+  invitationId: string,
+): Promise<void> {
+  await parseNoContent(
+    await authorizedFetch(
+      `/api/workspaces/${workspaceId}/invitations/${invitationId}`,
+      { method: 'DELETE' },
+    ),
   )
 }
 
