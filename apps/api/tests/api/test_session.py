@@ -55,6 +55,41 @@ def test_session_returns_only_authorized_workspace_context() -> None:
     }
 
 
+def test_bootstrap_creates_or_returns_personal_workspace_without_header() -> None:
+    user_id = uuid4()
+    workspace_id = uuid4()
+    application = FastAPI()
+    application.include_router(router)
+    verifier = Mock()
+    principal = AuthenticatedPrincipal(
+        issuer="https://identity.example", subject="new-user-subject"
+    )
+    verifier.verify.return_value = principal
+    repository = AsyncMock()
+    repository.bootstrap_personal_workspace.return_value = AuthorizedWorkspace(
+        user_id=user_id,
+        workspace_id=workspace_id,
+        workspace_name="Personal Workspace",
+        role="owner",
+    )
+    application.state.token_verifier = verifier
+    application.state.workspace_access_repository = repository
+
+    response = TestClient(application).post(
+        "/session/bootstrap",
+        headers={"Authorization": "Bearer signed-token"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "user_id": str(user_id),
+        "workspace_id": str(workspace_id),
+        "workspace_name": "Personal Workspace",
+        "role": "owner",
+    }
+    repository.bootstrap_personal_workspace.assert_awaited_once_with(principal)
+
+
 def test_workspace_membership_denial_does_not_return_session() -> None:
     application = FastAPI()
     application.include_router(router)

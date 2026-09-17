@@ -9,6 +9,7 @@ from devatlas.application.ingest_document import (
     IngestNewDocument,
     IngestNewDocumentCommand,
 )
+from devatlas.application.ports.authentication import AuthenticatedPrincipal
 from devatlas.application.ports.persistence import (
     DocumentNotFoundError,
     DuplicateDocumentContentError,
@@ -23,7 +24,9 @@ from devatlas.infrastructure.models import (
     Document,
     DocumentVersion,
     KnowledgeBase,
+    User,
     Workspace,
+    WorkspaceMembership,
 )
 from devatlas.infrastructure.persistence import (
     SqlAlchemyChunkSearchRepository,
@@ -31,6 +34,7 @@ from devatlas.infrastructure.persistence import (
     SqlAlchemyDocumentListRepository,
     SqlAlchemyDocumentVersionRepository,
     SqlAlchemyIngestionUnitOfWorkFactory,
+    SqlAlchemyWorkspaceAccessRepository,
 )
 from tests.fakes import DeterministicEmbeddingProvider
 
@@ -43,6 +47,65 @@ pytestmark = [
         reason="DEVATLAS_TEST_DATABASE_URL is not configured",
     ),
 ]
+
+
+@pytest.mark.asyncio
+async def test_workspace_bootstrap_is_idempotent_and_creates_default_scope() -> None:
+    assert TEST_DATABASE_URL is not None
+    engine = create_async_engine(TEST_DATABASE_URL)
+    session_factory = create_session_factory(engine)
+    repository = SqlAlchemyWorkspaceAccessRepository(session_factory)
+    principal = AuthenticatedPrincipal(
+        issuer="https://bootstrap.integration.example",
+        subject="self-service-user",
+    )
+    workspace_id = None
+
+    try:
+        first = await repository.bootstrap_personal_workspace(principal)
+        second = await repository.bootstrap_personal_workspace(principal)
+        workspace_id = first.workspace_id
+
+        assert second == first
+        assert first.workspace_name == "Personal Workspace"
+        assert first.role == "owner"
+        async with session_factory() as session:
+            knowledge_bases = (
+                await session.scalars(
+                    select(KnowledgeBase).where(
+                        KnowledgeBase.workspace_id == first.workspace_id
+                    )
+                )
+            ).all()
+            memberships = (
+                await session.scalars(
+                    select(WorkspaceMembership).where(
+                        WorkspaceMembership.user_id == first.user_id
+                    )
+                )
+            ).all()
+        assert [(item.name, item.is_default) for item in knowledge_bases] == [
+            ("General", True)
+        ]
+        assert len(memberships) == 1
+    finally:
+        if workspace_id is not None:
+            async with session_factory.begin() as session:
+                await session.execute(
+                    delete(KnowledgeBase).where(
+                        KnowledgeBase.workspace_id == workspace_id
+                    )
+                )
+                await session.execute(
+                    delete(Workspace).where(Workspace.id == workspace_id)
+                )
+                await session.execute(
+                    delete(User).where(
+                        User.identity_issuer == principal.issuer,
+                        User.identity_subject == principal.subject,
+                    )
+                )
+        await engine.dispose()
 
 
 @pytest.mark.asyncio

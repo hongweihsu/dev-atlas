@@ -12,7 +12,7 @@ explainability and cost control rather than high availability.
 Browser
   |
   v
-Amazon Cognito (admin-invited users, OAuth code + PKCE)
+Amazon Cognito (self-registration + verified email, OAuth code + PKCE)
   |
   v
 CloudFront default HTTPS domain
@@ -34,9 +34,9 @@ CloudFront default HTTPS domain
 The SPA sends the Cognito access token to FastAPI. FastAPI verifies its RS256
 signature, issuer, expiry, `token_use=access`, client ID, and subject against
 Cognito JWKS. A valid
-token proves identity only: the `(issuer, subject)` must also have an explicit
-database membership for the requested `X-Workspace-ID`. Self-registration is
-disabled and the demo owner is provisioned by an operator.
+token proves identity only. On first login, authenticated bootstrap creates an
+isolated personal workspace; every later request must still have database
+membership for the requested `X-Workspace-ID`.
 
 There is no inbound SSH rule. AWS Systems Manager Session Manager uses the EC2
 instance role for administration. Port 8000 accepts only the AWS-managed

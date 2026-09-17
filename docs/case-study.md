@@ -147,8 +147,9 @@ the application counters.
   by a continuous scraper; SLO targets are not achievement claims.
 - Suspicious PDF layout triggers whole-document multimodal extraction; selective
   page-only extraction and merge are not yet implemented.
-- Cognito users and workspace memberships are operator-provisioned; self-service
-  invitations, workspace creation, and workspace selection are not implemented.
+- Cognito users can self-register and receive an isolated personal workspace on
+  first login; invitations, shared-workspace acceptance, and workspace selection
+  are not implemented.
 - Backup automation is installed, but a disposable restore rehearsal has not
   yet established a measured recovery time.
 - LangSmith is not enabled. Before exporting detailed AI traces, the project

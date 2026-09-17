@@ -16,6 +16,10 @@ class AuthorizedWorkspace:
 
 
 class WorkspaceAccessRepository(Protocol):
+    async def bootstrap_personal_workspace(
+        self, principal: AuthenticatedPrincipal
+    ) -> AuthorizedWorkspace: ...
+
     async def resolve(
         self,
         principal: AuthenticatedPrincipal,

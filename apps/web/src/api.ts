@@ -57,6 +57,17 @@ export function configureApiSession(
   resolvedSession = session
 }
 
+export async function bootstrapSession(accessToken: string): Promise<SessionResponse> {
+  const response = await parseResponse<SessionResponse>(
+    await fetch('/api/session/bootstrap', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+  )
+  configureApiSession(accessToken, response.workspace_id, response)
+  return response
+}
+
 export interface IngestDocumentResponse {
   document_id: string
   version_id: string

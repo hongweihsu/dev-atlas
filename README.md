@@ -58,9 +58,12 @@ limitations, see the [engineering case study](docs/case-study.md).
   SLO targets, transient failure/recovery evidence, and CloudFront 5xx alerting
 - An explicitly development-only session endpoint lets the local React app use
   the same authenticated API boundary without pretending to be production OIDC
-- Cognito admin-only login uses OAuth Authorization Code + PKCE; a dedicated
+- Cognito hosted login uses OAuth Authorization Code + PKCE; a dedicated
   access-token verifier pins JWKS/RS256, issuer, token use, client ID, expiry,
   and subject before database membership authorization
+- Verified Cognito users can self-register; first-login bootstrap idempotently
+  creates an isolated Personal Workspace, owner membership, and default scope
+  without accepting a caller-selected role or workspace
 - The React header displays the workspace name and role resolved by the server,
   making the active authorization context visible to the user
 - Viewer sessions enter an explained read-only UI while the API independently
@@ -132,8 +135,8 @@ limitations, see the [engineering case study](docs/case-study.md).
 
 - Persistent or cached lexical indexing when its measured review gate is reached
 - Selective page-only multimodal extraction and merge for suspicious mixed PDFs
-- Optional workspace onboarding and selection beyond the current
-  operator-provisioned demo workspace
+- Workspace invitations, acceptance, and selection beyond the self-created
+  personal workspace
 - Final authenticated browser workflow recording, screenshots, and short demo
   video for portfolio presentation
 
@@ -234,8 +237,9 @@ next cost optimization is selective page-only extraction and merge.
 ## Limitations
 
 - Local token issuance is development-only. Production uses Cognito hosted
-  login and operator-provisioned database membership; self-service invitations,
-  workspace creation, and workspace selection are not implemented. The hybrid
+  login; a verified first login idempotently creates a personal workspace.
+  Invitations, shared-workspace acceptance, and workspace selection are not
+  implemented. The hybrid
   comparison covers only five controlled documents and must not be
   interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.

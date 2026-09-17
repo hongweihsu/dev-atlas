@@ -13,15 +13,17 @@ After reviewing and explicitly approving the saved Terraform plan:
    random database password; later runs reuse that value. Secrets are stored as
    SSM `SecureString` values.
 3. Connect through Session Manager and run `deploy.sh` on EC2.
-4. Create the sole Cognito user with `aws cognito-idp admin-create-user`.
-5. Read its immutable Cognito `sub`, then run `scripts/provision_identity.py`
-   inside the `migrate` container to grant an explicit workspace role.
+4. Open the CloudFront application, choose sign in, and use Cognito's sign-up
+   link. Confirm the verification code sent to the user's email address.
+5. On the first successful callback, `POST /session/bootstrap` creates the local
+   user, Personal Workspace, owner membership, and default General knowledge base.
 6. Run `deploy-web.sh` locally. It builds with Cognito's Terraform outputs,
    syncs the private S3 origin, and invalidates CloudFront.
 
-Creating a Cognito user alone is intentionally insufficient. Provisioning links
-the verified `(issuer, sub)` to a database workspace; rerunning it updates the
-same user and membership instead of creating duplicates.
+A Cognito identity alone still cannot select arbitrary workspaces. Bootstrap
+links its verified `(issuer, sub)` to one local personal workspace. The manual
+provisioning command remains available when an operator intentionally grants an
+existing user access to an additional workspace.
 
 Example identity provisioning on EC2:
 

@@ -1,14 +1,13 @@
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
 
-import { configureApiSession } from './api'
+import { bootstrapSession } from './api'
 
 const authority = import.meta.env.VITE_COGNITO_AUTHORITY as string | undefined
 const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID as string | undefined
-const workspaceId = import.meta.env.VITE_WORKSPACE_ID as string | undefined
 const cognitoDomain = import.meta.env.VITE_COGNITO_DOMAIN as string | undefined
 
 export const usesHostedAuthentication = Boolean(
-  authority && clientId && workspaceId && cognitoDomain,
+  authority && clientId && cognitoDomain,
 )
 
 const userManager = usesHostedAuthentication
@@ -24,7 +23,7 @@ const userManager = usesHostedAuthentication
   : null
 
 export async function restoreHostedSession(): Promise<boolean> {
-  if (!userManager || !workspaceId) return false
+  if (!userManager) return false
 
   if (window.location.pathname === '/auth/callback') {
     await userManager.signinRedirectCallback()
@@ -33,7 +32,7 @@ export async function restoreHostedSession(): Promise<boolean> {
 
   const user = await userManager.getUser()
   if (!user || user.expired || !user.access_token) return false
-  configureApiSession(user.access_token, workspaceId)
+  await bootstrapSession(user.access_token)
   return true
 }
 

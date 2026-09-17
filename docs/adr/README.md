@@ -20,3 +20,4 @@ of every library choice.
 - [ADR-012: Evidence-triggered single corrective retrieval](012-evidence-triggered-single-correction.md)
 - [ADR-013: Native-first multimodal PDF extraction](013-native-first-multimodal-pdf-extraction.md)
 - [ADR-014: Conservative PDF layout trigger](014-conservative-pdf-layout-trigger.md)
+- [ADR-015: Self-service personal workspace onboarding](015-self-service-personal-workspace-onboarding.md)
