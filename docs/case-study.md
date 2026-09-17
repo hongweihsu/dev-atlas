@@ -125,9 +125,9 @@ the application counters.
 
 ## Verification evidence
 
-- Backend quality gate: Ruff, strict mypy, and 219 passing tests, with five
+- Backend quality gate: Ruff, strict mypy, and 238 passing tests, with seven
   environment-gated integration skips.
-- Frontend quality gate: ESLint, TypeScript, 16 component tests, and production
+- Frontend quality gate: ESLint, TypeScript, 19 component tests, and production
   Vite build.
 - Infrastructure gate: valid Terraform, renderable production Compose, checked
   shell syntax, cost constraints, encrypted runtime parameters, a deployed
@@ -147,9 +147,10 @@ the application counters.
   by a continuous scraper; SLO targets are not achievement claims.
 - Suspicious PDF layout triggers whole-document multimodal extraction; selective
   page-only extraction and merge are not yet implemented.
-- Cognito users can self-register and receive an isolated personal workspace on
-  first login; invitations, shared-workspace acceptance, and workspace selection
-  are not implemented.
+- Cognito users can self-register, create and switch workspaces, and accept
+  verified-email invitations. Ownership transfer and workspace deletion are not
+  yet implemented; owners can manage editor/viewer roles and revoke pending
+  invitations.
 - Backup automation is installed, but a disposable restore rehearsal has not
   yet established a measured recovery time.
 - LangSmith is not enabled. Before exporting detailed AI traces, the project
