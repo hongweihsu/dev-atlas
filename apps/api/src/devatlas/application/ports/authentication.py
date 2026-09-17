@@ -6,6 +6,7 @@ from typing import Protocol
 class AuthenticatedPrincipal:
     issuer: str
     subject: str
+    email: str | None = None
 
 
 class InvalidCredentialError(ValueError):

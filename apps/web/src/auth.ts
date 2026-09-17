@@ -57,8 +57,9 @@ export async function restoreCognitoSession(): Promise<boolean> {
   if (!usesCognitoAuthentication) return false
   const session = await fetchAuthSession()
   const accessToken = session.tokens?.accessToken.toString()
-  if (!accessToken) return false
-  await bootstrapSession(accessToken)
+  const identityToken = session.tokens?.idToken?.toString()
+  if (!accessToken || !identityToken) return false
+  await bootstrapSession(accessToken, identityToken)
   return true
 }
 
@@ -113,8 +114,9 @@ export async function signOut(): Promise<void> {
 async function bootstrapAuthenticatedSession() {
   const session = await fetchAuthSession()
   const accessToken = session.tokens?.accessToken.toString()
-  if (!accessToken) throw new Error('Cognito returned no access token')
-  await bootstrapSession(accessToken)
+  const identityToken = session.tokens?.idToken?.toString()
+  if (!accessToken || !identityToken) throw new Error('Cognito returned incomplete tokens')
+  await bootstrapSession(accessToken, identityToken)
 }
 
 export function authenticationErrorMessage(error: unknown): string {

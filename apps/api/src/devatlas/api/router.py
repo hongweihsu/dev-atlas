@@ -13,6 +13,7 @@ from devatlas.api.routes.research import router as research_router
 from devatlas.api.routes.search import router as search_router
 from devatlas.api.routes.session import router as session_router
 from devatlas.api.routes.workspace_questions import router as workspace_questions_router
+from devatlas.api.routes.workspaces import router as workspaces_router
 
 api_router = APIRouter()
 api_router.include_router(authentication_router)
@@ -28,3 +29,4 @@ api_router.include_router(search_router)
 api_router.include_router(answers_router)
 api_router.include_router(session_router)
 api_router.include_router(workspace_questions_router)
+api_router.include_router(workspaces_router)

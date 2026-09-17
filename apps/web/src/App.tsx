@@ -14,6 +14,7 @@ import {
   ResearchResponse,
   SessionResponse,
   WorkspaceQuestionResponse,
+  acceptWorkspaceInvitation,
   activateDocumentVersion,
   askConversation,
   askCorrectiveQuestion,
@@ -22,6 +23,8 @@ import {
   checkHealth,
   createDevelopmentSession,
   createConversation,
+  createWorkspace,
+  createWorkspaceInvitation,
   createKnowledgeBase,
   getIngestionJob,
   getSession,
@@ -29,13 +32,16 @@ import {
   listConversations,
   listConversationTurns,
   listKnowledgeBases,
+  listWorkspaces,
   listDocumentVersions,
   restoreDocument,
   runResearch,
   submitIngestionJob,
+  selectWorkspace,
   uploadDocumentVersion,
 } from './api'
 import { AuthPanel } from './AuthPanel'
+import { WorkspaceControls } from './WorkspaceControls'
 import {
   restoreCognitoSession,
   signOut,
@@ -49,11 +55,29 @@ type DocumentView = 'active' | 'archived'
 type UploadTab = 'add' | 'update'
 type AuthenticationState = 'checking' | 'signed-in' | 'signed-out'
 
+async function loadAccessibleWorkspaces(
+  currentSession: SessionResponse,
+): Promise<SessionResponse[]> {
+  const listed = await listWorkspaces()
+  const valid = Array.isArray(listed)
+    ? listed.filter(
+        (item) =>
+          typeof item?.workspace_id === 'string' &&
+          typeof item?.workspace_name === 'string',
+      )
+    : []
+  return valid.some((item) => item.workspace_id === currentSession.workspace_id)
+    ? valid
+    : [currentSession, ...valid]
+}
+
 export default function App() {
   const [apiState, setApiState] = useState<ApiState>('checking')
   const [authenticationState, setAuthenticationState] =
     useState<AuthenticationState>('checking')
   const [session, setSession] = useState<SessionResponse | null>(null)
+  const [workspaces, setWorkspaces] = useState<SessionResponse[]>([])
+  const [workspaceNotice, setWorkspaceNotice] = useState('')
   const [title, setTitle] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [fileInputKey, setFileInputKey] = useState(0)
@@ -121,7 +145,16 @@ export default function App() {
         } else {
           await createDevelopmentSession()
         }
-        setSession(await getSession())
+        let currentSession = await getSession()
+        const invitationToken = new URLSearchParams(window.location.search).get('invite')
+        if (invitationToken) {
+          currentSession = await acceptWorkspaceInvitation(invitationToken)
+          selectWorkspace(currentSession)
+          window.history.replaceState({}, document.title, '/')
+          setWorkspaceNotice(`Joined ${currentSession.workspace_name}.`)
+        }
+        setSession(currentSession)
+        setWorkspaces(await loadAccessibleWorkspaces(currentSession))
         setAuthenticationState('signed-in')
         setApiState('healthy')
         try {
@@ -186,7 +219,16 @@ export default function App() {
   }
 
   async function handleAuthenticated() {
-    setSession(await getSession())
+    let currentSession = await getSession()
+    const invitationToken = new URLSearchParams(window.location.search).get('invite')
+    if (invitationToken) {
+      currentSession = await acceptWorkspaceInvitation(invitationToken)
+      selectWorkspace(currentSession)
+      window.history.replaceState({}, document.title, '/')
+      setWorkspaceNotice(`Joined ${currentSession.workspace_name}.`)
+    }
+    setSession(currentSession)
+    setWorkspaces(await loadAccessibleWorkspaces(currentSession))
     setAuthenticationState('signed-in')
     const loadedKnowledgeBases = await listKnowledgeBases()
     setKnowledgeBases(loadedKnowledgeBases)
@@ -200,6 +242,54 @@ export default function App() {
     setDocumentList(loadedDocuments)
     setSelectedDocumentId(loadedDocuments[0]?.document_id ?? null)
     setConversations(await listConversations())
+  }
+
+  async function handleWorkspaceSwitch(workspaceId: string) {
+    const workspace = workspaces.find((item) => item.workspace_id === workspaceId)
+    if (!workspace) return
+    selectWorkspace(workspace)
+    setSession(workspace)
+    const loadedKnowledgeBases = await listKnowledgeBases()
+    setKnowledgeBases(loadedKnowledgeBases)
+    setUploadKnowledgeBaseId(loadedKnowledgeBases.find((item) => item.is_default)?.id ?? '')
+    setSearchKnowledgeBaseIds(loadedKnowledgeBases.map((item) => item.id))
+    setDocumentKnowledgeBaseId('')
+    setDocumentList(await listDocuments())
+    setConversations(await listConversations())
+    setSelectedDocumentId(null)
+    setWorkspaceNotice(`Switched to ${workspace.workspace_name}.`)
+  }
+
+  async function handleCreateWorkspace(name: string) {
+    const created = await createWorkspace(name)
+    setWorkspaces((current) => [...current, created])
+    selectWorkspace(created)
+    setSession(created)
+    const loadedKnowledgeBases = await listKnowledgeBases()
+    setKnowledgeBases(loadedKnowledgeBases)
+    setUploadKnowledgeBaseId(loadedKnowledgeBases[0]?.id ?? '')
+    setSearchKnowledgeBaseIds(loadedKnowledgeBases.map((item) => item.id))
+    setDocumentList([])
+    setConversations([])
+    setSelectedDocumentId(null)
+    setWorkspaceNotice(`Created ${created.workspace_name}.`)
+  }
+
+  async function handleInviteMember(
+    email: string,
+    requestedRole: 'editor' | 'viewer',
+  ): Promise<string> {
+    if (!session || session.role !== 'owner') {
+      throw new Error('Only workspace owners can create invitations.')
+    }
+    const invitation = await createWorkspaceInvitation(
+      session.workspace_id,
+      email,
+      requestedRole,
+    )
+    const link = `${window.location.origin}/?invite=${encodeURIComponent(invitation.token)}`
+    setWorkspaceNotice('Invitation link created. It expires in 7 days.')
+    return link
   }
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
@@ -565,14 +655,21 @@ export default function App() {
         )}
         {apiState === 'healthy' && session && (
           <div className="session-context" aria-label="Current workspace and role">
-            <span>{session.workspace_name}</span>
-            <strong>{session.role}</strong>
+            <WorkspaceControls
+              session={session}
+              workspaces={workspaces}
+              onSwitch={handleWorkspaceSwitch}
+              onCreate={handleCreateWorkspace}
+              onInvite={handleInviteMember}
+            />
             {usesCognitoAuthentication && (
               <button type="button" onClick={() => void signOut()}>Sign out</button>
             )}
           </div>
         )}
       </header>
+
+      {workspaceNotice && <div className="workspace-notice" role="status">{workspaceNotice}</div>}
 
       {apiState === 'unavailable' && (
         <div className="service-banner" role="alert">

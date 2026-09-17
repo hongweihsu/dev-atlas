@@ -109,6 +109,68 @@ async def test_workspace_bootstrap_is_idempotent_and_creates_default_scope() -> 
 
 
 @pytest.mark.asyncio
+async def test_workspace_invitation_is_email_bound_and_single_use() -> None:
+    assert TEST_DATABASE_URL is not None
+    engine = create_async_engine(TEST_DATABASE_URL)
+    session_factory = create_session_factory(engine)
+    repository = SqlAlchemyWorkspaceAccessRepository(session_factory)
+    owner = AuthenticatedPrincipal(
+        issuer="https://invitations.integration.example",
+        subject="workspace-owner",
+        email="owner@example.com",
+    )
+    reader = AuthenticatedPrincipal(
+        issuer="https://invitations.integration.example",
+        subject="workspace-reader",
+        email="reader@example.com",
+    )
+    workspace_ids = []
+
+    try:
+        owner_personal = await repository.bootstrap_personal_workspace(owner)
+        reader_personal = await repository.bootstrap_personal_workspace(reader)
+        shared = await repository.create_workspace(owner, "Shared research")
+        workspace_ids.extend(
+            [
+                owner_personal.workspace_id,
+                reader_personal.workspace_id,
+                shared.workspace_id,
+            ]
+        )
+        invitation = await repository.create_invitation(
+            shared, "Reader@Example.COM", "viewer"
+        )
+
+        with pytest.raises(PermissionError, match="another email"):
+            await repository.accept_invitation(owner, invitation.token)
+
+        membership = await repository.accept_invitation(reader, invitation.token)
+
+        assert membership.workspace_id == shared.workspace_id
+        assert membership.role == "viewer"
+        assert shared.workspace_id in {
+            item.workspace_id for item in await repository.list_for_principal(reader)
+        }
+        with pytest.raises(ValueError, match="invalid or expired"):
+            await repository.accept_invitation(reader, invitation.token)
+    finally:
+        if workspace_ids:
+            async with session_factory.begin() as session:
+                await session.execute(
+                    delete(KnowledgeBase).where(
+                        KnowledgeBase.workspace_id.in_(workspace_ids)
+                    )
+                )
+                await session.execute(
+                    delete(Workspace).where(Workspace.id.in_(workspace_ids))
+                )
+                await session.execute(
+                    delete(User).where(User.identity_issuer == owner.issuer)
+                )
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
 async def test_ingestion_persists_complete_aggregate_in_postgresql() -> None:
     assert TEST_DATABASE_URL is not None
     engine = create_async_engine(TEST_DATABASE_URL)

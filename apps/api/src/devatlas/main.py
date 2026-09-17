@@ -24,6 +24,7 @@ from devatlas.core.config import Settings, get_settings
 from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
 from devatlas.infrastructure.authentication import (
     CognitoAccessTokenVerifier,
+    CognitoIdentityTokenVerifier,
     DevelopmentSessionIssuer,
     OidcJwksTokenVerifier,
     PyJwtTokenVerifier,
@@ -111,6 +112,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     issuer=app_settings.auth_jwt_issuer,
                     client_id=app_settings.auth_cognito_client_id,
                 )
+                application.state.identity_token_verifier = (
+                    CognitoIdentityTokenVerifier(
+                        jwks_url=app_settings.auth_jwks_url,
+                        issuer=app_settings.auth_jwt_issuer,
+                        client_id=app_settings.auth_cognito_client_id,
+                    )
+                )
             else:
                 application.state.token_verifier = OidcJwksTokenVerifier(
                     jwks_url=app_settings.auth_jwks_url,
@@ -195,6 +203,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 or app_settings.auth_jwks_url is not None
             ):
                 del application.state.token_verifier
+                if hasattr(application.state, "identity_token_verifier"):
+                    del application.state.identity_token_verifier
                 if app_settings.auth_development_mode:
                     del application.state.development_session_issuer
             if client is not None:

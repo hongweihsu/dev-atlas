@@ -29,9 +29,20 @@ button { cursor: pointer; }
 .status { display: inline-flex; align-items: center; gap: 0.6rem; color: #91a19b; font: 0.76rem ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.08em; }
 .status__dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #68756f; }
 .session-context { display: flex; align-items: center; gap: 0.65rem; color: #aebbb6; font: 0.72rem ui-monospace, monospace; }
+.session-context select { width: auto; max-width: 14rem; height: 2rem; padding: 0 1.6rem 0 0.5rem; font-size: 0.7rem; }
 .session-context strong { padding: 0.3rem 0.45rem; border: 1px solid #3c5148; color: #76d99e; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .session-context button { padding: 0.35rem 0.55rem; border: 1px solid #3c5148; color: #aebbb6; background: transparent; font-size: 0.68rem; }
 .session-context button:hover { border-color: #76d99e; color: #76d99e; }
+.workspace-controls { position: relative; }
+.workspace-controls__summary { display: flex; align-items: center; gap: 0.65rem; }
+.workspace-controls__form, .workspace-controls__link { position: absolute; z-index: 10; top: calc(100% + 0.75rem); right: 0; display: grid; grid-template-columns: minmax(12rem, 1fr) auto; gap: 0.65rem; min-width: 28rem; padding: 1rem; border: 1px solid #3c5148; background: #0b1613; box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4); }
+.workspace-controls__form label { gap: 0.35rem; font-size: 0.7rem; }
+.workspace-controls__form label + label { min-width: 7rem; }
+.workspace-controls__form input, .workspace-controls__link input { height: 2.4rem; padding: 0 0.7rem; border: 1px solid #31423b; color: #eef2f0; background: #07100d; }
+.workspace-controls__form button[type='submit'] { align-self: end; min-height: 2.4rem; padding: 0.45rem 0.8rem; }
+.workspace-controls__link { top: calc(100% + 6.7rem); }
+.workspace-controls__link input { min-width: 22rem; font: 0.68rem ui-monospace, monospace; }
+.workspace-controls__error { position: absolute; top: calc(100% + 6.7rem); right: 0; z-index: 11; min-width: 28rem; margin: 0; padding: 0.65rem; color: #ffc2bc; background: #24110f; }
 .service-banner { max-width: 86rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem auto 0; padding: 1rem 1.1rem; border: 1px solid rgba(240, 130, 120, 0.42); background: rgba(240, 130, 120, 0.08); }
 .service-banner > div { display: grid; gap: 0.2rem; }
 .service-banner strong { color: #ffc2bc; font-size: 0.84rem; }
@@ -41,6 +52,7 @@ button { cursor: pointer; }
 .service-banner--auth { border-color: rgba(118, 217, 158, 0.42); background: rgba(118, 217, 158, 0.08); }
 .service-banner--auth strong { color: #9be8b9; }
 .service-banner--auth button { border-color: #76d99e; color: #76d99e; }
+.workspace-notice { max-width: 86rem; margin: 1rem auto 0; padding: 0.7rem 0.9rem; border-left: 2px solid #76d99e; color: #9be8b9; background: rgba(118, 217, 158, 0.06); font-size: 0.76rem; }
 
 .hero { max-width: 68rem; padding: clamp(4.5rem, 10vw, 8rem) 0 clamp(3rem, 7vw, 5rem); }
 .eyebrow, .kicker { margin: 0; color: #76d99e; font: 500 0.72rem ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; }

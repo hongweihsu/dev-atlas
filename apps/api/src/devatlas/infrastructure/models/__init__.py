@@ -10,6 +10,7 @@ from devatlas.infrastructure.models.identity import (
     KnowledgeBase,
     User,
     Workspace,
+    WorkspaceInvitation,
     WorkspaceMembership,
 )
 from devatlas.infrastructure.models.ingestion_job import IngestionJob
@@ -25,5 +26,6 @@ __all__ = [
     "IngestionJob",
     "User",
     "Workspace",
+    "WorkspaceInvitation",
     "WorkspaceMembership",
 ]

@@ -90,6 +90,70 @@ def test_bootstrap_creates_or_returns_personal_workspace_without_header() -> Non
     repository.bootstrap_personal_workspace.assert_awaited_once_with(principal)
 
 
+def test_cognito_bootstrap_uses_matching_verified_identity_claims() -> None:
+    application = FastAPI()
+    application.include_router(router)
+    access_verifier = Mock()
+    access_verifier.verify.return_value = AuthenticatedPrincipal(
+        issuer="https://identity.example", subject="user-subject"
+    )
+    identity = AuthenticatedPrincipal(
+        issuer="https://identity.example",
+        subject="user-subject",
+        email="reader@example.com",
+    )
+    identity_verifier = Mock()
+    identity_verifier.verify.return_value = identity
+    repository = AsyncMock()
+    repository.bootstrap_personal_workspace.return_value = AuthorizedWorkspace(
+        uuid4(), uuid4(), "Personal Workspace", "owner"
+    )
+    application.state.token_verifier = access_verifier
+    application.state.identity_token_verifier = identity_verifier
+    application.state.workspace_access_repository = repository
+
+    response = TestClient(application).post(
+        "/session/bootstrap",
+        headers={
+            "Authorization": "Bearer access-token",
+            "X-Identity-Token": "identity-token",
+        },
+    )
+
+    assert response.status_code == 200
+    identity_verifier.verify.assert_called_once_with("identity-token")
+    repository.bootstrap_personal_workspace.assert_awaited_once_with(identity)
+
+
+def test_cognito_bootstrap_rejects_mismatched_token_subjects() -> None:
+    application = FastAPI()
+    application.include_router(router)
+    access_verifier = Mock()
+    access_verifier.verify.return_value = AuthenticatedPrincipal(
+        issuer="https://identity.example", subject="access-subject"
+    )
+    identity_verifier = Mock()
+    identity_verifier.verify.return_value = AuthenticatedPrincipal(
+        issuer="https://identity.example",
+        subject="different-subject",
+        email="reader@example.com",
+    )
+    application.state.token_verifier = access_verifier
+    application.state.identity_token_verifier = identity_verifier
+    application.state.workspace_access_repository = AsyncMock()
+
+    response = TestClient(application).post(
+        "/session/bootstrap",
+        headers={
+            "Authorization": "Bearer access-token",
+            "X-Identity-Token": "identity-token",
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"]["code"] == "identity_mismatch"
+
+
 def test_workspace_membership_denial_does_not_return_session() -> None:
     application = FastAPI()
     application.include_router(router)

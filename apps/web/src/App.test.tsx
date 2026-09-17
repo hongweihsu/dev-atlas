@@ -40,6 +40,19 @@ const knowledgeBases = [
   { id: 'general-id', name: 'General', is_default: true, document_count: 1 },
 ]
 
+const workspaceMemberships = [
+  {
+    user_id: 'test-user-id',
+    workspace_id: 'test-workspace-id',
+    workspace_name: 'Engineering Notes',
+    role: 'owner',
+  },
+]
+
+function isWorkspaceListRequest(input: RequestInfo | URL) {
+  return input === '/api/workspaces'
+}
+
 function isKnowledgeBaseListRequest(input: RequestInfo | URL, init?: RequestInit) {
   return input === '/api/knowledge-bases' && init?.method !== 'POST'
 }
@@ -264,6 +277,7 @@ test('shows immutable history and makes an older version current', async () => {
       if (input === '/api/health') {
         return jsonResponse({ status: 'ok', service: 'devatlas-api' })
       }
+      if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
       if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
       if (isDocumentListRequest(input, init)) {
         return jsonResponse([documentSummary(activeVersion)])
@@ -313,6 +327,7 @@ test('shows a duplicate-content error when a version is rejected', async () => {
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) {
       return jsonResponse(created ? [documentSummary()] : [])
@@ -554,6 +569,7 @@ test('shows the API error message without discarding the question', async () => 
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) return jsonResponse([])
     if (input === '/api/conversations' && init?.method !== 'POST') {
@@ -626,6 +642,7 @@ test('archives a document and restores it with undo', async () => {
       if (input === '/api/health') {
         return jsonResponse({ status: 'ok', service: 'devatlas-api' })
       }
+      if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
       if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
       if (input === '/api/documents/document-id' && init?.method === 'DELETE') {
         archived = true
@@ -674,6 +691,7 @@ test('loads archived documents after a page-state change and restores one', asyn
     if (input === '/api/health') {
       return jsonResponse({ status: 'ok', service: 'devatlas-api' })
     }
+    if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (input === '/api/documents') return jsonResponse([])
     if (input === '/api/documents?status=archived') {

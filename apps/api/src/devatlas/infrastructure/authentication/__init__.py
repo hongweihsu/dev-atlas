@@ -3,6 +3,7 @@ from devatlas.infrastructure.authentication.development import (
 )
 from devatlas.infrastructure.authentication.jwt import (
     CognitoAccessTokenVerifier,
+    CognitoIdentityTokenVerifier,
     OidcJwksTokenVerifier,
     PyJwtTokenVerifier,
 )
@@ -10,6 +11,7 @@ from devatlas.infrastructure.authentication.jwt import (
 __all__ = [
     "DevelopmentSessionIssuer",
     "CognitoAccessTokenVerifier",
+    "CognitoIdentityTokenVerifier",
     "OidcJwksTokenVerifier",
     "PyJwtTokenVerifier",
 ]

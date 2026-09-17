@@ -43,6 +43,14 @@ export interface SessionResponse {
   role: 'owner' | 'editor' | 'viewer'
 }
 
+export interface WorkspaceInvitationResponse {
+  invitation_id: string
+  token: string
+  workspace_name: string
+  email: string
+  role: 'editor' | 'viewer'
+}
+
 export function configureApiSession(
   accessToken: string,
   workspaceId: string,
@@ -57,11 +65,23 @@ export function configureApiSession(
   resolvedSession = session
 }
 
-export async function bootstrapSession(accessToken: string): Promise<SessionResponse> {
+export function selectWorkspace(workspace: SessionResponse): void {
+  if (apiSession === null) throw new Error('No authenticated API session')
+  apiSession.workspace_id = workspace.workspace_id
+  resolvedSession = workspace
+}
+
+export async function bootstrapSession(
+  accessToken: string,
+  identityToken: string,
+): Promise<SessionResponse> {
   const response = await parseResponse<SessionResponse>(
     await fetch('/api/session/bootstrap', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'X-Identity-Token': identityToken,
+      },
     }),
   )
   configureApiSession(accessToken, response.workspace_id, response)
@@ -221,6 +241,44 @@ export async function getSession(): Promise<SessionResponse> {
   )
   resolvedSession = session
   return session
+}
+
+export async function listWorkspaces(): Promise<SessionResponse[]> {
+  return parseResponse(await authorizedFetch('/api/workspaces'))
+}
+
+export async function createWorkspace(name: string): Promise<SessionResponse> {
+  return parseResponse(
+    await authorizedFetch('/api/workspaces', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }),
+  )
+}
+
+export async function createWorkspaceInvitation(
+  workspaceId: string,
+  email: string,
+  role: 'editor' | 'viewer',
+): Promise<WorkspaceInvitationResponse> {
+  return parseResponse(
+    await authorizedFetch(`/api/workspaces/${workspaceId}/invitations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role }),
+    }),
+  )
+}
+
+export async function acceptWorkspaceInvitation(token: string): Promise<SessionResponse> {
+  return parseResponse(
+    await authorizedFetch('/api/workspaces/invitations/accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    }),
+  )
 }
 
 async function authorizedFetch(

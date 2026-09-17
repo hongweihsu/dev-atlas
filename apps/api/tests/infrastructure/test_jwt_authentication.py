@@ -10,6 +10,7 @@ from jwt.algorithms import RSAAlgorithm
 from devatlas.application.ports.authentication import InvalidCredentialError
 from devatlas.infrastructure.authentication import (
     CognitoAccessTokenVerifier,
+    CognitoIdentityTokenVerifier,
     OidcJwksTokenVerifier,
     PyJwtTokenVerifier,
 )
@@ -137,6 +138,37 @@ def test_cognito_verifier_accepts_only_access_token_for_expected_client() -> Non
     )
 
     assert verifier.verify(token).subject == "cognito-user-123"
+
+
+def test_cognito_identity_verifier_requires_and_normalizes_verified_email() -> None:
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    signing_key = PyJWK.from_json(RSAAlgorithm.to_jwk(private_key.public_key()))
+    jwks_client = MagicMock(spec=PyJWKClient)
+    jwks_client.get_signing_key_from_jwt.return_value = signing_key
+    token = jwt.encode(
+        {
+            "iss": "https://cognito-idp.ap-southeast-2.amazonaws.com/pool",
+            "sub": "cognito-user-123",
+            "aud": "web-client-123",
+            "token_use": "id",
+            "email": "Reader@Example.COM",
+            "email_verified": True,
+            "exp": datetime.now(UTC) + timedelta(minutes=5),
+        },
+        private_key,
+        algorithm="RS256",
+    )
+    verifier = CognitoIdentityTokenVerifier(
+        jwks_url="https://cognito.example.com/.well-known/jwks.json",
+        issuer="https://cognito-idp.ap-southeast-2.amazonaws.com/pool",
+        client_id="web-client-123",
+        jwks_client=jwks_client,
+    )
+
+    principal = verifier.verify(token)
+
+    assert principal.subject == "cognito-user-123"
+    assert principal.email == "reader@example.com"
 
 
 @pytest.mark.parametrize(

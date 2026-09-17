@@ -98,3 +98,18 @@ def require_workspace_editor(workspace: CurrentWorkspace) -> AuthorizedWorkspace
 
 
 WritableWorkspace = Annotated[AuthorizedWorkspace, Depends(require_workspace_editor)]
+
+
+def require_workspace_owner(workspace: CurrentWorkspace) -> AuthorizedWorkspace:
+    if workspace.role != "owner":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "workspace_owner_required",
+                "message": "workspace owner access is required",
+            },
+        )
+    return workspace
+
+
+OwnedWorkspace = Annotated[AuthorizedWorkspace, Depends(require_workspace_owner)]
