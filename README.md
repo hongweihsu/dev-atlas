@@ -238,8 +238,9 @@ unset.
 Phases 1–17 are implemented together in the AWS demo. Phase 18 now has a
 native-first PDF pipeline with a conservative local layout detector. Pure prose
 uses deterministic extraction; scanned pages, table graphics, large images, and
-suspicious reading-order jumps trigger structured multimodal extraction. The
-next cost optimization is selective page-only extraction and merge.
+suspicious reading-order jumps trigger structured multimodal extraction. Only
+flagged pages are copied into the provider request; validated results are merged
+with trusted native pages under their original page numbers.
 
 ## Limitations
 

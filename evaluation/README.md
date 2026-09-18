@@ -132,6 +132,7 @@ uv run --extra evaluation python -m devatlas.evaluation.retrieval \
 - [2026-09-11 NanoBEIR three-task baseline](reports/2026-09-11-nanobeir-three-task-baseline.md)
 - [2026-09-17 Phase 18 PDF extraction baseline](reports/2026-09-17-phase-18-pdf-extraction.md)
 - [2026-09-17 Phase 18 PDF layout-trigger comparison](reports/2026-09-17-phase-18-layout-trigger.md)
+- [2026-09-18 Phase 18 selective-page routing](reports/2026-09-18-phase-18-selective-pages.md)
 
 ## Phase 18 PDF extraction suite
 

@@ -125,7 +125,7 @@ the application counters.
 
 ## Verification evidence
 
-- Backend quality gate: Ruff, strict mypy, and 241 passing tests, with eight
+- Backend quality gate: Ruff, strict mypy, and 242 passing tests, with eight
   environment-gated integration skips; focused PostgreSQL retention verification
   also passes.
 - Frontend quality gate: ESLint, TypeScript, 19 component tests, and production
@@ -139,7 +139,9 @@ the application counters.
   results.
 - PDF evidence: a visually inspected image-only table/flow fixture, successful
   queued ingestion in one attempt, exact-identifier retrieval, and a grounded
-  page-1 citation.
+  page-1 citation. Selective-page extraction retained 1.00 reviewed path, page,
+  evidence, and structure scores across five synthetic fixtures while reducing
+  provider-routed pages from five to four.
 
 ## Intentional limitations
 
