@@ -37,9 +37,9 @@ raw payload while retaining its SHA-256 checksum for safe idempotency checks.
 ## Consequences
 
 The API, worker, Redis, and PostgreSQL are separate operational components.
-Redis is a wake-up mechanism; PostgreSQL remains authoritative. If PostgreSQL
-commits a queued job but Redis dispatch fails, the API returns `503` and an
-identical client retry with the same key safely re-dispatches it. Automatic
-outbox recovery and object storage for large or long-lived payloads remain
-future production-hardening work. Existing version replacement remains on the
-synchronous route in this phase.
+Redis is a wake-up mechanism; PostgreSQL remains authoritative. PostgreSQL now
+commits the queued job and a unique outbox event atomically. A worker dispatcher
+locks bounded unpublished events with `SKIP LOCKED`, uses the job UUID as ARQ's
+idempotent job ID, and marks an event published only after Redis accepts it.
+Failed dispatches retry every ten seconds. Object storage remains future work;
+existing version replacement remains synchronous.

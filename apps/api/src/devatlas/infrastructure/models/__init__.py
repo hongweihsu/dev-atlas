@@ -14,6 +14,7 @@ from devatlas.infrastructure.models.identity import (
     WorkspaceMembership,
 )
 from devatlas.infrastructure.models.ingestion_job import IngestionJob
+from devatlas.infrastructure.models.outbox import IngestionOutboxEvent
 
 __all__ = [
     "Base",
@@ -24,6 +25,7 @@ __all__ = [
     "DocumentVersion",
     "KnowledgeBase",
     "IngestionJob",
+    "IngestionOutboxEvent",
     "User",
     "Workspace",
     "WorkspaceInvitation",

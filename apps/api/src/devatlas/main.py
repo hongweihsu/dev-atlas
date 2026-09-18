@@ -58,7 +58,6 @@ from devatlas.infrastructure.persistence import (
     SqlAlchemyKnowledgeBaseRepository,
     SqlAlchemyWorkspaceAccessRepository,
 )
-from devatlas.infrastructure.queue import ArqIngestionQueue
 from devatlas.infrastructure.rate_limit import RedisMutationRateLimiter
 from devatlas.infrastructure.readiness import DependencyReadinessChecker
 
@@ -78,7 +77,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         application.state.manage_ingestion_jobs = ManageIngestionJobs(
             repository=SqlAlchemyIngestionJobRepository(session_factory),
-            queue=ArqIngestionQueue(redis),
         )
         application.state.list_documents = ListDocuments(
             SqlAlchemyDocumentListRepository(session_factory)

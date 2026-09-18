@@ -26,8 +26,13 @@ from devatlas.infrastructure.database import (
 from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
 from devatlas.infrastructure.extraction import OpenAIMultimodalDocumentExtractor
 from devatlas.infrastructure.maintenance import SqlAlchemyRetentionCleaner
-from devatlas.infrastructure.models import DocumentVersion, IngestionJob
+from devatlas.infrastructure.models import (
+    DocumentVersion,
+    IngestionJob,
+    IngestionOutboxEvent,
+)
 from devatlas.infrastructure.persistence import SqlAlchemyIngestionUnitOfWorkFactory
+from devatlas.infrastructure.queue import ArqIngestionQueue
 
 MAX_JOB_ATTEMPTS = 3
 
@@ -168,6 +173,30 @@ async def cleanup_expired_operational_data(ctx: dict[str, Any]) -> None:
     )
 
 
+async def dispatch_ingestion_outbox(ctx: dict[str, Any]) -> None:
+    queue = ArqIngestionQueue(ctx["redis"])
+    async with ctx["session_factory"]() as session, session.begin():
+        events = list(
+            await session.scalars(
+                select(IngestionOutboxEvent)
+                .where(IngestionOutboxEvent.published_at.is_(None))
+                .order_by(IngestionOutboxEvent.created_at)
+                .limit(50)
+                .with_for_update(skip_locked=True)
+            )
+        )
+        for event in events:
+            try:
+                await queue.enqueue(event.job_id)
+            except Exception as error:
+                event.attempt_count += 1
+                event.last_error = str(error)[:500]
+            else:
+                event.attempt_count += 1
+                event.last_error = None
+                event.published_at = datetime.now(UTC)
+
+
 async def _record_failure(
     ctx: dict[str, Any],
     job_id: UUID,
@@ -189,9 +218,16 @@ async def _record_failure(
 
 
 class WorkerSettings:
-    functions = [process_ingestion_job]
+    functions = [process_ingestion_job, dispatch_ingestion_outbox]
     on_startup = startup
     on_shutdown = shutdown
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)
     max_tries = MAX_JOB_ATTEMPTS
-    cron_jobs = [cron(cleanup_expired_operational_data, hour=3, minute=30)]
+    cron_jobs = [
+        cron(cleanup_expired_operational_data, hour=3, minute=30),
+        cron(
+            dispatch_ingestion_outbox,
+            second={0, 10, 20, 30, 40, 50},
+            run_at_startup=True,
+        ),
+    ]

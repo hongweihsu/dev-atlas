@@ -34,8 +34,9 @@ flowchart LR
   cloudfront -->|/api/*| api
 
   api -->|RBAC, documents, vectors, conversations| postgres
-  api -->|enqueue / rate limits| redis
-  redis -->|durable job ID| worker
+  api -->|job + outbox transaction| postgres
+  worker -->|dispatch unpublished event| redis
+  redis -->|idempotent job ID| worker
   worker -->|job state, chunks, embeddings| postgres
   api -->|answers, tools, agents| openai
   worker -->|embeddings + selected PDF pages| openai

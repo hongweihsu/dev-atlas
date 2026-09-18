@@ -4,7 +4,6 @@ from uuid import UUID, uuid4
 from devatlas.application.ports.ingestion_jobs import (
     IngestionJobRepository,
     IngestionJobSnapshot,
-    IngestionQueue,
     NewIngestionJob,
 )
 
@@ -14,11 +13,8 @@ class InvalidIdempotencyKeyError(ValueError):
 
 
 class ManageIngestionJobs:
-    def __init__(
-        self, *, repository: IngestionJobRepository, queue: IngestionQueue
-    ) -> None:
+    def __init__(self, *, repository: IngestionJobRepository) -> None:
         self._repository = repository
-        self._queue = queue
 
     async def submit(
         self,
@@ -49,8 +45,6 @@ class ManageIngestionJobs:
                 content_checksum=sha256(content).hexdigest(),
             )
         )
-        if snapshot.status == "queued":
-            await self._queue.enqueue(snapshot.id)
         return snapshot
 
     async def get(self, workspace_id: UUID, job_id: UUID) -> IngestionJobSnapshot:

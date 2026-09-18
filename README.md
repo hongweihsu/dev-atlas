@@ -256,9 +256,9 @@ with trusted native pages under their original page numbers.
   memory and automatic history summarization are intentionally absent.
 - Re-ingestion currently embeds content before transactional duplicate
   detection, so a rejected duplicate may still incur embedding usage.
-- Replacement-version ingestion remains synchronous. A queued job that is
-  committed while Redis dispatch is unavailable requires an identical client
-  retry; an automatic transactional-outbox recovery sweep is not implemented.
+- Replacement-version ingestion remains synchronous. New-document ingestion
+  commits its queued job and outbox event atomically; the worker retries
+  unpublished Redis dispatches every ten seconds.
 - New-job payload bytes are stored temporarily in PostgreSQL and cleared at a
   terminal state. Daily retention cleanup removes terminal job rows older than
   30 days; production-scale object storage remains future work.

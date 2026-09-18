@@ -12,9 +12,8 @@ from devatlas.application.ports.ingestion_jobs import IngestionJobSnapshot
 
 
 @pytest.mark.asyncio
-async def test_submit_persists_before_enqueue_and_reuses_repository_identity() -> None:
+async def test_submit_persists_and_reuses_repository_identity() -> None:
     repository = AsyncMock()
-    queue = AsyncMock()
     job_id = uuid4()
     repository.create_or_get.return_value = IngestionJobSnapshot(
         id=job_id,
@@ -28,7 +27,7 @@ async def test_submit_persists_before_enqueue_and_reuses_repository_identity() -
         started_at=None,
         finished_at=None,
     )
-    service = ManageIngestionJobs(repository=repository, queue=queue)
+    service = ManageIngestionJobs(repository=repository)
 
     result = await service.submit(
         workspace_id=uuid4(),
@@ -41,14 +40,12 @@ async def test_submit_persists_before_enqueue_and_reuses_repository_identity() -
     )
 
     assert result.id == job_id
-    queue.enqueue.assert_awaited_once_with(job_id)
     assert repository.create_or_get.await_count == 1
 
 
 @pytest.mark.asyncio
-async def test_completed_idempotent_submission_is_not_enqueued_again() -> None:
+async def test_completed_idempotent_submission_returns_existing_snapshot() -> None:
     repository = AsyncMock()
-    queue = AsyncMock()
     repository.create_or_get.return_value = IngestionJobSnapshot(
         id=uuid4(),
         status="succeeded",
@@ -61,7 +58,7 @@ async def test_completed_idempotent_submission_is_not_enqueued_again() -> None:
         started_at=datetime.now(UTC),
         finished_at=datetime.now(UTC),
     )
-    service = ManageIngestionJobs(repository=repository, queue=queue)
+    service = ManageIngestionJobs(repository=repository)
 
     await service.submit(
         workspace_id=uuid4(),
@@ -73,13 +70,13 @@ async def test_completed_idempotent_submission_is_not_enqueued_again() -> None:
         content=b"content",
     )
 
-    queue.enqueue.assert_not_awaited()
+    repository.create_or_get.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_blank_idempotency_key_is_rejected_before_persistence() -> None:
     repository = AsyncMock()
-    service = ManageIngestionJobs(repository=repository, queue=AsyncMock())
+    service = ManageIngestionJobs(repository=repository)
 
     with pytest.raises(InvalidIdempotencyKeyError):
         await service.submit(

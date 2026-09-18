@@ -9,7 +9,7 @@ from devatlas.application.ports.ingestion_jobs import (
     IngestionJobSnapshot,
     NewIngestionJob,
 )
-from devatlas.infrastructure.models import IngestionJob
+from devatlas.infrastructure.models import IngestionJob, IngestionOutboxEvent
 from devatlas.infrastructure.persistence.unit_of_work import SessionFactory
 
 
@@ -34,6 +34,7 @@ class SqlAlchemyIngestionJobRepository:
         try:
             async with self._session_factory() as session:
                 session.add(model)
+                session.add(IngestionOutboxEvent(job_id=job.id))
                 await session.commit()
                 await session.refresh(model)
         except IntegrityError as error:
