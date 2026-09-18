@@ -3,6 +3,11 @@ output "cloudfront_url" {
   value       = "https://${aws_cloudfront_distribution.app.domain_name}"
 }
 
+output "application_url" {
+  description = "Canonical Retrieval Works HTTPS entry point."
+  value       = "https://${local.app_domain}"
+}
+
 output "cloudfront_distribution_id" {
   value = aws_cloudfront_distribution.app.id
 }

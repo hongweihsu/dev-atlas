@@ -1,5 +1,10 @@
 # AWS demo deployment
 
+The canonical application hostname is `retrieval.dennishsu.dev`. Route 53 owns
+the public DNS zone, ACM issues the CloudFront certificate in `us-east-1`, and
+the distribution redirects viewers to HTTPS. Cognito callback and logout URLs
+use the canonical hostname rather than the generated `cloudfront.net` address.
+
 ## Goal and budget
 
 Phase 10 targets an always-available learning demo in Sydney with a user limit

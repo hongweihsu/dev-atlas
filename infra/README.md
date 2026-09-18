@@ -1,5 +1,10 @@
 # Retrieval Works AWS infrastructure
 
+The configuration serves the application at `retrieval.dennishsu.dev`. The ACM
+certificate is intentionally created through an aliased `us-east-1` provider
+because CloudFront does not accept certificates from the Sydney region. Route
+53 DNS validation and the A/AAAA aliases are managed by Terraform.
+
 Phase 10 targets a cost-bounded portfolio deployment in `ap-southeast-2`:
 
 ```text

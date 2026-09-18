@@ -27,6 +27,23 @@ variable "environment" {
   default     = "demo"
 }
 
+variable "root_domain" {
+  description = "Route 53 public domain used for the portfolio deployment."
+  type        = string
+  default     = "dennishsu.dev"
+}
+
+variable "app_subdomain" {
+  description = "Hostname label used by the Retrieval Works web application."
+  type        = string
+  default     = "retrieval"
+
+  validation {
+    condition     = can(regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$", var.app_subdomain))
+    error_message = "app_subdomain must be one valid lowercase DNS label."
+  }
+}
+
 variable "instance_type" {
   description = "ARM burstable instance sized for the low-traffic demo."
   type        = string

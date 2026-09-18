@@ -16,8 +16,10 @@ resource "aws_cloudfront_function" "strip_api_prefix" {
 
 resource "aws_cloudfront_distribution" "app" {
   enabled             = true
+  is_ipv6_enabled     = true
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
+  aliases             = [local.app_domain]
 
   origin {
     domain_name              = aws_s3_bucket.web.bucket_regional_domain_name
@@ -89,7 +91,9 @@ resource "aws_cloudfront_distribution" "app" {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate_validation.web.certificate_arn
+    minimum_protocol_version = "TLSv1.2_2021"
+    ssl_support_method       = "sni-only"
   }
 }
 
