@@ -2,27 +2,51 @@
 
 ## Status
 
-Phase 16 privacy-bounded observability and production hardening. This document
-distinguishes implemented components from planned architecture.
+Deployed AWS demo through Phase 18, including multi-workspace collaboration,
+bounded AI workflows, operational hardening, and selective-page PDF extraction.
 
 ## Implemented runtime
 
-```text
-Browser
-  |
-  | GET /api/health (development proxy)
-  v
-React + Vite
-  |
-  | GET /health (JSON)
-  v
-FastAPI ------------------> PostgreSQL + pgvector
-  |                         job state + documents
-  v
-Redis / ARQ queue -------> ingestion worker
-                            |
-                            +----> OpenAI embeddings
-                            +----> PostgreSQL transaction
+```mermaid
+flowchart LR
+  user[Browser user]
+  operator[Operator]
+  cognito[Amazon Cognito]
+  cloudfront[CloudFront]
+  web[S3 private web origin]
+
+  subgraph ec2[EC2 · Docker Compose]
+    api[FastAPI API]
+    worker[ARQ ingestion worker]
+    redis[(Redis queue)]
+    postgres[(PostgreSQL + pgvector)]
+  end
+
+  openai[OpenAI API]
+  artifacts[S3 artifacts + backups]
+  ssm[SSM Parameter Store]
+  monitoring[Prometheus metrics + CloudWatch alarms]
+
+  user -->|sign up / sign in| cognito
+  cognito -->|JWT| user
+  user -->|HTTPS| cloudfront
+  cloudfront -->|React assets| web
+  cloudfront -->|/api/*| api
+
+  api -->|RBAC, documents, vectors, conversations| postgres
+  api -->|enqueue / rate limits| redis
+  redis -->|durable job ID| worker
+  worker -->|job state, chunks, embeddings| postgres
+  api -->|answers, tools, agents| openai
+  worker -->|embeddings + selected PDF pages| openai
+
+  operator -->|Session Manager deploy| ssm
+  ssm -->|runtime secrets| api
+  ssm -->|runtime secrets| worker
+  artifacts -->|checksum-verified source| ec2
+  postgres -->|daily encrypted dump| artifacts
+  api -->|privacy-bounded telemetry| monitoring
+  cloudfront -->|5xx metrics| monitoring
 ```
 
 Docker Compose runs one service for each boundary and gives them a private
@@ -125,9 +149,8 @@ network. A named volume preserves PostgreSQL data between normal restarts.
   endpoint. Raw paths, identities, questions, prompts, chunks, and answers are
   intentionally excluded.
 
-The health endpoint is a liveness signal. It intentionally has no database query,
-so a database incident does not make the API process itself appear dead. A
-separate readiness check can be added when deployment requirements justify it.
+`/health` is a liveness signal. `/health/ready` separately verifies PostgreSQL
+and Redis and returns `503` when either dependency is unavailable.
 
 ## Failure cases
 
