@@ -7,8 +7,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt import PyJWK, PyJWKClient
 from jwt.algorithms import RSAAlgorithm
 
-from devatlas.application.ports.authentication import InvalidCredentialError
-from devatlas.infrastructure.authentication import (
+from retrieval_works.application.ports.authentication import InvalidCredentialError
+from retrieval_works.infrastructure.authentication import (
     CognitoAccessTokenVerifier,
     CognitoIdentityTokenVerifier,
     OidcJwksTokenVerifier,
@@ -22,7 +22,7 @@ def _token(**overrides: object) -> str:
     claims: dict[str, object] = {
         "iss": "test-issuer",
         "sub": "user-123",
-        "aud": "devatlas-api",
+        "aud": "retrieval-works-api",
         "exp": datetime.now(UTC) + timedelta(minutes=5),
     }
     claims.update(overrides)
@@ -31,7 +31,7 @@ def _token(**overrides: object) -> str:
 
 def test_verifier_accepts_expected_issuer_subject_audience_and_expiry() -> None:
     verifier = PyJwtTokenVerifier(
-        secret=SECRET, issuer="test-issuer", audience="devatlas-api"
+        secret=SECRET, issuer="test-issuer", audience="retrieval-works-api"
     )
 
     principal = verifier.verify(_token())
@@ -50,7 +50,7 @@ def test_verifier_accepts_expected_issuer_subject_audience_and_expiry() -> None:
             {
                 "iss": "test-issuer",
                 "sub": "user-123",
-                "aud": "devatlas-api",
+                "aud": "retrieval-works-api",
                 "exp": datetime.now(UTC) + timedelta(minutes=5),
             },
             "wrong-secret-that-is-also-at-least-32-bytes",
@@ -60,7 +60,7 @@ def test_verifier_accepts_expected_issuer_subject_audience_and_expiry() -> None:
 )
 def test_verifier_rejects_untrusted_or_expired_tokens(token: str) -> None:
     verifier = PyJwtTokenVerifier(
-        secret=SECRET, issuer="test-issuer", audience="devatlas-api"
+        secret=SECRET, issuer="test-issuer", audience="retrieval-works-api"
     )
 
     with pytest.raises(InvalidCredentialError, match="invalid or expired"):
@@ -77,7 +77,7 @@ def test_oidc_verifier_resolves_rs256_key_and_validates_claims() -> None:
         {
             "iss": "https://identity.example.com/",
             "sub": "provider-user-123",
-            "aud": "devatlas-api",
+            "aud": "retrieval-works-api",
             "exp": datetime.now(UTC) + timedelta(minutes=5),
         },
         private_key,
@@ -87,7 +87,7 @@ def test_oidc_verifier_resolves_rs256_key_and_validates_claims() -> None:
     verifier = OidcJwksTokenVerifier(
         jwks_url="https://identity.example.com/.well-known/jwks.json",
         issuer="https://identity.example.com/",
-        audience="devatlas-api",
+        audience="retrieval-works-api",
         jwks_client=jwks_client,
     )
 
@@ -106,7 +106,7 @@ def test_oidc_verifier_rejects_algorithm_confusion() -> None:
     verifier = OidcJwksTokenVerifier(
         jwks_url="https://identity.example.com/.well-known/jwks.json",
         issuer="test-issuer",
-        audience="devatlas-api",
+        audience="retrieval-works-api",
         jwks_client=jwks_client,
     )
 

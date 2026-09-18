@@ -10,7 +10,7 @@ set +a
 
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 backup_directory="$runtime_directory/backups"
-backup_path="$backup_directory/devatlas-$timestamp.dump"
+backup_path="$backup_directory/retrieval-works-$timestamp.dump"
 mkdir -p "$backup_directory"
 
 docker compose --env-file .env -f compose.yml exec -T postgres \

@@ -2,8 +2,8 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from devatlas.application.ports.retrieval import RetrievedChunk
-from devatlas.application.search_documents import (
+from retrieval_works.application.ports.retrieval import RetrievedChunk
+from retrieval_works.application.search_documents import (
     MAX_QUERY_CHARACTERS,
     InvalidSearchQueryError,
     SearchDocuments,

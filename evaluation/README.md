@@ -30,7 +30,7 @@ Start the API with OpenAI embeddings configured, then run:
 
 ```bash
 cd apps/api
-uv run --extra evaluation python -m devatlas.evaluation.retrieval \
+uv run --extra evaluation python -m retrieval_works.evaluation.retrieval \
   ../../evaluation/retrieval-cases.jsonl \
   --corpus ../../evaluation/corpus \
   --manifest ../../evaluation/runs/manifest.json \
@@ -89,7 +89,7 @@ It cannot be combined with `--reuse-manifest`.
 
 ## Package decision
 
-DevAtlas uses `ir-measures` for standard deterministic information-retrieval
+Retrieval Works uses `ir-measures` for standard deterministic information-retrieval
 metrics. It is installed only through the API project's `evaluation` optional
 dependency, not in the production runtime. LLM-based answer judges are deferred
 until generation evaluation has a concrete need and a reviewed rubric.
@@ -111,7 +111,7 @@ After explicit cost approval, the BM25-only query run is:
 
 ```bash
 cd apps/api
-uv run --extra evaluation python -m devatlas.evaluation.retrieval \
+uv run --extra evaluation python -m retrieval_works.evaluation.retrieval \
   ../../evaluation/context-cases.jsonl \
   --corpus ../../evaluation/context-corpus \
   --manifest ../../evaluation/runs/context-manifest.json \
@@ -145,9 +145,9 @@ Generate the local ignored fixtures and run the provider-backed evaluation:
 
 ```bash
 cd apps/api
-uv run --extra evaluation python -m devatlas.evaluation.pdf_fixtures \
+uv run --extra evaluation python -m retrieval_works.evaluation.pdf_fixtures \
   --output ../../output/pdf/phase18-evaluation
-uv run --extra evaluation python -m devatlas.evaluation.pdf_extraction \
+uv run --extra evaluation python -m retrieval_works.evaluation.pdf_extraction \
   ../../evaluation/pdf-cases.json \
   --corpus ../../output/pdf/phase18-evaluation \
   --report ../../evaluation/runs/phase18-pdf-extraction.json
@@ -169,7 +169,7 @@ download corpus text or call OpenAI:
 
 ```bash
 cd apps/api
-uv run --extra benchmark python -m devatlas.evaluation.nanobeir_inspection \
+uv run --extra benchmark python -m retrieval_works.evaluation.nanobeir_inspection \
   --report ../../evaluation/runs/nanobeir-inspection.json
 ```
 
@@ -178,7 +178,7 @@ and uses the local embedding tokenizer; it still makes no OpenAI request:
 
 ```bash
 cd apps/api
-uv run --extra benchmark python -m devatlas.evaluation.nanobeir_tokens \
+uv run --extra benchmark python -m retrieval_works.evaluation.nanobeir_tokens \
   --report ../../evaluation/runs/nanobeir-tokens.json
 ```
 

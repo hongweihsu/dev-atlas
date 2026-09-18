@@ -1,4 +1,4 @@
-DevAtlas Operations Runbook
+Retrieval Works Operations Runbook
 
 Service readiness
 
@@ -8,7 +8,7 @@ available. During an incident, first check container health, then inspect the AP
 logs and database connectivity independently. Avoid restarting every service at
 once because that destroys evidence about which dependency failed first.
 
-The public status page uses the service name DevAtlas API. Internal dashboards
+The public status page uses the service name Retrieval Works API. Internal dashboards
 group request latency, database pool saturation, provider failures, and ingestion
 outcomes separately. An elevated response time without database contention may
 indicate provider latency rather than an API capacity problem.
@@ -16,7 +16,7 @@ indicate provider latency rather than an API capacity problem.
 Ingestion validation
 
 Strict validation is controlled by the configuration key
-DEVATLAS_INGEST_MODE=strict. This setting rejects unsupported media types before
+RETRIEVAL_WORKS_INGEST_MODE=strict. This setting rejects unsupported media types before
 text extraction and retains the original safe filename as source provenance. Do
 not place credentials in this variable; it is an operational mode, not a secret.
 

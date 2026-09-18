@@ -1,4 +1,4 @@
-from devatlas.infrastructure.extraction.pdf_layout import (
+from retrieval_works.infrastructure.extraction.pdf_layout import (
     PdfPageLayout,
     _has_suspicious_reading_order,
 )

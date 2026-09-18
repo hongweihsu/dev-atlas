@@ -47,7 +47,7 @@ memory, concurrent reads during refresh, and document update/delete behavior.
 
 ```bash
 cd apps/api
-uv run python -m devatlas.evaluation.bm25_benchmark \
+uv run python -m retrieval_works.evaluation.bm25_benchmark \
   --report ../../evaluation/runs/bm25-index-benchmark.json
 ```
 

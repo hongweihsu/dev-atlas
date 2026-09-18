@@ -13,4 +13,4 @@ COPY alembic.ini ./
 COPY alembic ./alembic
 COPY scripts ./scripts
 
-CMD ["uvicorn", "devatlas.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "retrieval_works.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

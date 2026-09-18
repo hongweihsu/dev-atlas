@@ -1,8 +1,8 @@
-# DevAtlas
+# Retrieval Works
 
 **AI Technical Research & Knowledge Platform**
 
-DevAtlas is a learning-first, production-oriented AI engineering project for
+Retrieval Works is a learning-first, production-oriented AI engineering project for
 organizing and researching technical knowledge. It has grown deliberately from
 a full-stack foundation into a measured, permission-aware retrieval system.
 
@@ -68,9 +68,9 @@ limitations, see the [engineering case study](docs/case-study.md).
   single-use invitations bound to Cognito-verified email, manage editor/viewer
   roles, remove members, and revoke pending invitations without exposing stored
   token hashes
-- DevAtlas-native sign-in, registration, email confirmation, and password
+- Retrieval Works-native sign-in, registration, email confirmation, and password
   recovery use the official Amplify Auth SRP client; passwords go directly to
-  Cognito and never pass through the DevAtlas API
+  Cognito and never pass through the Retrieval Works API
 - The React header displays and switches among server-authorized workspaces,
   making the active authorization context and role visible to the user
 - Viewer sessions enter an explained read-only UI while the API independently
@@ -141,9 +141,10 @@ limitations, see the [engineering case study](docs/case-study.md).
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- Selective page-only multimodal extraction and merge for suspicious mixed PDFs
-- Workspace invitations, acceptance, and selection beyond the self-created
-  personal workspace
+- Automatic invitation email delivery, ownership transfer, and workspace
+  deletion or leave semantics
+- Verified cutover to the Retrieval Works AWS resource prefix and
+  `retrieval.dennishsu.dev`
 - Final authenticated browser workflow recording, screenshots, and short demo
   video for portfolio presentation
 

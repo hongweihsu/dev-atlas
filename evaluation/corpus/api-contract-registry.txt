@@ -1,4 +1,4 @@
-DevAtlas API Contract Registry
+Retrieval Works API Contract Registry
 
 Contract lifecycle
 
@@ -30,7 +30,7 @@ first vertical slice easy to reason about.
 Schema negotiation
 
 Clients participating in the September contract experiment send the header
-X-DevAtlas-Schema: 2026-09. This identifier selects the documented experimental
+X-Retrieval Works-Schema: 2026-09. This identifier selects the documented experimental
 response shape in test environments only. Production ignores unsupported schema
 headers and responds with the stable public representation rather than guessing a
 client capability.

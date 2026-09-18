@@ -1,6 +1,6 @@
 # Observability and production hardening
 
-DevAtlas uses a deliberately small observability stack for its low-traffic,
+Retrieval Works uses a deliberately small observability stack for its low-traffic,
 cost-capped demo. It exposes Prometheus-format application metrics, emits one
 structured completion log per HTTP request, and uses AWS CloudWatch alarms for
 continuous infrastructure and edge failure notification. It does not run an
@@ -33,9 +33,9 @@ configured the endpoint returns `503`; missing or invalid credentials return
 
 The initial metrics are:
 
-- `devatlas_http_requests_total{method,route,status_code}`;
-- `devatlas_http_request_duration_seconds{method,route}`;
-- `devatlas_workflow_operations_total{workflow,outcome}`.
+- `retrieval_works_http_requests_total{method,route,status_code}`;
+- `retrieval_works_http_request_duration_seconds{method,route}`;
+- `retrieval_works_workflow_operations_total{workflow,outcome}`.
 
 Workflow and outcome values come from a bounded server-controlled vocabulary.
 They expose search result presence, evidence sufficiency, corrective-query

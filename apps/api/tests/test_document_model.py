@@ -9,7 +9,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 
-from devatlas.infrastructure.models import (
+from retrieval_works.infrastructure.models import (
     Chunk,
     Document,
     DocumentVersion,

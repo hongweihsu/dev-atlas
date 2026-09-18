@@ -52,7 +52,7 @@ measured claim must include this limitation.
 
 ## Implementation observations
 
-BM25S may return zero-score rows to fill the requested `k`; DevAtlas removes
+BM25S may return zero-score rows to fill the requested `k`; Retrieval Works removes
 those rows before fusion so a lexical non-match cannot receive RRF credit. Raw
 BM25 and cosine scores are not directly comparable, so RRF combines only their
 rank positions using stable chunk UUIDs.

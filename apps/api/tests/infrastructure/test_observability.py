@@ -6,9 +6,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from devatlas.api.routes.metrics import router as metrics_router
-from devatlas.core.config import Settings
-from devatlas.infrastructure.observability import (
+from retrieval_works.api.routes.metrics import router as metrics_router
+from retrieval_works.core.config import Settings
+from retrieval_works.infrastructure.observability import (
     HttpMetrics,
     RequestObservabilityMiddleware,
 )
@@ -39,7 +39,7 @@ def test_middleware_preserves_safe_request_id_and_logs_only_route_template(
 ) -> None:
     application = _application()
 
-    with caplog.at_level(logging.INFO, logger="devatlas.requests"):
+    with caplog.at_level(logging.INFO, logger="retrieval_works.requests"):
         response = TestClient(application).get(
             "/documents/private-document?query=private-question",
             headers={"X-Request-ID": "request-1234"},
@@ -82,7 +82,7 @@ def test_metrics_endpoint_requires_token_and_exports_bounded_labels() -> None:
     assert 'route="/documents/{document_id}"' in response.text
     assert 'status_code="200"' in response.text
     assert (
-        'devatlas_workflow_operations_total{outcome="provider_unavailable",'
+        'retrieval_works_workflow_operations_total{outcome="provider_unavailable",'
         'workflow="corrective_answer"} 1.0'
     ) in response.text
     assert "private-document" not in response.text
@@ -100,7 +100,7 @@ def test_workflow_log_uses_request_correlation_without_content(
         )
         return {"answer": "private answer"}
 
-    with caplog.at_level(logging.INFO, logger="devatlas.workflows"):
+    with caplog.at_level(logging.INFO, logger="retrieval_works.workflows"):
         TestClient(application).get(
             "/workflow?question=private-question",
             headers={"X-Request-ID": "workflow-1234"},
@@ -147,10 +147,10 @@ def test_metrics_capture_failure_then_recovery() -> None:
     assert failed.status_code == 503
     assert recovered.status_code == 200
     assert (
-        'devatlas_http_requests_total{method="GET",route="/transient-provider",'
+        'retrieval_works_http_requests_total{method="GET",route="/transient-provider",'
         'status_code="503"} 1.0'
     ) in metrics.text
     assert (
-        'devatlas_http_requests_total{method="GET",route="/transient-provider",'
+        'retrieval_works_http_requests_total{method="GET",route="/transient-provider",'
         'status_code="200"} 1.0'
     ) in metrics.text

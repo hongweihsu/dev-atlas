@@ -1,7 +1,10 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from devatlas.application.ports.retrieval import RetrievalStrategy, RetrievedChunk
+from retrieval_works.application.ports.retrieval import (
+    RetrievalStrategy,
+    RetrievedChunk,
+)
 
 
 class FakeChunkSearchRepository:

@@ -1,4 +1,4 @@
-from devatlas.evaluation.nanobeir_tokens import (
+from retrieval_works.evaluation.nanobeir_tokens import (
     TaskTokenInspection,
     build_token_report,
     inspect_task_tokens,

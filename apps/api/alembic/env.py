@@ -5,8 +5,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from devatlas.core.config import get_settings
-from devatlas.infrastructure.models import Base
+from retrieval_works.core.config import get_settings
+from retrieval_works.infrastructure.models import Base
 
 config = context.config
 if config.config_file_name is not None:

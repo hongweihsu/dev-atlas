@@ -22,4 +22,4 @@ aws cloudfront create-invalidation \
   --paths '/*' \
   --profile devatlas >/dev/null
 
-echo "Published DevAtlas web app to $cloudfront_url"
+echo "Published Retrieval Works web app to $cloudfront_url"

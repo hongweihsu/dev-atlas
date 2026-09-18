@@ -4,13 +4,15 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.workspace_questions import get_answer_workspace_question
-from devatlas.application.answer_workspace_question import AnswerWorkspaceQuestion
-from devatlas.application.ports.tool_calling import (
+from retrieval_works.api.routes.workspace_questions import get_answer_workspace_question
+from retrieval_works.application.answer_workspace_question import (
+    AnswerWorkspaceQuestion,
+)
+from retrieval_works.application.ports.tool_calling import (
     ExecutedTool,
     WorkspaceQuestionAnswer,
 )
-from devatlas.main import app
+from retrieval_works.main import app
 
 
 @pytest.fixture

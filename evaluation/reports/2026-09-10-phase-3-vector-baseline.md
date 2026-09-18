@@ -34,7 +34,7 @@ Every judged passage still appeared within the top-three context candidates.
 
 ## Phase 3 decision
 
-Hybrid retrieval remains a product requirement because DevAtlas must support
+Hybrid retrieval remains a product requirement because Retrieval Works must support
 both semantic descriptions and exact technical tokens. This result is the
 comparison baseline, not a claim that BM25 will improve every category.
 
@@ -46,6 +46,6 @@ must remain available when aggregate metrics tie.
 ## Limitations
 
 The corpus and judgments are deliberately small and English-heavy. The result
-is a regression signal for the implemented DevAtlas behavior, not a general
+is a regression signal for the implemented Retrieval Works behavior, not a general
 retrieval benchmark. It does not measure latency, index-update cost, generated
 answer quality, or multilingual tokenization.

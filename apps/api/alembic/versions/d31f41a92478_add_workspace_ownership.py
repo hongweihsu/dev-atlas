@@ -103,10 +103,10 @@ def upgrade() -> None:
             "display_name) VALUES (:id, :issuer, :subject, :email, :name)"
         ).bindparams(
             id=LEGACY_USER_ID,
-            issuer="devatlas-local",
+            issuer="retrieval_works-local",
             subject="personal-owner",
             email=None,
-            name="DevAtlas Owner",
+            name="Retrieval Works Owner",
         )
     )
     op.execute(

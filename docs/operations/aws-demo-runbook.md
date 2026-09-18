@@ -28,13 +28,13 @@ existing user access to an additional workspace.
 Example identity provisioning on EC2:
 
 ```bash
-cd /opt/devatlas/infra/aws/runtime
+cd /opt/retrieval-works/infra/aws/runtime
 docker compose --env-file .env -f compose.yml run --rm migrate \
   python scripts/provision_identity.py \
   --issuer "$AUTH_JWT_ISSUER" \
   --subject "COGNITO_SUB_FROM_ADMIN_GET_USER" \
   --email "OWNER_EMAIL" \
-  --display-name "DevAtlas Owner" \
+  --display-name "Retrieval Works Owner" \
   --role owner
 ```
 
@@ -51,7 +51,7 @@ commit:
 The command prints the S3 URI, SHA-256 checksum, and Git revision. Through
 Systems Manager, download that exact private `artifacts/*` object with the EC2
 instance role, verify its checksum, extract it into a staging directory, and
-atomically replace `/opt/devatlas`. Keep the previous directory until the smoke
+atomically replace `/opt/retrieval-works`. Keep the previous directory until the smoke
 test passes.
 
 EC2 bootstrap installs pinned Docker Compose and Buildx CLI plugins from
@@ -63,23 +63,23 @@ package, and its bundled Buildx is older than current Compose requires.
 Then run on EC2:
 
 ```bash
-cd /opt/devatlas/infra/aws/runtime
+cd /opt/retrieval-works/infra/aws/runtime
 ./deploy.sh
 ```
 
 For a Git checkout the script first fast-forwards `main`; for an immutable
 artifact it skips Git. It then renders a mode-600 `.env` from the
-`/devatlas/demo` SSM path, builds the API image, runs Alembic to `head`, and
+`/retrieval-works/demo` SSM path, builds the API image, runs Alembic to `head`, and
 starts API, ARQ worker, Redis, and PostgreSQL. A migration failure stops the
 rollout before API/worker replacement.
 
 ## Inspect runtime state
 
 ```bash
-cd /opt/devatlas/infra/aws/runtime
+cd /opt/retrieval-works/infra/aws/runtime
 docker compose --env-file .env -f compose.yml ps
 docker compose --env-file .env -f compose.yml logs --tail=100 api worker
-systemctl status devatlas-backup.timer
+systemctl status retrieval-works-backup.timer
 curl --fail-with-body http://localhost:8000/health/ready
 ```
 
@@ -115,7 +115,7 @@ removed; S3 expires demo backups after 30 days.
 Run a manual backup:
 
 ```bash
-cd /opt/devatlas/infra/aws/runtime
+cd /opt/retrieval-works/infra/aws/runtime
 ./backup-postgres.sh
 ```
 
@@ -134,7 +134,7 @@ confirmation variable:
 
 ```bash
 CONFIRM_RESTORE=yes ./restore-postgres.sh \
-  s3://example-backup-bucket/postgres/devatlas-YYYYMMDDTHHMMSSZ.dump
+  s3://example-backup-bucket/postgres/retrieval-works-YYYYMMDDTHHMMSSZ.dump
 ```
 
 Always rehearse restore with disposable data before relying on backups.

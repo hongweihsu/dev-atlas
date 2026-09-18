@@ -5,7 +5,7 @@
 
 ## Context
 
-DevAtlas needs collaboration boundaries without prematurely building enterprise
+Retrieval Works needs collaboration boundaries without prematurely building enterprise
 IAM or fine-grained ACLs. Users may participate in multiple groups with different
 roles.
 

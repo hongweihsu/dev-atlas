@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from devatlas.evaluation.nanobeir_cache import (
+from retrieval_works.evaluation.nanobeir_cache import (
     EmbeddingCacheError,
     EmbeddingCacheIdentity,
     NumpyEmbeddingCache,

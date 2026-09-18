@@ -1,6 +1,6 @@
 import numpy as np
 
-from devatlas.evaluation.nanobeir_benchmark import (
+from retrieval_works.evaluation.nanobeir_benchmark import (
     dense_rankings,
     reciprocal_rank_fusion_ids,
 )

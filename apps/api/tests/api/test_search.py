@@ -5,14 +5,14 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.search import get_search_documents
-from devatlas.application.ports.embedding import (
+from retrieval_works.api.routes.search import get_search_documents
+from retrieval_works.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
 )
-from devatlas.application.ports.retrieval import RetrievedChunk
-from devatlas.application.search_documents import SearchDocuments
-from devatlas.main import app
+from retrieval_works.application.ports.retrieval import RetrievedChunk
+from retrieval_works.application.search_documents import SearchDocuments
+from retrieval_works.main import app
 from tests.fakes import DeterministicEmbeddingProvider, FakeChunkSearchRepository
 
 

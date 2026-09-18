@@ -3,7 +3,7 @@ from typing import Any, cast
 import pytest
 from arq.connections import ArqRedis
 
-from devatlas.infrastructure.rate_limit import (
+from retrieval_works.infrastructure.rate_limit import (
     RateLimitExceededError,
     RedisMutationRateLimiter,
 )
@@ -32,7 +32,7 @@ async def test_rate_limiter_hashes_identity_and_allows_within_limit() -> None:
     )
 
     assert "sensitive-subject" not in redis.keys[0]
-    assert redis.keys[0].startswith("devatlas:rate-limit:workspace-create:")
+    assert redis.keys[0].startswith("retrieval_works:rate-limit:workspace-create:")
 
 
 @pytest.mark.asyncio

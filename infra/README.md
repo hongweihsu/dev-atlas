@@ -1,4 +1,4 @@
-# DevAtlas AWS infrastructure
+# Retrieval Works AWS infrastructure
 
 Phase 10 targets a cost-bounded portfolio deployment in `ap-southeast-2`:
 

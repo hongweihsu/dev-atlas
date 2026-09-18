@@ -4,14 +4,14 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from devatlas.api.dependencies.authentication import (
+from retrieval_works.api.dependencies.authentication import (
     CurrentPrincipal,
     WritableWorkspace,
     get_authorized_workspace,
 )
-from devatlas.api.routes.session import router
-from devatlas.application.ports.authentication import AuthenticatedPrincipal
-from devatlas.application.ports.workspace_access import AuthorizedWorkspace
+from retrieval_works.api.routes.session import router
+from retrieval_works.application.ports.authentication import AuthenticatedPrincipal
+from retrieval_works.application.ports.workspace_access import AuthorizedWorkspace
 
 
 def test_missing_bearer_token_is_rejected_with_challenge() -> None:
@@ -159,7 +159,7 @@ def test_workspace_membership_denial_does_not_return_session() -> None:
     application.include_router(router)
     verifier = Mock()
     verifier.verify.return_value = AuthenticatedPrincipal(
-        issuer="devatlas-local", subject="personal-owner"
+        issuer="retrieval_works-local", subject="personal-owner"
     )
     repository = AsyncMock()
     repository.resolve.return_value = None

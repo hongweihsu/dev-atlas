@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-parameter_path=${1:-/devatlas/demo}
+parameter_path=${1:-/retrieval-works/demo}
 target_file=${2:-.env}
 temporary_file=$(mktemp)
 trap 'rm -f "$temporary_file"' EXIT

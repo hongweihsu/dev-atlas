@@ -8,7 +8,7 @@ Accepted — 2026-09-15
 
 Document RAG cannot reliably answer questions about live application metadata,
 such as which KnowledgeBase currently contains the most documents. Giving a
-model unrestricted application or database access would bypass DevAtlas's
+model unrestricted application or database access would bypass Retrieval Works's
 workspace authorization boundary and could create unbounded execution loops.
 
 ## Decision

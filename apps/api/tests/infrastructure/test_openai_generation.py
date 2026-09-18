@@ -6,15 +6,15 @@ from uuid import uuid4
 import pytest
 from openai import APIConnectionError, AsyncOpenAI
 
-from devatlas.application.ports.generation import (
+from retrieval_works.application.ports.generation import (
     AnswerGenerationRequest,
     AnswerGenerator,
     AnswerGeneratorUnavailableError,
     EvidenceSource,
     InvalidGeneratedAnswerError,
 )
-from devatlas.infrastructure.generation import OpenAIAnswerGenerator
-from devatlas.infrastructure.generation.openai import _StructuredAnswer
+from retrieval_works.infrastructure.generation import OpenAIAnswerGenerator
+from retrieval_works.infrastructure.generation.openai import _StructuredAnswer
 
 
 def make_client() -> tuple[AsyncOpenAI, AsyncMock]:

@@ -1,6 +1,6 @@
 import pytest
 
-from devatlas.evaluation.bm25_benchmark import benchmark_size, make_corpus
+from retrieval_works.evaluation.bm25_benchmark import benchmark_size, make_corpus
 
 
 def test_make_corpus_is_deterministic_and_bounded() -> None:

@@ -12,7 +12,7 @@ else
 fi
 
 cd "$runtime_directory"
-./render-env.sh /devatlas/demo .env
+./render-env.sh /retrieval-works/demo .env
 docker compose --env-file .env -f compose.yml build
 docker compose --env-file .env -f compose.yml run --rm migrate
 docker compose --env-file .env -f compose.yml up -d --remove-orphans

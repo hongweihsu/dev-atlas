@@ -6,25 +6,27 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.documents import (
+from retrieval_works.api.routes.documents import (
     get_ingest_new_document,
     get_list_documents,
     get_manage_document_lifecycle,
     get_manage_document_versions,
 )
-from devatlas.application.ingest_document import IngestNewDocument
-from devatlas.application.list_documents import ListDocuments
-from devatlas.application.manage_document_lifecycle import ManageDocumentLifecycle
-from devatlas.application.manage_document_versions import ManageDocumentVersions
-from devatlas.application.ports.document_list import DocumentSummary
-from devatlas.application.ports.document_versions import DocumentVersionSummary
-from devatlas.application.ports.embedding import (
+from retrieval_works.application.ingest_document import IngestNewDocument
+from retrieval_works.application.list_documents import ListDocuments
+from retrieval_works.application.manage_document_lifecycle import (
+    ManageDocumentLifecycle,
+)
+from retrieval_works.application.manage_document_versions import ManageDocumentVersions
+from retrieval_works.application.ports.document_list import DocumentSummary
+from retrieval_works.application.ports.document_versions import DocumentVersionSummary
+from retrieval_works.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
 )
-from devatlas.application.ports.persistence import DocumentNotFoundError
-from devatlas.domain.document_ingestion import DEFAULT_MAX_TEXT_BYTES
-from devatlas.main import app
+from retrieval_works.application.ports.persistence import DocumentNotFoundError
+from retrieval_works.domain.document_ingestion import DEFAULT_MAX_TEXT_BYTES
+from retrieval_works.main import app
 from tests.fakes import (
     DeterministicEmbeddingProvider,
     FakeIngestionUnitOfWorkFactory,

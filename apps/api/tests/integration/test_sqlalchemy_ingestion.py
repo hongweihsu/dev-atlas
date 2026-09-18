@@ -8,23 +8,23 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import selectinload
 
-from devatlas.application.ingest_document import (
+from retrieval_works.application.ingest_document import (
     IngestNewDocument,
     IngestNewDocumentCommand,
 )
-from devatlas.application.ports.authentication import AuthenticatedPrincipal
-from devatlas.application.ports.persistence import (
+from retrieval_works.application.ports.authentication import AuthenticatedPrincipal
+from retrieval_works.application.ports.persistence import (
     DocumentNotFoundError,
     DuplicateDocumentContentError,
 )
-from devatlas.application.search_documents import (
+from retrieval_works.application.search_documents import (
     SearchDocuments,
     SearchDocumentsCommand,
 )
-from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
-from devatlas.infrastructure.database import create_session_factory
-from devatlas.infrastructure.maintenance import SqlAlchemyRetentionCleaner
-from devatlas.infrastructure.models import (
+from retrieval_works.core.tenancy import LEGACY_WORKSPACE_ID
+from retrieval_works.infrastructure.database import create_session_factory
+from retrieval_works.infrastructure.maintenance import SqlAlchemyRetentionCleaner
+from retrieval_works.infrastructure.models import (
     Document,
     DocumentVersion,
     IngestionJob,
@@ -34,7 +34,7 @@ from devatlas.infrastructure.models import (
     WorkspaceInvitation,
     WorkspaceMembership,
 )
-from devatlas.infrastructure.persistence import (
+from retrieval_works.infrastructure.persistence import (
     SqlAlchemyChunkSearchRepository,
     SqlAlchemyDocumentLifecycleRepository,
     SqlAlchemyDocumentListRepository,
@@ -44,13 +44,13 @@ from devatlas.infrastructure.persistence import (
 )
 from tests.fakes import DeterministicEmbeddingProvider
 
-TEST_DATABASE_URL = os.getenv("DEVATLAS_TEST_DATABASE_URL")
+TEST_DATABASE_URL = os.getenv("RETRIEVAL_WORKS_TEST_DATABASE_URL")
 
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
         TEST_DATABASE_URL is None,
-        reason="DEVATLAS_TEST_DATABASE_URL is not configured",
+        reason="RETRIEVAL_WORKS_TEST_DATABASE_URL is not configured",
     ),
 ]
 

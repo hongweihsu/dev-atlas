@@ -5,11 +5,14 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.research import get_run_agentic_research
-from devatlas.application.ports.agentic_research import ResearchResult, ResearchStep
-from devatlas.application.ports.generation import EvidenceSource
-from devatlas.application.run_agentic_research import RunAgenticResearch
-from devatlas.main import app
+from retrieval_works.api.routes.research import get_run_agentic_research
+from retrieval_works.application.ports.agentic_research import (
+    ResearchResult,
+    ResearchStep,
+)
+from retrieval_works.application.ports.generation import EvidenceSource
+from retrieval_works.application.run_agentic_research import RunAgenticResearch
+from retrieval_works.main import app
 
 
 @pytest.fixture

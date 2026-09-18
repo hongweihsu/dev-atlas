@@ -3,19 +3,19 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from devatlas.application.ingest_document import (
+from retrieval_works.application.ingest_document import (
     IngestNewDocument,
     IngestNewDocumentCommand,
 )
-from devatlas.application.ports.embedding import EmbeddingBatchError
-from devatlas.application.ports.persistence import (
+from retrieval_works.application.ports.embedding import EmbeddingBatchError
+from retrieval_works.application.ports.persistence import (
     DocumentArchivedError,
     DocumentNotFoundError,
     DuplicateDocumentContentError,
     IngestionUnitOfWorkFactory,
 )
-from devatlas.domain.document_ingestion import PreparedTextDocument
-from devatlas.domain.text_processing import content_checksum
+from retrieval_works.domain.document_ingestion import PreparedTextDocument
+from retrieval_works.domain.text_processing import content_checksum
 from tests.fakes import (
     DeterministicEmbeddingProvider,
     FakeIngestionUnitOfWorkFactory,
@@ -31,7 +31,7 @@ def accepts_unit_of_work_factory(
     return factory
 
 
-def make_command(*, title: str = "DevAtlas Notes") -> IngestNewDocumentCommand:
+def make_command(*, title: str = "Retrieval Works Notes") -> IngestNewDocumentCommand:
     return IngestNewDocumentCommand(
         title=title,
         source_filename="notes.txt",
@@ -50,7 +50,7 @@ async def test_ingest_new_document_commits_complete_version_one() -> None:
     )
 
     result = await use_case.execute(
-        WORKSPACE_ID, make_command(title="  DevAtlas Notes  ")
+        WORKSPACE_ID, make_command(title="  Retrieval Works Notes  ")
     )
 
     assert result.chunk_count == 2
@@ -61,7 +61,7 @@ async def test_ingest_new_document_commits_complete_version_one() -> None:
 
     document = factory.committed_documents[0]
     assert document.id == result.document_id
-    assert document.title == "DevAtlas Notes"
+    assert document.title == "Retrieval Works Notes"
     assert document.version.id == result.version_id
     assert document.version.version_number == 1
     assert document.version.is_active is True

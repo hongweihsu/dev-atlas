@@ -28,8 +28,8 @@ data "aws_iam_policy_document" "runtime" {
       "ssm:GetParametersByPath",
     ]
     resources = [
-      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/devatlas/demo",
-      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/devatlas/demo/*"
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/retrieval-works/demo",
+      "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/retrieval-works/demo/*"
     ]
   }
 

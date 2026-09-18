@@ -3,12 +3,12 @@ from uuid import uuid4
 
 import pytest
 
-from devatlas.application.ports.agentic_research import (
+from retrieval_works.application.ports.agentic_research import (
     InvalidResearchQuestionError,
     ResearchAgent,
     ResearchResult,
 )
-from devatlas.application.run_agentic_research import (
+from retrieval_works.application.run_agentic_research import (
     MAX_RESEARCH_QUESTION_CHARACTERS,
     RunAgenticResearch,
     RunAgenticResearchCommand,

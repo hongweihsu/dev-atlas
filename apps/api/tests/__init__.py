@@ -1,1 +1,1 @@
-"""DevAtlas API test suite."""
+"""Retrieval Works API test suite."""

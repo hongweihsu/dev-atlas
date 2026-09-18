@@ -5,10 +5,10 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.knowledge_bases import get_manage_knowledge_bases
-from devatlas.application.manage_knowledge_bases import ManageKnowledgeBases
-from devatlas.application.ports.knowledge_bases import KnowledgeBaseSummary
-from devatlas.main import app
+from retrieval_works.api.routes.knowledge_bases import get_manage_knowledge_bases
+from retrieval_works.application.manage_knowledge_bases import ManageKnowledgeBases
+from retrieval_works.application.ports.knowledge_bases import KnowledgeBaseSummary
+from retrieval_works.main import app
 
 
 @pytest.fixture

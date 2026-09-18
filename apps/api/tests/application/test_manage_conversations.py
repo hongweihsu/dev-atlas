@@ -4,13 +4,16 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from devatlas.application.answer_documents import AnswerDocuments, AnswerDocumentsResult
-from devatlas.application.manage_conversations import (
+from retrieval_works.application.answer_documents import (
+    AnswerDocuments,
+    AnswerDocumentsResult,
+)
+from retrieval_works.application.manage_conversations import (
     MAX_CONVERSATION_HISTORY_TURNS,
     AskConversationCommand,
     ManageConversations,
 )
-from devatlas.application.ports.conversations import (
+from retrieval_works.application.ports.conversations import (
     ConversationSummary,
     ConversationTurn,
     QuestionContextualizer,

@@ -1,6 +1,6 @@
 import pytest
 
-from devatlas.domain.document_ingestion import (
+from retrieval_works.domain.document_ingestion import (
     DEFAULT_MAX_TEXT_BYTES,
     DocumentValidationCode,
     DocumentValidationError,
@@ -11,7 +11,7 @@ from devatlas.domain.document_ingestion import (
     prepare_text_document,
     validate_document_upload,
 )
-from devatlas.domain.text_processing import content_checksum
+from retrieval_works.domain.text_processing import content_checksum
 
 
 def test_prepare_text_document_returns_normalized_metadata() -> None:
@@ -138,7 +138,7 @@ def test_prepare_pdf_document_preserves_one_based_page_spans(
         pages = [Page(" First page. "), Page("  "), Page("Third page.")]
 
     monkeypatch.setattr(
-        "devatlas.domain.document_ingestion.PdfReader", lambda _stream: Reader()
+        "retrieval_works.domain.document_ingestion.PdfReader", lambda _stream: Reader()
     )
 
     prepared = prepare_pdf_document(
@@ -167,7 +167,7 @@ def test_prepare_document_dispatches_pdf_and_rejects_scanned_only_pdf(
         pages = [EmptyPage()]
 
     monkeypatch.setattr(
-        "devatlas.domain.document_ingestion.PdfReader", lambda _stream: Reader()
+        "retrieval_works.domain.document_ingestion.PdfReader", lambda _stream: Reader()
     )
 
     with pytest.raises(DocumentValidationError) as captured:
@@ -192,7 +192,7 @@ def test_upload_validation_accepts_scanned_pdf_for_later_extraction(
         pages = [EmptyPage()]
 
     monkeypatch.setattr(
-        "devatlas.domain.document_ingestion.PdfReader", lambda _stream: Reader()
+        "retrieval_works.domain.document_ingestion.PdfReader", lambda _stream: Reader()
     )
 
     validate_document_upload(

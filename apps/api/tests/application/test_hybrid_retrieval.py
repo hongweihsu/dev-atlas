@@ -3,11 +3,14 @@ from uuid import UUID
 
 import pytest
 
-from devatlas.application.hybrid_retrieval import (
+from retrieval_works.application.hybrid_retrieval import (
     HybridChunkSearchRepository,
     reciprocal_rank_fusion,
 )
-from devatlas.application.ports.retrieval import RetrievalStrategy, RetrievedChunk
+from retrieval_works.application.ports.retrieval import (
+    RetrievalStrategy,
+    RetrievedChunk,
+)
 
 
 def make_chunk(number: int) -> RetrievedChunk:

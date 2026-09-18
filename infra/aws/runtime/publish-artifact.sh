@@ -7,7 +7,7 @@ profile=${AWS_PROFILE:-devatlas}
 region=${AWS_REGION:-ap-southeast-2}
 revision=$(git -C "$repository_root" rev-parse HEAD)
 temporary_directory=$(mktemp -d)
-archive="$temporary_directory/devatlas-$revision.tar.gz"
+archive="$temporary_directory/retrieval-works-$revision.tar.gz"
 trap 'rm -rf "$temporary_directory"' EXIT
 
 if [ -n "$(git -C "$repository_root" status --porcelain)" ]; then
@@ -16,7 +16,7 @@ if [ -n "$(git -C "$repository_root" status --porcelain)" ]; then
 fi
 
 backup_bucket=$(terraform -chdir="$terraform_directory" output -raw backup_bucket_name)
-artifact_uri="s3://$backup_bucket/artifacts/devatlas-$revision.tar.gz"
+artifact_uri="s3://$backup_bucket/artifacts/retrieval-works-$revision.tar.gz"
 
 git -C "$repository_root" archive --format=tar.gz --output="$archive" HEAD
 checksum=$(shasum -a 256 "$archive" | awk '{print $1}')

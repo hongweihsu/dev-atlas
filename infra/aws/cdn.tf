@@ -1,6 +1,6 @@
 resource "aws_cloudfront_origin_access_control" "web" {
   name                              = "${local.name}-web"
-  description                       = "Private S3 access for the DevAtlas SPA"
+  description                       = "Private S3 access for the Retrieval Works SPA"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"

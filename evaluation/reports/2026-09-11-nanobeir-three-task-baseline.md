@@ -4,7 +4,7 @@
 
 This standard document-level run uses the official NanoBEIR corpus IDs, fifty
 queries per task, and official relevance judgments. Documents are not processed
-through DevAtlas ingestion or chunking, so these results evaluate retrieval
+through Retrieval Works ingestion or chunking, so these results evaluate retrieval
 methods rather than the complete product pipeline.
 
 - Dense model: `text-embedding-3-small`, 1,536 dimensions

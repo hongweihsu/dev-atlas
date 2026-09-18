@@ -7,15 +7,15 @@ import pytest
 from openai import AsyncOpenAI
 from pypdf import PdfReader, PdfWriter
 
-from devatlas.application.ports.document_extraction import (
+from retrieval_works.application.ports.document_extraction import (
     DocumentExtractionUnavailableError,
 )
-from devatlas.domain.document_ingestion import PageSpan, PreparedTextDocument
-from devatlas.infrastructure.extraction.openai_pdf import (
+from retrieval_works.domain.document_ingestion import PageSpan, PreparedTextDocument
+from retrieval_works.infrastructure.extraction.openai_pdf import (
     OpenAIMultimodalDocumentExtractor,
     _select_pdf_pages,
 )
-from devatlas.infrastructure.extraction.pdf_layout import PdfPageLayout
+from retrieval_works.infrastructure.extraction.pdf_layout import PdfPageLayout
 
 
 def make_client() -> tuple[AsyncOpenAI, AsyncMock]:
@@ -54,7 +54,7 @@ def layouts(*page_reasons: tuple[str, ...]) -> tuple[PdfPageLayout, ...]:
 
 def avoid_real_pdf_rewrite(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf._select_pdf_pages",
+        "retrieval_works.infrastructure.extraction.openai_pdf._select_pdf_pages",
         lambda content, _pages: content,
     )
 
@@ -89,11 +89,11 @@ async def test_native_pdf_text_does_not_call_multimodal_api(
         page_spans=(PageSpan(1, 0, 11),),
     )
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf.prepare_document",
+        "retrieval_works.infrastructure.extraction.openai_pdf.prepare_document",
         lambda **_kwargs: native,
     )
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
+        "retrieval_works.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
         lambda _content: layout(),
     )
     extractor = OpenAIMultimodalDocumentExtractor(client)
@@ -113,7 +113,7 @@ async def test_textless_pdf_uses_structured_multimodal_extraction(
     client, parse = make_client()
     avoid_real_pdf_rewrite(monkeypatch)
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf.prepare_document",
+        "retrieval_works.infrastructure.extraction.openai_pdf.prepare_document",
         lambda **_kwargs: PreparedTextDocument(
             source_filename="scan.pdf",
             media_type="application/pdf",
@@ -126,7 +126,7 @@ async def test_textless_pdf_uses_structured_multimodal_extraction(
         ),
     )
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
+        "retrieval_works.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
         lambda _content: layouts((), ("no_text",)),
     )
     parse.return_value = SimpleNamespace(
@@ -164,7 +164,7 @@ async def test_multimodal_extraction_rejects_duplicate_page_numbers(
     client, parse = make_client()
     avoid_real_pdf_rewrite(monkeypatch)
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf.prepare_document",
+        "retrieval_works.infrastructure.extraction.openai_pdf.prepare_document",
         lambda **_kwargs: PreparedTextDocument(
             source_filename="scan.pdf",
             media_type="application/pdf",
@@ -176,7 +176,7 @@ async def test_multimodal_extraction_rejects_duplicate_page_numbers(
         ),
     )
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
+        "retrieval_works.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
         lambda _content: layout("no_text"),
     )
     parse.return_value = SimpleNamespace(
@@ -202,7 +202,7 @@ async def test_text_layer_table_still_uses_multimodal_extraction(
     client, parse = make_client()
     avoid_real_pdf_rewrite(monkeypatch)
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf.prepare_document",
+        "retrieval_works.infrastructure.extraction.openai_pdf.prepare_document",
         lambda **_kwargs: PreparedTextDocument(
             source_filename="table.pdf",
             media_type="application/pdf",
@@ -214,7 +214,7 @@ async def test_text_layer_table_still_uses_multimodal_extraction(
         ),
     )
     monkeypatch.setattr(
-        "devatlas.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
+        "retrieval_works.infrastructure.extraction.openai_pdf.analyze_pdf_pages",
         lambda _content: layout("table_graphics"),
     )
     parse.return_value = SimpleNamespace(

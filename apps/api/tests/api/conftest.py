@@ -3,9 +3,9 @@ from uuid import UUID
 
 import pytest
 
-from devatlas.api.dependencies.authentication import get_authorized_workspace
-from devatlas.application.ports.workspace_access import AuthorizedWorkspace
-from devatlas.main import app
+from retrieval_works.api.dependencies.authentication import get_authorized_workspace
+from retrieval_works.application.ports.workspace_access import AuthorizedWorkspace
+from retrieval_works.main import app
 
 TEST_WORKSPACE_ID = UUID(int=999)
 

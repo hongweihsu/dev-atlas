@@ -7,20 +7,20 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from devatlas.api.dependencies.authentication import (
+from retrieval_works.api.dependencies.authentication import (
     get_authenticated_principal,
     get_authorized_workspace,
 )
-from devatlas.api.routes.workspaces import router
-from devatlas.application.ports.authentication import AuthenticatedPrincipal
-from devatlas.application.ports.workspace_access import (
+from retrieval_works.api.routes.workspaces import router
+from retrieval_works.application.ports.authentication import AuthenticatedPrincipal
+from retrieval_works.application.ports.workspace_access import (
     AuthorizedWorkspace,
     WorkspaceInvitationResult,
     WorkspaceInvitationSummary,
     WorkspaceMember,
 )
-from devatlas.core.config import Settings
-from devatlas.infrastructure.rate_limit import RateLimitExceededError
+from retrieval_works.core.config import Settings
+from retrieval_works.infrastructure.rate_limit import RateLimitExceededError
 
 
 @pytest.fixture

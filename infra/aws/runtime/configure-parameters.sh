@@ -10,7 +10,7 @@ repository_root=$(git rev-parse --show-toplevel)
 terraform_directory="$repository_root/infra/aws"
 profile=${AWS_PROFILE:-devatlas}
 region=${AWS_REGION:-ap-southeast-2}
-parameter_path=/devatlas/demo
+parameter_path=/retrieval-works/demo
 user_pool_id=$(terraform -chdir="$terraform_directory" output -raw cognito_user_pool_id)
 client_id=$(terraform -chdir="$terraform_directory" output -raw cognito_client_id)
 backup_bucket=$(terraform -chdir="$terraform_directory" output -raw backup_bucket_name)
@@ -57,10 +57,10 @@ put_parameter() {
     --region "$region" >/dev/null
 }
 
-put_parameter POSTGRES_DB devatlas
-put_parameter POSTGRES_USER devatlas
+put_parameter POSTGRES_DB retrieval_works
+put_parameter POSTGRES_USER retrieval_works
 put_parameter POSTGRES_PASSWORD "$postgres_password" SecureString
-put_parameter DATABASE_URL "postgresql+asyncpg://devatlas:$postgres_password@postgres:5432/devatlas" SecureString
+put_parameter DATABASE_URL "postgresql+asyncpg://retrieval_works:$postgres_password@postgres:5432/retrieval_works" SecureString
 put_parameter REDIS_URL redis://redis:6379/0
 put_parameter OPENAI_API_KEY "$OPENAI_API_KEY" SecureString
 put_parameter EMBEDDING_MODEL text-embedding-3-small

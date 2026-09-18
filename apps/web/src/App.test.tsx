@@ -98,7 +98,7 @@ function isDocumentListRequest(input: RequestInfo | URL, init?: RequestInit) {
 test('shows the product identity and hides healthy API status', async () => {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input)) return jsonResponse(knowledgeBases)
     return jsonResponse([])
@@ -125,7 +125,7 @@ test('shows viewer access as read-only while keeping research available', async 
   })
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input)) return jsonResponse(knowledgeBases)
     return jsonResponse([documentSummary()])
@@ -145,7 +145,7 @@ test('shows an unavailable banner and retries the health check', async () => {
   const fetchMock = vi
     .spyOn(globalThis, 'fetch')
     .mockRejectedValueOnce(new Error('offline'))
-    .mockResolvedValueOnce(jsonResponse({ status: 'ok', service: 'devatlas-api' }))
+    .mockResolvedValueOnce(jsonResponse({ status: 'ok', service: 'retrieval-works-api' }))
     .mockResolvedValueOnce(jsonResponse([]))
 
   render(<App />)
@@ -163,7 +163,7 @@ test('uploads a dropped text document without a custom title', async () => {
   let created = false
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) {
@@ -200,7 +200,7 @@ test('uploads a new version for the document that was just indexed', async () =>
   let activeVersion = 0
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) {
@@ -275,7 +275,7 @@ test('shows immutable history and makes an older version current', async () => {
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
     async (input, init) => {
       if (input === '/api/health') {
-        return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+        return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
       }
       if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
       if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
@@ -325,7 +325,7 @@ test('shows a duplicate-content error when a version is rejected', async () => {
   let created = false
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
@@ -375,7 +375,7 @@ test('shows a duplicate-content error when a version is rejected', async () => {
 test('asks a question and renders expandable citation provenance', async () => {
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) return jsonResponse([])
@@ -442,7 +442,7 @@ test('asks a workspace question and shows the executed tool', async () => {
     .spyOn(globalThis, 'fetch')
     .mockImplementation(async (input, init) => {
       if (input === '/api/health') {
-        return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+        return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
       }
       if (isKnowledgeBaseListRequest(input, init)) {
         return jsonResponse(knowledgeBases)
@@ -479,7 +479,7 @@ test('asks a workspace question and shows the executed tool', async () => {
 test('runs bounded research and renders steps, stop reason, and evidence', async () => {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (input === '/api/research') {
@@ -533,7 +533,7 @@ test('runs bounded research and renders steps, stop reason, and evidence', async
 test('shows when corrective retrieval changed the query', async () => {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (input === '/api/corrective-answers') {
@@ -567,7 +567,7 @@ test('shows when corrective retrieval changed the query', async () => {
 test('shows the API error message without discarding the question', async () => {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
@@ -601,7 +601,7 @@ test('shows the API error message without discarding the question', async () => 
 test('loads existing documents and lets the user select one for an update', async () => {
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input)) return jsonResponse(knowledgeBases)
     return jsonResponse([
@@ -640,7 +640,7 @@ test('archives a document and restores it with undo', async () => {
   const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(
     async (input, init) => {
       if (input === '/api/health') {
-        return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+        return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
       }
       if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
       if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
@@ -689,7 +689,7 @@ test('loads archived documents after a page-state change and restores one', asyn
   let restored = false
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isWorkspaceListRequest(input)) return jsonResponse(workspaceMemberships)
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
@@ -733,7 +733,7 @@ test('selects the existing document when a new upload duplicates its content', a
   let duplicateRejected = false
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === '/api/health') {
-      return jsonResponse({ status: 'ok', service: 'devatlas-api' })
+      return jsonResponse({ status: 'ok', service: 'retrieval-works-api' })
     }
     if (isKnowledgeBaseListRequest(input, init)) return jsonResponse(knowledgeBases)
     if (isDocumentListRequest(input, init)) {

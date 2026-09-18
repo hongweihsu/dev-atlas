@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from devatlas.evaluation.nanobeir_inspection import (
+from retrieval_works.evaluation.nanobeir_inspection import (
     InvalidNanoBeirMetadataError,
     TaskInspection,
     build_report,
@@ -86,7 +86,7 @@ def test_inspect_task_rejects_missing_required_statistics() -> None:
 
 def test_build_report_aggregates_counts(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "devatlas.evaluation.nanobeir_inspection.version", lambda _: "2.20.11"
+        "retrieval_works.evaluation.nanobeir_inspection.version", lambda _: "2.20.11"
     )
     inspections = [
         TaskInspection("one", "train", 10, 2, 3, 1000, 95.0, 1.5),

@@ -28,14 +28,14 @@ echo "$buildx_checksum  $buildx_binary" | sha256sum --check --strict
 chmod +x "$buildx_binary"
 docker buildx version
 
-mkdir -p /opt/devatlas
-chown ec2-user:ec2-user /opt/devatlas
+mkdir -p /opt/retrieval-works
+chown ec2-user:ec2-user /opt/retrieval-works
 
-if [ ! -d /opt/devatlas/.git ]; then
-  sudo -u ec2-user git clone https://github.com/hongweihsu/dev-atlas.git /opt/devatlas
+if [ ! -d /opt/retrieval-works/.git ]; then
+  sudo -u ec2-user git clone https://github.com/hongweihsu/dev-atlas.git /opt/retrieval-works
 fi
 
-chmod +x /opt/devatlas/infra/aws/runtime/*.sh
+chmod +x /opt/retrieval-works/infra/aws/runtime/*.sh
 
 if ! swapon --show | grep -q /swapfile; then
   dd if=/dev/zero of=/swapfile bs=1M count=2048

@@ -5,16 +5,16 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.health import router
-from devatlas.infrastructure.readiness import ReadinessResult
-from devatlas.main import app
+from retrieval_works.api.routes.health import router
+from retrieval_works.infrastructure.readiness import ReadinessResult
+from retrieval_works.main import app
 
 
 def test_health_returns_typed_service_status() -> None:
     response = TestClient(app).get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "devatlas-api"}
+    assert response.json() == {"status": "ok", "service": "retrieval-works-api"}
 
 
 @pytest.fixture

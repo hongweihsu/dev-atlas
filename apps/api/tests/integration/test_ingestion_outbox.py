@@ -8,23 +8,23 @@ from arq.connections import ArqRedis
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from devatlas.application.ports.ingestion_jobs import NewIngestionJob
-from devatlas.infrastructure.database import create_session_factory
-from devatlas.infrastructure.models import (
+from retrieval_works.application.ports.ingestion_jobs import NewIngestionJob
+from retrieval_works.infrastructure.database import create_session_factory
+from retrieval_works.infrastructure.models import (
     IngestionJob,
     IngestionOutboxEvent,
     KnowledgeBase,
 )
-from devatlas.infrastructure.persistence import SqlAlchemyIngestionJobRepository
-from devatlas.worker import dispatch_ingestion_outbox
+from retrieval_works.infrastructure.persistence import SqlAlchemyIngestionJobRepository
+from retrieval_works.worker import dispatch_ingestion_outbox
 
-TEST_DATABASE_URL = os.getenv("DEVATLAS_TEST_DATABASE_URL")
+TEST_DATABASE_URL = os.getenv("RETRIEVAL_WORKS_TEST_DATABASE_URL")
 
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
         TEST_DATABASE_URL is None,
-        reason="DEVATLAS_TEST_DATABASE_URL is not configured",
+        reason="RETRIEVAL_WORKS_TEST_DATABASE_URL is not configured",
     ),
 ]
 

@@ -7,16 +7,16 @@ Accepted — 2026-09-17
 ## Context
 
 Cognito managed login supplied secure OAuth and PKCE quickly, but its appearance
-was disconnected from DevAtlas and made registration feel like leaving the
+was disconnected from Retrieval Works and made registration feel like leaving the
 product. Reimplementing Cognito's SRP protocol or storing passwords in the
-DevAtlas API would create unnecessary security risk.
+Retrieval Works API would create unnecessary security risk.
 
 ## Decision
 
 Use the official AWS Amplify Auth browser library against the existing
-Terraform-managed Cognito User Pool. DevAtlas renders its own sign-in, sign-up,
+Terraform-managed Cognito User Pool. Retrieval Works renders its own sign-in, sign-up,
 email-confirmation, forgot-password, and reset-password states. Amplify performs
-SRP authentication and sends credentials directly to Cognito; DevAtlas receives
+SRP authentication and sends credentials directly to Cognito; Retrieval Works receives
 only the resulting access token and submits it to `/session/bootstrap`.
 
 Store Amplify tokens in `sessionStorage`, matching the previous tab-scoped
@@ -26,7 +26,7 @@ Identity Pool, client secret, or password endpoint in the API.
 
 ## Consequences
 
-- Authentication now visually belongs to DevAtlas while Cognito retains password
+- Authentication now visually belongs to Retrieval Works while Cognito retains password
   policy, verification codes, recovery, token issuance, and credential storage.
 - The frontend bundle grows because it includes the supported SRP implementation.
 - Closing the browser tab ends its local session; refresh inside the tab restores

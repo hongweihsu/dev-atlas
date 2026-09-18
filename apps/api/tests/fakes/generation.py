@@ -1,4 +1,4 @@
-from devatlas.application.ports.generation import (
+from retrieval_works.application.ports.generation import (
     AnswerGenerationRequest,
     GeneratedAnswer,
 )

@@ -31,7 +31,7 @@ CloudFront default HTTPS domain
                └── PostgreSQL + pgvector
 ```
 
-The SPA uses a DevAtlas-native authentication UI while the official Amplify Auth
+The SPA uses a Retrieval Works-native authentication UI while the official Amplify Auth
 client performs SRP, confirmation, recovery, and token refresh directly with
 Cognito. It sends the resulting access token to FastAPI. FastAPI verifies its RS256
 signature, issuer, expiry, `token_use=access`, client ID, and subject against
@@ -89,7 +89,7 @@ notification control, not a guaranteed resource kill switch.
 The production Compose definition does not mount source code or expose database
 ports. It enables Redis AOF persistence, waits for PostgreSQL/Redis health,
 runs Alembic as a deployment gate, and starts Uvicorn without development
-reload. EC2 reads runtime secrets from `/devatlas/demo` in SSM through its
+reload. EC2 reads runtime secrets from `/retrieval-works/demo` in SSM through its
 instance role. This includes a generated, independently scoped bearer token for
 the protected Prometheus-format `/metrics` endpoint; the token is never sent to
 the React application.

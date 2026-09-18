@@ -1,8 +1,8 @@
-# DevAtlas engineering case study
+# Retrieval Works engineering case study
 
 ## Problem
 
-DevAtlas is a technical knowledge platform built to answer a harder engineering
+Retrieval Works is a technical knowledge platform built to answer a harder engineering
 question than “can an LLM answer a document?”: can ingestion, retrieval,
 generation, authorization, lifecycle, evaluation, and operations remain
 explainable and testable as the product grows?
@@ -42,7 +42,7 @@ overwriting evidence.
 
 ### Retrieval is measured, not assumed
 
-DevAtlas combines pgvector cosine retrieval and BM25S with reciprocal-rank
+Retrieval Works combines pgvector cosine retrieval and BM25S with reciprocal-rank
 fusion because semantic concepts and exact technical identifiers fail in
 different ways. Raw BM25 and cosine scores are never added because their scales
 are incompatible.
@@ -163,7 +163,7 @@ the application counters.
 
 ## What this demonstrates
 
-The portfolio evidence is not merely that DevAtlas calls an LLM. It demonstrates
+The portfolio evidence is not merely that Retrieval Works calls an LLM. It demonstrates
 typed application boundaries, transactional persistence, evaluated retrieval,
 tenant authorization, bounded agent control, privacy-conscious observability,
 cost-aware infrastructure, and the discipline to distinguish implemented and

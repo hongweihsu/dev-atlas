@@ -5,7 +5,7 @@
 
 ## Context
 
-DevAtlas needs relational data for users, ownership, documents, conversations,
+Retrieval Works needs relational data for users, ownership, documents, conversations,
 and evaluation. It will later need vector similarity search. Phase 0 needs a
 local database without prematurely operating multiple data stores.
 

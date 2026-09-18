@@ -7,7 +7,7 @@ membership, authentication, and query-level document isolation are implemented.
 The Phase 8 persistence foundation now assigns every document to a
 workspace-owned KnowledgeBase; selectable API search scope remains in progress.
 
-DevAtlas will use the following conceptual ownership model unless a later ADR
+Retrieval Works will use the following conceptual ownership model unless a later ADR
 changes it:
 
 ```text

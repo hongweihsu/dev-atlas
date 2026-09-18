@@ -5,7 +5,7 @@
 
 ## Context
 
-A workspace is DevAtlas's tenant and permission boundary, but users also need a
+A workspace is Retrieval Works's tenant and permission boundary, but users also need a
 smaller way to organize and search related documents. Passing arbitrary document
 IDs from the browser would create unstable saved searches, large requests, and
 an easy authorization surface to implement inconsistently.

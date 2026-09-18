@@ -5,22 +5,22 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.answers import get_answer_documents
-from devatlas.application.answer_documents import (
+from retrieval_works.api.routes.answers import get_answer_documents
+from retrieval_works.application.answer_documents import (
     AnswerDocuments,
     AnswerDocumentsResult,
 )
-from devatlas.application.ports.embedding import (
+from retrieval_works.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProviderUnavailableError,
 )
-from devatlas.application.ports.generation import (
+from retrieval_works.application.ports.generation import (
     AnswerGeneratorUnavailableError,
     EvidenceSource,
     InvalidGeneratedAnswerError,
 )
-from devatlas.application.search_documents import InvalidSearchQueryError
-from devatlas.main import app
+from retrieval_works.application.search_documents import InvalidSearchQueryError
+from retrieval_works.main import app
 
 
 def make_citation() -> EvidenceSource:

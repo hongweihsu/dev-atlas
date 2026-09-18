@@ -3,12 +3,15 @@ from uuid import UUID
 
 import pytest
 
-from devatlas.application.answer_documents import AnswerDocuments, AnswerDocumentsResult
-from devatlas.application.corrective_answer_documents import (
+from retrieval_works.application.answer_documents import (
+    AnswerDocuments,
+    AnswerDocumentsResult,
+)
+from retrieval_works.application.corrective_answer_documents import (
     CorrectiveAnswerDocuments,
     CorrectiveAnswerDocumentsCommand,
 )
-from devatlas.application.ports.correction import CorrectiveQueryGenerator
+from retrieval_works.application.ports.correction import CorrectiveQueryGenerator
 
 WORKSPACE_ID = UUID(int=999)
 

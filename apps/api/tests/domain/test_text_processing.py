@@ -1,6 +1,6 @@
 import pytest
 
-from devatlas.domain.text_processing import (
+from retrieval_works.domain.text_processing import (
     TextChunk,
     chunk_text,
     content_checksum,
@@ -95,7 +95,7 @@ def test_chunk_text_falls_back_to_whitespace_then_hard_boundary() -> None:
 
 def test_chunk_text_satisfies_v1_invariants() -> None:
     text = normalize_text(
-        "第一段介紹 DevAtlas。\r\n\r\n"
+        "第一段介紹 Retrieval Works。\r\n\r\n"
         "第二段包含較長的內容，用來驗證 chunk 邊界、重疊和來源位置。\r\n"
         "Final paragraph without a trailing newline."
     )

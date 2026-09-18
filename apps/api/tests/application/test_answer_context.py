@@ -3,12 +3,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from devatlas.application.answer_context import (
+from retrieval_works.application.answer_context import (
     InvalidContextBudgetError,
     build_bounded_context,
     diagnose_bounded_context,
 )
-from devatlas.application.ports.retrieval import RetrievedChunk
+from retrieval_works.application.ports.retrieval import RetrievedChunk
 
 
 def make_chunk(

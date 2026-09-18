@@ -16,7 +16,7 @@ not a public benchmark or a claim of broad generalization.
 
 The first execution revealed unrelated active documents in the normal
 development database and was retained only as a mixed-index observation. The
-reported run used a separate `devatlas_phase4` database containing only the
+reported run used a separate `retrieval_works_phase4` database containing only the
 three reviewed corpus documents. Existing embeddings for those exact records
 were copied into the isolated database, avoiding duplicate provider calls.
 

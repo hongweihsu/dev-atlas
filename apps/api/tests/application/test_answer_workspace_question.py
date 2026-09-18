@@ -3,12 +3,12 @@ from uuid import uuid4
 
 import pytest
 
-from devatlas.application.answer_workspace_question import (
+from retrieval_works.application.answer_workspace_question import (
     MAX_WORKSPACE_QUESTION_CHARACTERS,
     AnswerWorkspaceQuestion,
     AnswerWorkspaceQuestionCommand,
 )
-from devatlas.application.ports.tool_calling import (
+from retrieval_works.application.ports.tool_calling import (
     InvalidWorkspaceQuestionError,
     WorkspaceQuestionAnswer,
     WorkspaceQuestionAnswerer,

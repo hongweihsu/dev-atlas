@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "devatlas-api"
+name = "retrieval-works-api"
 version = "0.1.0"
-description = "DevAtlas FastAPI service"
+description = "Retrieval Works FastAPI service"
 requires-python = ">=3.12,<3.14"
 dependencies = [
   "alembic>=1.14,<2",
@@ -48,7 +48,7 @@ benchmark = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/devatlas"]
+packages = ["src/retrieval_works"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

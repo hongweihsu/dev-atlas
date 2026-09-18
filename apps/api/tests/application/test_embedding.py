@@ -2,7 +2,7 @@ from math import inf, isclose, nan, sqrt
 
 import pytest
 
-from devatlas.application.ports.embedding import (
+from retrieval_works.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProvider,
     validate_embedding_batch,

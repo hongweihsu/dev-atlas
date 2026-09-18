@@ -4,14 +4,14 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from devatlas.application.ports.persistence import (
+from retrieval_works.application.ports.persistence import (
     NewChunkRecord,
     NewDocumentRecord,
     NewDocumentVersionRecord,
 )
-from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
-from devatlas.infrastructure.models import Document
-from devatlas.infrastructure.persistence import (
+from retrieval_works.core.tenancy import LEGACY_WORKSPACE_ID
+from retrieval_works.infrastructure.models import Document
+from retrieval_works.infrastructure.persistence import (
     SqlAlchemyDocumentIngestionRepository,
     SqlAlchemyIngestionUnitOfWork,
 )

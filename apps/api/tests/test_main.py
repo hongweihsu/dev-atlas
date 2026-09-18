@@ -6,13 +6,13 @@ from openai import AsyncOpenAI
 from pydantic import SecretStr
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-import devatlas.main as main_module
-from devatlas.application.answer_documents import AnswerDocuments
-from devatlas.application.ingest_document import IngestNewDocument
-from devatlas.application.list_documents import ListDocuments
-from devatlas.application.manage_conversations import ManageConversations
-from devatlas.application.search_documents import SearchDocuments
-from devatlas.core.config import Settings
+import retrieval_works.main as main_module
+from retrieval_works.application.answer_documents import AnswerDocuments
+from retrieval_works.application.ingest_document import IngestNewDocument
+from retrieval_works.application.list_documents import ListDocuments
+from retrieval_works.application.manage_conversations import ManageConversations
+from retrieval_works.application.search_documents import SearchDocuments
+from retrieval_works.core.config import Settings
 
 
 def test_settings_parse_schema_dimension_from_environment(

@@ -7,10 +7,10 @@ from uuid import uuid4
 import pytest
 from openai import AsyncOpenAI
 
-from devatlas.application.manage_knowledge_bases import ManageKnowledgeBases
-from devatlas.application.ports.knowledge_bases import KnowledgeBaseSummary
-from devatlas.application.ports.tool_calling import InvalidToolCallError
-from devatlas.infrastructure.generation.openai_tool_calling import (
+from retrieval_works.application.manage_knowledge_bases import ManageKnowledgeBases
+from retrieval_works.application.ports.knowledge_bases import KnowledgeBaseSummary
+from retrieval_works.application.ports.tool_calling import InvalidToolCallError
+from retrieval_works.infrastructure.generation.openai_tool_calling import (
     LIST_KNOWLEDGE_BASES_TOOL,
     OpenAIWorkspaceQuestionAnswerer,
 )

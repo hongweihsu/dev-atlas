@@ -4,11 +4,11 @@ from uuid import uuid4
 
 import pytest
 
-from devatlas.application.manage_ingestion_jobs import (
+from retrieval_works.application.manage_ingestion_jobs import (
     InvalidIdempotencyKeyError,
     ManageIngestionJobs,
 )
-from devatlas.application.ports.ingestion_jobs import IngestionJobSnapshot
+from retrieval_works.application.ports.ingestion_jobs import IngestionJobSnapshot
 
 
 @pytest.mark.asyncio

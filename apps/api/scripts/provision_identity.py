@@ -6,13 +6,13 @@ from uuid import UUID
 
 from sqlalchemy import select
 
-from devatlas.core.config import get_settings
-from devatlas.core.tenancy import LEGACY_WORKSPACE_ID
-from devatlas.infrastructure.database import (
+from retrieval_works.core.config import get_settings
+from retrieval_works.core.tenancy import LEGACY_WORKSPACE_ID
+from retrieval_works.infrastructure.database import (
     create_database_engine,
     create_session_factory,
 )
-from devatlas.infrastructure.models import User, Workspace, WorkspaceMembership
+from retrieval_works.infrastructure.models import User, Workspace, WorkspaceMembership
 
 
 def parse_arguments() -> argparse.Namespace:

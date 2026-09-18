@@ -33,14 +33,14 @@ and [NanoHotpotQARetrieval](https://huggingface.co/datasets/mteb/NanoHotpotQARet
   and query embeddings.
 - Treat this as the closest result to the public benchmark protocol.
 
-### DevAtlas end-to-end evaluation
+### Retrieval Works end-to-end evaluation
 
 - Optional follow-up after a safe bulk evaluation loader exists.
-- Run documents through DevAtlas normalization, chunking, pgvector, BM25S, and
+- Run documents through Retrieval Works normalization, chunking, pgvector, BM25S, and
   chunk-to-document aggregation.
 - Use a disposable evaluation database and preserve each official document ID
   in a manifest.
-- Report results as DevAtlas pipeline metrics, not as leaderboard-equivalent
+- Report results as Retrieval Works pipeline metrics, not as leaderboard-equivalent
   NanoBEIR scores.
 
 The current one-document ingestion endpoint must not be used for all 10,962
@@ -91,7 +91,7 @@ model provider:
 
 ```bash
 cd apps/api
-uv run --extra benchmark python -m devatlas.evaluation.nanobeir_inspection \
+uv run --extra benchmark python -m retrieval_works.evaluation.nanobeir_inspection \
   --report ../../evaluation/runs/nanobeir-inspection.json
 ```
 
@@ -99,7 +99,7 @@ The ignored JSON output records the installed MTEB version and per-task plus
 aggregate documents, queries, relevance judgments, characters, average document
 length, and average relevant documents per query. MTEB currently emits a torch
 `FutureWarning` during import on this environment; it does not change the
-inspection result and is not suppressed by DevAtlas.
+inspection result and is not suppressed by Retrieval Works.
 
 ## Exact token inspection
 
@@ -108,7 +108,7 @@ model tokenizer, without calling OpenAI:
 
 ```bash
 cd apps/api
-uv run --extra benchmark python -m devatlas.evaluation.nanobeir_tokens \
+uv run --extra benchmark python -m retrieval_works.evaluation.nanobeir_tokens \
   --report ../../evaluation/runs/nanobeir-tokens.json
 ```
 

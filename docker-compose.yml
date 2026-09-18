@@ -10,9 +10,9 @@ services:
   postgres:
     image: pgvector/pgvector:pg17
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-devatlas}
-      POSTGRES_USER: ${POSTGRES_USER:-devatlas}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devatlas}
+      POSTGRES_DB: ${POSTGRES_DB:-retrieval_works}
+      POSTGRES_USER: ${POSTGRES_USER:-retrieval_works}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-retrieval_works}
     ports:
       - "5432:5432"
     volumes:
@@ -27,14 +27,14 @@ services:
     build:
       context: ./apps/api
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://devatlas:devatlas@postgres:5432/devatlas}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://retrieval_works:retrieval_works@postgres:5432/retrieval_works}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       CORS_ORIGINS: '["http://localhost:5173"]'
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
       EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-1536}
       ANSWER_MODEL: ${ANSWER_MODEL:-gpt-4.1-mini}
-      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-devatlas-local-development-secret-change-me}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-retrieval-works-local-development-secret-change-me}
       AUTH_DEVELOPMENT_MODE: ${AUTH_DEVELOPMENT_MODE:-true}
       PYTHONPATH: /app/src
     ports:
@@ -69,9 +69,9 @@ services:
   worker:
     build:
       context: ./apps/api
-    command: ["arq", "devatlas.worker.WorkerSettings"]
+    command: ["arq", "retrieval_works.worker.WorkerSettings"]
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://devatlas:devatlas@postgres:5432/devatlas}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://retrieval_works:retrieval_works@postgres:5432/retrieval_works}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}

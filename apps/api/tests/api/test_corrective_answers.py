@@ -4,13 +4,15 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-from devatlas.api.routes.corrective_answers import get_corrective_answer_documents
-from devatlas.application.answer_documents import AnswerDocumentsResult
-from devatlas.application.corrective_answer_documents import (
+from retrieval_works.api.routes.corrective_answers import (
+    get_corrective_answer_documents,
+)
+from retrieval_works.application.answer_documents import AnswerDocumentsResult
+from retrieval_works.application.corrective_answer_documents import (
     CorrectiveAnswerDocuments,
     CorrectiveAnswerDocumentsResult,
 )
-from devatlas.main import app
+from retrieval_works.main import app
 
 
 @pytest.fixture

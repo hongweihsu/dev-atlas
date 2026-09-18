@@ -1,4 +1,4 @@
-DevAtlas creates an embedding vector from each normalized text chunk and stores it
+Retrieval Works creates an embedding vector from each normalized text chunk and stores it
 with the embedding model name and dimension. This metadata prevents search from
 comparing vectors produced by incompatible model configurations. At search time,
 it embeds the query with the compatible model and asks PostgreSQL with pgvector to

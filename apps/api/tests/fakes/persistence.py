@@ -1,7 +1,7 @@
 from types import TracebackType
 from uuid import UUID
 
-from devatlas.application.ports.persistence import (
+from retrieval_works.application.ports.persistence import (
     DocumentArchivedError,
     DocumentNotFoundError,
     DuplicateDocumentContentError,

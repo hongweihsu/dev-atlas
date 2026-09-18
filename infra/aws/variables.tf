@@ -18,7 +18,7 @@ variable "aws_region" {
 variable "project_name" {
   description = "Lowercase name used in resource names and tags."
   type        = string
-  default     = "devatlas"
+  default     = "retrieval-works"
 }
 
 variable "environment" {

@@ -7,7 +7,7 @@ Accepted — 2026-09-17
 ## Context
 
 The first deployed demo allowed only administrator-created Cognito users and
-required a second operator command to create the corresponding DevAtlas user and
+required a second operator command to create the corresponding Retrieval Works user and
 membership. This made ordinary product signup depend on an administrator.
 
 ## Decision
@@ -26,7 +26,7 @@ all subsequent APIs continue to require `X-Workspace-ID` and database membership
 
 ## Consequences
 
-- A verified user can register, sign in, and begin using DevAtlas without an
+- A verified user can register, sign in, and begin using Retrieval Works without an
   operator editing the database.
 - A valid Cognito token does not grant access to another user's workspace.
 - The former fixed production `VITE_WORKSPACE_ID` is removed.

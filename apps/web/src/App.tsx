@@ -643,9 +643,9 @@ export default function App() {
   return (
     <main className="shell">
       <header className="topbar">
-        <a className="brand" href="#top" aria-label="DevAtlas home">
+        <a className="brand" href="#top" aria-label="Retrieval Works home">
           <span className="brand__mark">DA</span>
-          <span>DevAtlas</span>
+          <span>Retrieval Works</span>
         </a>
         {apiState === 'checking' && (
           <div className="status" role="status">

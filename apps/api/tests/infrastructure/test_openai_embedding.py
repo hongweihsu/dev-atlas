@@ -5,12 +5,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from openai import APIConnectionError, AsyncOpenAI
 
-from devatlas.application.ports.embedding import (
+from retrieval_works.application.ports.embedding import (
     EmbeddingBatchError,
     EmbeddingProvider,
     EmbeddingProviderUnavailableError,
 )
-from devatlas.infrastructure.embedding import OpenAIEmbeddingProvider
+from retrieval_works.infrastructure.embedding import OpenAIEmbeddingProvider
 
 
 def make_client() -> tuple[AsyncOpenAI, AsyncMock]:

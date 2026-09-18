@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from devatlas.domain.document_ingestion import PageSpan, PreparedTextDocument
-from devatlas.evaluation.pdf_extraction import (
+from retrieval_works.domain.document_ingestion import PageSpan, PreparedTextDocument
+from retrieval_works.evaluation.pdf_extraction import (
     InvalidPdfEvaluationDatasetError,
     PdfExtractionCase,
     load_pdf_cases,

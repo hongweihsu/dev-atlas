@@ -6,12 +6,14 @@ from uuid import uuid4
 import pytest
 from openai import AsyncOpenAI
 
-from devatlas.application.manage_knowledge_bases import ManageKnowledgeBases
-from devatlas.application.ports.agentic_research import InvalidResearchResponseError
-from devatlas.application.ports.knowledge_bases import KnowledgeBaseSummary
-from devatlas.application.ports.retrieval import RetrievedChunk
-from devatlas.application.search_documents import SearchDocuments
-from devatlas.infrastructure.generation.openai_research_agent import (
+from retrieval_works.application.manage_knowledge_bases import ManageKnowledgeBases
+from retrieval_works.application.ports.agentic_research import (
+    InvalidResearchResponseError,
+)
+from retrieval_works.application.ports.knowledge_bases import KnowledgeBaseSummary
+from retrieval_works.application.ports.retrieval import RetrievedChunk
+from retrieval_works.application.search_documents import SearchDocuments
+from retrieval_works.infrastructure.generation.openai_research_agent import (
     LIST_KNOWLEDGE_BASES_TOOL,
     MAX_RESEARCH_TOOL_CALLS,
     SEARCH_DOCUMENTS_TOOL,

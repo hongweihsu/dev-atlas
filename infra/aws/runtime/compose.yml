@@ -54,7 +54,7 @@ services:
       context: ../../../apps/api
     restart: unless-stopped
     command:
-      ["uvicorn", "devatlas.main:app", "--host", "0.0.0.0", "--port", "8000"]
+      ["uvicorn", "retrieval_works.main:app", "--host", "0.0.0.0", "--port", "8000"]
     environment: *api-environment
     ports:
       - "8000:8000"
@@ -74,7 +74,7 @@ services:
     build:
       context: ../../../apps/api
     restart: unless-stopped
-    command: ["arq", "devatlas.worker.WorkerSettings"]
+    command: ["arq", "retrieval_works.worker.WorkerSettings"]
     environment: *api-environment
     depends_on:
       postgres:

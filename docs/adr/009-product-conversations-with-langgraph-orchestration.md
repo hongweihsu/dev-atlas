@@ -8,13 +8,13 @@ Accepted — 2026-09-14
 
 Phase 12 needs multi-turn questions that survive reloads, remain inspectable, and
 cannot cross workspace or user boundaries. LangGraph offers checkpoint-backed
-workflow state, but a checkpoint thread identifier alone is not a DevAtlas
+workflow state, but a checkpoint thread identifier alone is not a Retrieval Works
 authorization model. The product also needs stable conversation lists and exact
 historical citation snapshots.
 
 ## Decision
 
-Store conversation metadata and immutable turns in DevAtlas-owned PostgreSQL
+Store conversation metadata and immutable turns in Retrieval Works-owned PostgreSQL
 tables. Every repository operation requires `workspace_id` and `user_id`; an
 unknown or foreign conversation is reported as not found.
 

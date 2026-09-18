@@ -2,17 +2,17 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from devatlas.application.answer_documents import (
+from retrieval_works.application.answer_documents import (
     NO_EVIDENCE_ANSWER,
     AnswerDocuments,
     AnswerDocumentsCommand,
 )
-from devatlas.application.ports.generation import (
+from retrieval_works.application.ports.generation import (
     GeneratedAnswer,
     InvalidGeneratedAnswerError,
 )
-from devatlas.application.ports.retrieval import RetrievedChunk
-from devatlas.application.search_documents import SearchDocuments
+from retrieval_works.application.ports.retrieval import RetrievedChunk
+from retrieval_works.application.search_documents import SearchDocuments
 from tests.fakes import (
     DeterministicEmbeddingProvider,
     FakeChunkSearchRepository,

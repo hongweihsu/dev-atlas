@@ -5,7 +5,7 @@
 
 ## Context
 
-DevAtlas must retrieve both semantic descriptions and exact technical tokens
+Retrieval Works must retrieve both semantic descriptions and exact technical tokens
 such as error codes, configuration keys, incident IDs, and migration numbers.
 Its first vector-only stratified baseline achieved perfect identifier results
 but weaker rank-one results on two semantic cases. Hybrid retrieval is therefore
@@ -22,7 +22,7 @@ ranking. Fuse the two ordered candidate lists with reciprocal rank fusion (RRF),
 which depends on rank positions rather than incomparable raw BM25 and cosine
 scores.
 
-Keep lexical retrieval and fusion behind application ports. DevAtlas-specific
+Keep lexical retrieval and fusion behind application ports. Retrieval Works-specific
 code owns active-version filtering, stable chunk identity, bounded candidate
 collection, deterministic tie-breaking, and result provenance; the package owns
 BM25 token statistics and scoring.
@@ -50,7 +50,7 @@ change before scale requires it.
 ### The high-level `BM25` package
 
 The package wraps `bm25s` with a simpler API, but it was first released shortly
-before this decision. DevAtlas uses the established lower-level package directly
+before this decision. Retrieval Works uses the established lower-level package directly
 so the index metadata and returned chunk identities remain under explicit
 control.
 

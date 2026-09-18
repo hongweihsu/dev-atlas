@@ -30,7 +30,7 @@ irrelevant.
 ## Per-case diagnosis
 
 - `tx-rollback`: the judged `transactions` document and passage ranked second,
-  behind the pre-existing `DevAtlas Live Verification` document.
+  behind the pre-existing `Retrieval Works Live Verification` document.
 - `vector-provenance`: the judged `vector-search` document and passage ranked
   fifth, behind four historical documents all titled `phase-1-browser-check`.
   Those four results had the same similarity and may be duplicate or equally

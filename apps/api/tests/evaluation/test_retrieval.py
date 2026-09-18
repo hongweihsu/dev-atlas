@@ -4,7 +4,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from devatlas.evaluation.retrieval import (
+from retrieval_works.evaluation.retrieval import (
     CorpusLoadError,
     InvalidEvaluationDatasetError,
     ManifestEntry,

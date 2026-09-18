@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from openai import AsyncOpenAI
 
-from devatlas.infrastructure.generation.openai_corrective_query import (
+from retrieval_works.infrastructure.generation.openai_corrective_query import (
     OpenAICorrectiveQueryGenerator,
     _CorrectiveQuery,
 )
