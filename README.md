@@ -265,7 +265,8 @@ with trusted native pages under their original page numbers.
 - Redis-backed limits bound workspace creation, invitations, and ingestion
   submissions per authenticated identity. The current fixed-window thresholds
   suit a low-traffic demo rather than a globally distributed service.
-- The health endpoint currently reports API liveness, not database readiness.
+- `/health` reports process liveness, while `/health/ready` verifies both
+  PostgreSQL and Redis and returns `503` when either dependency is unavailable.
 - BM25 currently rebuilds an in-memory active-chunk index per search; its
   performance has not yet been benchmarked at representative corpus sizes.
 - PDF layout routing uses conservative rectangle, image-area, and reading-order

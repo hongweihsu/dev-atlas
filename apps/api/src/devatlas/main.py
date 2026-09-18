@@ -60,6 +60,7 @@ from devatlas.infrastructure.persistence import (
 )
 from devatlas.infrastructure.queue import ArqIngestionQueue
 from devatlas.infrastructure.rate_limit import RedisMutationRateLimiter
+from devatlas.infrastructure.readiness import DependencyReadinessChecker
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -72,6 +73,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         session_factory = create_session_factory(engine)
         redis = await create_pool(RedisSettings.from_dsn(app_settings.redis_url))
         application.state.mutation_rate_limiter = RedisMutationRateLimiter(redis)
+        application.state.readiness_checker = DependencyReadinessChecker(
+            session_factory, redis
+        )
         application.state.manage_ingestion_jobs = ManageIngestionJobs(
             repository=SqlAlchemyIngestionJobRepository(session_factory),
             queue=ArqIngestionQueue(redis),
@@ -201,6 +205,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             del application.state.manage_document_versions
             del application.state.workspace_access_repository
             del application.state.mutation_rate_limiter
+            del application.state.readiness_checker
             if (
                 app_settings.auth_jwt_secret is not None
                 or app_settings.auth_jwks_url is not None

@@ -80,6 +80,7 @@ cd /opt/devatlas/infra/aws/runtime
 docker compose --env-file .env -f compose.yml ps
 docker compose --env-file .env -f compose.yml logs --tail=100 api worker
 systemctl status devatlas-backup.timer
+curl --fail-with-body http://localhost:8000/health/ready
 ```
 
 Inspect privacy-bounded application metrics without exposing the operator token
