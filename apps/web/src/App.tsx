@@ -644,7 +644,9 @@ export default function App() {
     <main className="shell">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="Retrieval Works home">
-          <span className="brand__mark">DA</span>
+          <span className="brand__mark" aria-hidden="true">
+            RW
+          </span>
           <span>Retrieval Works</span>
         </a>
         {apiState === 'checking' && (

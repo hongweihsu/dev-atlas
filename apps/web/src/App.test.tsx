@@ -106,6 +106,10 @@ test('shows the product identity and hides healthy API status', async () => {
 
   render(<App />)
 
+  expect(screen.getByText('RW')).toBeInTheDocument()
+  expect(
+    screen.getByRole('link', { name: 'Retrieval Works home' }),
+  ).toBeInTheDocument()
   expect(
     screen.getByRole('heading', { name: /Ask your documents/i }),
   ).toBeInTheDocument()
