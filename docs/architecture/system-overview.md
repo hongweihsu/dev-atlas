@@ -11,9 +11,11 @@ bounded AI workflows, operational hardening, and selective-page PDF extraction.
 flowchart LR
   user[Browser user]
   operator[Operator]
+  dns[Route 53 + ACM TLS]
   cognito[Amazon Cognito]
   cloudfront[CloudFront]
   web[S3 private web origin]
+  ses[Amazon SES + DKIM]
 
   subgraph ec2[EC2 · Docker Compose]
     api[FastAPI API]
@@ -29,6 +31,7 @@ flowchart LR
 
   user -->|sign up / sign in| cognito
   cognito -->|JWT| user
+  dns -->|retrieval.dennishsu.dev| cloudfront
   user -->|HTTPS| cloudfront
   cloudfront -->|React assets| web
   cloudfront -->|/api/*| api
@@ -39,6 +42,8 @@ flowchart LR
   redis -->|idempotent job ID| worker
   worker -->|job state, chunks, embeddings| postgres
   api -->|answers, tools, agents| openai
+  api -->|workspace invitations| ses
+  ses -->|transactional email| user
   worker -->|embeddings + selected PDF pages| openai
 
   operator -->|Session Manager deploy| ssm

@@ -13,17 +13,9 @@ must resolve to retrieved chunks, and quality claims require recorded evidence.
 
 ## Implemented architecture
 
-```text
-Browser / React / TypeScript
-          |
-          | Cognito access token + workspace scope
-          v
-CloudFront ----> FastAPI
-                    |-- PostgreSQL + pgvector
-                    |-- Redis / ARQ ingestion worker
-                    |-- OpenAI embedding, generation, and PDF vision adapters
-                    `-- request/workflow telemetry
-```
+The current production topology, trust boundaries, durable stores, asynchronous
+path, model-provider calls, backups, monitoring, and transactional invitation
+email flow are captured in the [deployed AWS architecture](architecture/aws-demo-deployment.md).
 
 The low-traffic AWS demo uses a private S3 frontend origin and one ARM EC2
 Docker host in Sydney. This avoids the fixed cost of an ALB, NAT Gateway, RDS,

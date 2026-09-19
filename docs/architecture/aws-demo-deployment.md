@@ -13,27 +13,51 @@ explainability and cost control rather than high availability.
 
 ## Deployed topology
 
-```text
-Browser
-  |
-  v
-Amazon Cognito (self-registration + verified email, Amplify Auth SRP)
-  |
-  v
-CloudFront default HTTPS domain
-  ├── /*       -> private S3 bucket -> React assets
-  └── /api/*   -> CloudFront Function removes /api
-                     |
-                     v
-                 Elastic IP
-                     |
-                     v
-               t4g.small EC2
-               Docker Compose
-               ├── FastAPI :8000
-               ├── ARQ worker
-               ├── Redis
-               └── PostgreSQL + pgvector
+```mermaid
+flowchart TB
+  user[Browser user]
+  route53[Route 53<br/>dennishsu.dev]
+  acm[ACM certificate<br/>us-east-1]
+  cognito[Cognito User Pool<br/>self-registration + JWT]
+  cloudfront[CloudFront<br/>retrieval.dennishsu.dev]
+  web[S3 private web origin<br/>React + Vite]
+  ses[SES + DKIM<br/>transactional invitations]
+  openai[OpenAI API<br/>embeddings + generation + PDF vision]
+
+  subgraph host[t4g.small EC2 · Sydney · Docker Compose]
+    api[FastAPI :8000]
+    worker[ARQ worker]
+    redis[(Redis queue + AOF)]
+    postgres[(PostgreSQL + pgvector)]
+  end
+
+  backups[S3 private bucket<br/>source artifacts + daily backups]
+  ssm[Systems Manager<br/>Session Manager + Parameter Store]
+  alarms[CloudWatch + SNS<br/>instance and CloudFront alerts]
+
+  user -->|sign up / sign in| cognito
+  cognito -->|signed tokens| user
+  route53 --> cloudfront
+  acm --> cloudfront
+  user -->|HTTPS| cloudfront
+  cloudfront -->|static assets| web
+  cloudfront -->|/api/* via Elastic IP| api
+
+  api -->|tenant data + vectors| postgres
+  api -->|job + outbox transaction| postgres
+  worker -->|dispatch outbox| redis
+  redis -->|job ID| worker
+  worker -->|chunks + job state| postgres
+  api --> openai
+  worker --> openai
+  api -->|invitation| ses
+  ses -->|email| user
+
+  ssm -->|runtime configuration| host
+  backups -->|verified deploy artifact| host
+  postgres -->|daily encrypted dump| backups
+  host --> alarms
+  cloudfront --> alarms
 ```
 
 The SPA uses a Retrieval Works-native authentication UI while the official Amplify Auth
@@ -79,8 +103,8 @@ notification control, not a guaranteed resource kill switch.
   before treating the instance as the source of retained demo data.
 - The root volume is deleted with the instance to avoid surprise orphan-volume
   charges; durable recovery must come from backups, not an abandoned disk.
-- CloudFront provides a stable HTTPS URL without buying a domain or running an
-  Application Load Balancer.
+- Route 53 and ACM provide the canonical HTTPS hostname without an Application
+  Load Balancer. CloudFront remains the only public application entry point.
 - The EC2 instance status alarm notifies through SNS after two failed five-minute
   checks. The email subscription must be confirmed before it can deliver.
 - A separate CloudFront alarm notifies when the average 5xx error rate reaches
