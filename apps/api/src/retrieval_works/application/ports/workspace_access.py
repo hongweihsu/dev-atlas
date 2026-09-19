@@ -89,6 +89,10 @@ class WorkspaceAccessRepository(Protocol):
         self, workspace: AuthorizedWorkspace, user_id: UUID
     ) -> None: ...
 
+    async def transfer_ownership(
+        self, workspace: AuthorizedWorkspace, new_owner_user_id: UUID
+    ) -> AuthorizedWorkspace: ...
+
     async def list_invitations(
         self, workspace: AuthorizedWorkspace
     ) -> tuple[WorkspaceInvitationSummary, ...]: ...

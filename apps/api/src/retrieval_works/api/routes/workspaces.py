@@ -76,6 +76,10 @@ class UpdateMemberRoleRequest(BaseModel):
     role: Literal["editor", "viewer"]
 
 
+class TransferOwnershipRequest(BaseModel):
+    new_owner_user_id: UUID
+
+
 class InvitationSummaryResponse(BaseModel):
     invitation_id: str
     email: str
@@ -280,6 +284,34 @@ async def remove_member(
             status.HTTP_409_CONFLICT,
             detail={"code": "protected_membership", "message": str(error)},
         ) from error
+
+
+@router.post(
+    "/{target_workspace_id}/ownership",
+    response_model=WorkspaceResponse,
+)
+async def transfer_ownership(
+    target_workspace_id: UUID,
+    body: TransferOwnershipRequest,
+    request: Request,
+    workspace: OwnedWorkspace,
+) -> WorkspaceResponse:
+    _require_matching_workspace(target_workspace_id, workspace)
+    try:
+        updated = await _repository(request).transfer_ownership(
+            workspace, body.new_owner_user_id
+        )
+    except LookupError as error:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            detail={"code": "member_not_found", "message": str(error)},
+        ) from error
+    except ValueError as error:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={"code": "ownership_conflict", "message": str(error)},
+        ) from error
+    return _response(updated)
 
 
 @router.get(

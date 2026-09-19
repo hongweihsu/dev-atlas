@@ -188,3 +188,26 @@ def test_owner_membership_cannot_be_changed_or_removed(
     assert changed.json()["detail"]["code"] == "protected_membership"
     assert removed.status_code == 409
     assert removed.json()["detail"]["code"] == "protected_membership"
+
+
+def test_owner_can_transfer_ownership_to_an_existing_member(
+    workspace_api: tuple[TestClient, AsyncMock, AuthorizedWorkspace],
+) -> None:
+    client, repository, workspace = workspace_api
+    new_owner_id = uuid4()
+    updated = AuthorizedWorkspace(
+        workspace.user_id,
+        workspace.workspace_id,
+        workspace.workspace_name,
+        "editor",
+    )
+    repository.transfer_ownership.return_value = updated
+
+    response = client.post(
+        f"/workspaces/{workspace.workspace_id}/ownership",
+        json={"new_owner_user_id": str(new_owner_id)},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "editor"
+    repository.transfer_ownership.assert_awaited_once_with(workspace, new_owner_id)

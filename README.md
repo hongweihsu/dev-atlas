@@ -66,8 +66,8 @@ limitations, see the [engineering case study](docs/case-study.md).
   without accepting a caller-selected role or workspace
 - Users can create and switch among multiple workspaces; owners issue expiring,
   single-use invitations bound to Cognito-verified email, manage editor/viewer
-  roles, remove members, and revoke pending invitations without exposing stored
-  token hashes
+  roles, transfer ownership atomically, remove members, and revoke pending
+  invitations without exposing stored token hashes
 - Retrieval Works-native sign-in, registration, email confirmation, and password
   recovery use the official Amplify Auth SRP client; passwords go directly to
   Cognito and never pass through the Retrieval Works API
@@ -141,10 +141,7 @@ limitations, see the [engineering case study](docs/case-study.md).
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- Automatic invitation email delivery, ownership transfer, and workspace
-  deletion or leave semantics
-- Verified cutover to the Retrieval Works AWS resource prefix and
-  `retrieval.dennishsu.dev`
+- Automatic invitation email delivery and workspace deletion or leave semantics
 - Final authenticated browser workflow recording, screenshots, and short demo
   video for portfolio presentation
 
@@ -248,8 +245,8 @@ with trusted native pages under their original page numbers.
 - Local token issuance is development-only. Production uses Cognito hosted
   login; a verified first login idempotently creates a personal workspace.
   Owners can create workspaces, invite editor/viewer members, and administer
-  those memberships; ownership transfer and workspace deletion are not
-  implemented. The hybrid comparison covers only five controlled documents and
+  those memberships, including explicit ownership transfer; workspace deletion
+  is not implemented. The hybrid comparison covers only five controlled documents and
   must not be interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Follow-up conversation turns add one model request for standalone-question

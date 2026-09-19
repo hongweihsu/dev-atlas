@@ -328,6 +328,42 @@ class SqlAlchemyWorkspaceAccessRepository:
                 raise ValueError("owner membership cannot be removed")
             await session.delete(membership)
 
+    async def transfer_ownership(
+        self, workspace: AuthorizedWorkspace, new_owner_user_id: UUID
+    ) -> AuthorizedWorkspace:
+        if new_owner_user_id == workspace.user_id:
+            raise ValueError("the current owner already owns this workspace")
+        async with self._session_factory() as session, session.begin():
+            memberships = (
+                await session.scalars(
+                    select(WorkspaceMembership)
+                    .where(
+                        WorkspaceMembership.workspace_id == workspace.workspace_id,
+                        WorkspaceMembership.user_id.in_(
+                            (workspace.user_id, new_owner_user_id)
+                        ),
+                    )
+                    .with_for_update()
+                )
+            ).all()
+            by_user_id = {membership.user_id: membership for membership in memberships}
+            current_owner = by_user_id.get(workspace.user_id)
+            new_owner = by_user_id.get(new_owner_user_id)
+            if current_owner is None or current_owner.role != "owner":
+                raise ValueError("workspace ownership changed; refresh and try again")
+            if new_owner is None:
+                raise LookupError("new owner must already be a workspace member")
+            if new_owner.role == "owner":
+                raise ValueError("the selected member already owns this workspace")
+            current_owner.role = "editor"
+            new_owner.role = "owner"
+            return AuthorizedWorkspace(
+                workspace.user_id,
+                workspace.workspace_id,
+                workspace.workspace_name,
+                "editor",
+            )
+
     async def list_invitations(
         self, workspace: AuthorizedWorkspace
     ) -> tuple[WorkspaceInvitationSummary, ...]:

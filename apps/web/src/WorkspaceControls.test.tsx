@@ -72,9 +72,18 @@ test('owner manages member roles and revokes pending invitations', async () => {
       ) {
         return new Response(null, { status: 204 })
       }
+      if (
+        input === '/api/workspaces/workspace-id/ownership' &&
+        init?.method === 'POST'
+      ) {
+        return jsonResponse({ ...session, role: 'editor' })
+      }
       throw new Error(`Unexpected request: ${String(input)}`)
     },
   )
+
+  const onOwnershipTransferred = vi.fn()
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
 
   render(
     <WorkspaceControls
@@ -83,6 +92,7 @@ test('owner manages member roles and revokes pending invitations', async () => {
       onSwitch={vi.fn()}
       onCreate={vi.fn()}
       onInvite={vi.fn()}
+      onOwnershipTransferred={onOwnershipTransferred}
     />,
   )
 
@@ -105,4 +115,10 @@ test('owner manages member roles and revokes pending invitations', async () => {
   await waitFor(() =>
     expect(screen.queryByText('pending@example.com')).not.toBeInTheDocument(),
   )
+
+  fireEvent.click(screen.getByRole('button', { name: 'Transfer ownership' }))
+  await waitFor(() => expect(onOwnershipTransferred).toHaveBeenCalledWith({
+    ...session,
+    role: 'editor',
+  }))
 })

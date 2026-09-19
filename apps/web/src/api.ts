@@ -332,6 +332,19 @@ export async function removeWorkspaceMember(
   )
 }
 
+export async function transferWorkspaceOwnership(
+  workspaceId: string,
+  newOwnerUserId: string,
+): Promise<SessionResponse> {
+  return parseResponse(
+    await authorizedFetch(`/api/workspaces/${workspaceId}/ownership`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_owner_user_id: newOwnerUserId }),
+    }),
+  )
+}
+
 export async function listWorkspaceInvitations(
   workspaceId: string,
 ): Promise<WorkspaceInvitationSummary[]> {

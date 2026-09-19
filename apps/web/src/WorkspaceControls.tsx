@@ -8,6 +8,7 @@ import {
   listWorkspaceMembers,
   removeWorkspaceMember,
   revokeWorkspaceInvitation,
+  transferWorkspaceOwnership,
   updateWorkspaceMemberRole,
 } from './api'
 
@@ -17,6 +18,7 @@ interface WorkspaceControlsProps {
   onSwitch: (workspaceId: string) => Promise<void>
   onCreate: (name: string) => Promise<void>
   onInvite: (email: string, role: 'editor' | 'viewer') => Promise<string>
+  onOwnershipTransferred: (session: SessionResponse) => void
 }
 
 export function WorkspaceControls({
@@ -25,6 +27,7 @@ export function WorkspaceControls({
   onSwitch,
   onCreate,
   onInvite,
+  onOwnershipTransferred,
 }: WorkspaceControlsProps) {
   const [action, setAction] = useState<'create' | 'invite' | 'manage' | null>(null)
   const [name, setName] = useState('')
@@ -114,6 +117,29 @@ export function WorkspaceControls({
       setMembers((current) => current.filter((item) => item.user_id !== member.user_id))
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Member removal failed')
+    }
+  }
+
+  async function transferOwnership(member: WorkspaceMember) {
+    const identity = member.email ?? member.display_name ?? member.user_id
+    if (!window.confirm(
+      `Transfer ownership to ${identity}? You will become an editor.`,
+    )) return
+    setError('')
+    try {
+      const updatedSession = await transferWorkspaceOwnership(
+        session.workspace_id,
+        member.user_id,
+      )
+      setMembers((current) => current.map((item) => {
+        if (item.user_id === session.user_id) return { ...item, role: 'editor' }
+        if (item.user_id === member.user_id) return { ...item, role: 'owner' }
+        return item
+      }))
+      onOwnershipTransferred(updatedSession)
+      setAction(null)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Ownership transfer failed')
     }
   }
 
@@ -228,6 +254,9 @@ export function WorkspaceControls({
                     <option value="viewer">Viewer</option>
                     <option value="editor">Editor</option>
                   </select>
+                  <button type="button" onClick={() => void transferOwnership(member)}>
+                    Transfer ownership
+                  </button>
                   <button type="button" onClick={() => void removeMember(member)}>Remove</button>
                 </>
               )}

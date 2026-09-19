@@ -292,6 +292,17 @@ export default function App() {
     return link
   }
 
+  function handleOwnershipTransferred(updatedSession: SessionResponse) {
+    selectWorkspace(updatedSession)
+    setSession(updatedSession)
+    setWorkspaces((current) => current.map((workspace) =>
+      workspace.workspace_id === updatedSession.workspace_id
+        ? updatedSession
+        : workspace,
+    ))
+    setWorkspaceNotice('Workspace ownership transferred. Your role is now editor.')
+  }
+
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!file) return
@@ -663,6 +674,7 @@ export default function App() {
               onSwitch={handleWorkspaceSwitch}
               onCreate={handleCreateWorkspace}
               onInvite={handleInviteMember}
+              onOwnershipTransferred={handleOwnershipTransferred}
             />
             {usesCognitoAuthentication && (
               <button type="button" onClick={() => void signOut()}>Sign out</button>
