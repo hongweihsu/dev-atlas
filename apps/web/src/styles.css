@@ -33,6 +33,9 @@ button { cursor: pointer; }
 .session-context strong { padding: 0.3rem 0.45rem; border: 1px solid #3c5148; color: #76d99e; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .session-context button { padding: 0.35rem 0.55rem; border: 1px solid #3c5148; color: #aebbb6; background: transparent; font-size: 0.68rem; }
 .session-context button:hover { border-color: #76d99e; color: #76d99e; }
+.session-context .session-context__logout { margin-left: 0.35rem; padding: 0.5rem 0.75rem; border-color: #587268; color: #dce5e1; font-weight: 700; }
+.session-context .session-context__logout:hover { border-color: #f08278; color: #ffc2bc; background: rgba(240, 130, 120, 0.08); }
+.session-context__development { padding: 0.4rem 0.55rem; border-left: 1px solid #3c5148; color: #718079; font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase; }
 .workspace-controls { position: relative; }
 .workspace-controls__summary { display: flex; align-items: center; gap: 0.65rem; }
 .workspace-controls__form, .workspace-controls__link { position: absolute; z-index: 10; top: calc(100% + 0.75rem); right: 0; display: grid; grid-template-columns: minmax(12rem, 1fr) auto; gap: 0.65rem; min-width: 28rem; padding: 1rem; border: 1px solid #3c5148; background: #0b1613; box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4); }

@@ -677,7 +677,22 @@ export default function App() {
               onOwnershipTransferred={handleOwnershipTransferred}
             />
             {usesCognitoAuthentication && (
-              <button type="button" onClick={() => void signOut()}>Sign out</button>
+              <button
+                className="session-context__logout"
+                type="button"
+                aria-label="Log out of Retrieval Works"
+                onClick={() => void signOut()}
+              >
+                Log out
+              </button>
+            )}
+            {!usesCognitoAuthentication && (
+              <span
+                className="session-context__development"
+                title="Local development authentication is automatic"
+              >
+                Local session
+              </span>
             )}
           </div>
         )}

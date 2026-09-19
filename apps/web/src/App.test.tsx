@@ -118,6 +118,10 @@ test('shows the product identity and hides healthy API status', async () => {
   expect(screen.queryByText('API connected')).not.toBeInTheDocument()
   expect(screen.getByText('Engineering Notes')).toBeInTheDocument()
   expect(screen.getByText('owner')).toBeInTheDocument()
+  expect(screen.getByText('Local session')).toBeInTheDocument()
+  expect(
+    screen.queryByRole('button', { name: 'Log out of Retrieval Works' }),
+  ).not.toBeInTheDocument()
 })
 
 test('shows viewer access as read-only while keeping research available', async () => {
