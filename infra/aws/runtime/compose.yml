@@ -44,6 +44,9 @@ services:
       AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:?AUTH_JWT_AUDIENCE is required}
       AUTH_COGNITO_CLIENT_ID: ${AUTH_COGNITO_CLIENT_ID:?AUTH_COGNITO_CLIENT_ID is required}
       OBSERVABILITY_METRICS_TOKEN: ${OBSERVABILITY_METRICS_TOKEN:?OBSERVABILITY_METRICS_TOKEN is required}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://retrieval.dennishsu.dev}
+      INVITATION_EMAIL_SENDER: ${INVITATION_EMAIL_SENDER:-Retrieval Works <no-reply@dennishsu.dev>}
+      AWS_REGION: ${AWS_REGION:-ap-southeast-2}
     depends_on:
       postgres:
         condition: service_healthy

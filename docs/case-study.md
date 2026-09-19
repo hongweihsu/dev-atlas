@@ -151,9 +151,9 @@ the application counters.
 - Suspicious PDF layout triggers whole-document multimodal extraction; selective
   page-only extraction and merge are not yet implemented.
 - Cognito users can self-register, create and switch workspaces, and accept
-  verified-email invitations. Ownership transfer and workspace deletion are not
-  yet implemented; owners can manage editor/viewer roles and revoke pending
-  invitations.
+  verified-email invitations. Owners can manage roles, transfer ownership,
+  revoke invitations, or permanently delete a workspace; non-owners can leave.
+  SES invitation delivery preserves a copy-link fallback when email is unavailable.
 - Backup automation is installed, but a disposable restore rehearsal has not
   yet established a measured recovery time.
 - LangSmith is not enabled. Before exporting detailed AI traces, the project

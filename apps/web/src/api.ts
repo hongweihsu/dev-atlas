@@ -49,6 +49,7 @@ export interface WorkspaceInvitationResponse {
   workspace_name: string
   email: string
   role: 'editor' | 'viewer'
+  email_delivery: 'sent' | 'unavailable' | 'failed'
 }
 
 export interface WorkspaceMember {
@@ -343,6 +344,19 @@ export async function transferWorkspaceOwnership(
       body: JSON.stringify({ new_owner_user_id: newOwnerUserId }),
     }),
   )
+}
+
+export async function leaveWorkspace(workspaceId: string): Promise<void> {
+  await parseNoContent(await authorizedFetch(
+    `/api/workspaces/${workspaceId}/membership`,
+    { method: 'DELETE' },
+  ))
+}
+
+export async function deleteWorkspace(workspaceId: string): Promise<void> {
+  await parseNoContent(await authorizedFetch(`/api/workspaces/${workspaceId}`, {
+    method: 'DELETE',
+  }))
 }
 
 export async function listWorkspaceInvitations(

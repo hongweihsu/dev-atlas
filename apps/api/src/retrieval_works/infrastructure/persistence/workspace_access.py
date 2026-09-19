@@ -16,6 +16,8 @@ from retrieval_works.application.ports.workspace_access import (
     WorkspaceRole,
 )
 from retrieval_works.infrastructure.models import (
+    Document,
+    IngestionJob,
     KnowledgeBase,
     User,
     Workspace,
@@ -363,6 +365,39 @@ class SqlAlchemyWorkspaceAccessRepository:
                 workspace.workspace_name,
                 "editor",
             )
+
+    async def leave_workspace(self, workspace: AuthorizedWorkspace) -> None:
+        if workspace.role == "owner":
+            raise ValueError(
+                "transfer ownership or delete the workspace before leaving"
+            )
+        async with self._session_factory() as session, session.begin():
+            membership = await session.get(
+                WorkspaceMembership,
+                {"workspace_id": workspace.workspace_id, "user_id": workspace.user_id},
+                with_for_update=True,
+            )
+            if membership is None:
+                raise LookupError("workspace membership was not found")
+            await session.delete(membership)
+
+    async def delete_workspace(self, workspace: AuthorizedWorkspace) -> None:
+        async with self._session_factory() as session, session.begin():
+            target = await session.get(
+                Workspace, workspace.workspace_id, with_for_update=True
+            )
+            if target is None:
+                raise LookupError("workspace was not found")
+            await session.execute(
+                delete(IngestionJob).where(IngestionJob.workspace_id == target.id)
+            )
+            await session.execute(
+                delete(Document).where(Document.workspace_id == target.id)
+            )
+            await session.execute(
+                delete(KnowledgeBase).where(KnowledgeBase.workspace_id == target.id)
+            )
+            await session.delete(target)
 
     async def list_invitations(
         self, workspace: AuthorizedWorkspace

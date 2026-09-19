@@ -19,6 +19,8 @@ interface WorkspaceControlsProps {
   onCreate: (name: string) => Promise<void>
   onInvite: (email: string, role: 'editor' | 'viewer') => Promise<string>
   onOwnershipTransferred: (session: SessionResponse) => void
+  onLeave: () => Promise<void>
+  onDelete: () => Promise<void>
 }
 
 export function WorkspaceControls({
@@ -28,6 +30,8 @@ export function WorkspaceControls({
   onCreate,
   onInvite,
   onOwnershipTransferred,
+  onLeave,
+  onDelete,
 }: WorkspaceControlsProps) {
   const [action, setAction] = useState<'create' | 'invite' | 'manage' | null>(null)
   const [name, setName] = useState('')
@@ -158,6 +162,34 @@ export function WorkspaceControls({
     }
   }
 
+  async function leave() {
+    if (!window.confirm(`Leave ${session.workspace_name}? You will lose access immediately.`)) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await onLeave()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Could not leave workspace')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function deleteCurrentWorkspace() {
+    if (!window.confirm(
+      `Permanently delete ${session.workspace_name} and all of its documents? This cannot be undone.`,
+    )) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await onDelete()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Workspace deletion failed')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="workspace-controls">
       <div className="workspace-controls__summary">
@@ -188,6 +220,11 @@ export function WorkspaceControls({
               Members
             </button>
           </>
+        )}
+        {session.role !== 'owner' && (
+          <button type="button" disabled={submitting} onClick={() => void leave()}>
+            Leave
+          </button>
         )}
       </div>
 
@@ -281,6 +318,13 @@ export function WorkspaceControls({
               )}
             </div>
           ))}
+          <div className="workspace-members__danger">
+            <strong>Danger zone</strong>
+            <span>Deleting removes every document, conversation, and membership.</span>
+            <button type="button" disabled={submitting} onClick={() => void deleteCurrentWorkspace()}>
+              Delete workspace
+            </button>
+          </div>
         </section>
       )}
     </div>

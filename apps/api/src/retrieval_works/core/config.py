@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     ingestion_create_rate_limit: int = 30
     terminal_job_retention_days: int = 30
     accepted_invitation_retention_days: int = 30
+    public_app_url: str = "http://localhost:5173"
+    invitation_email_sender: str | None = None
+    aws_region: str = "ap-southeast-2"
 
     @field_validator(
         "openai_api_key",

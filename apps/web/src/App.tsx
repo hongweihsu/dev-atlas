@@ -25,6 +25,7 @@ import {
   createConversation,
   createWorkspace,
   createWorkspaceInvitation,
+  deleteWorkspace,
   createKnowledgeBase,
   getIngestionJob,
   getSession,
@@ -33,6 +34,7 @@ import {
   listConversationTurns,
   listKnowledgeBases,
   listWorkspaces,
+  leaveWorkspace,
   listDocumentVersions,
   restoreDocument,
   runResearch,
@@ -288,8 +290,29 @@ export default function App() {
       requestedRole,
     )
     const link = `${window.location.origin}/?invite=${encodeURIComponent(invitation.token)}`
-    setWorkspaceNotice('Invitation link created. It expires in 7 days.')
+    setWorkspaceNotice(
+      invitation.email_delivery === 'sent'
+        ? `Invitation emailed to ${invitation.email}. It expires in 7 days.`
+        : 'Invitation created, but email delivery is unavailable. Copy the link instead.',
+    )
     return link
+  }
+
+  async function handleWorkspaceRemoved(mode: 'leave' | 'delete') {
+    if (!session) return
+    if (mode === 'delete') await deleteWorkspace(session.workspace_id)
+    else await leaveWorkspace(session.workspace_id)
+    const remaining = (await listWorkspaces()).filter(
+      (workspace) => workspace.workspace_id !== session.workspace_id,
+    )
+    const next = remaining[0]
+    if (!next) {
+      window.location.reload()
+      return
+    }
+    setWorkspaces(remaining)
+    await handleWorkspaceSwitch(next.workspace_id)
+    setWorkspaceNotice(mode === 'delete' ? 'Workspace deleted.' : 'You left the workspace.')
   }
 
   function handleOwnershipTransferred(updatedSession: SessionResponse) {
@@ -675,6 +698,8 @@ export default function App() {
               onCreate={handleCreateWorkspace}
               onInvite={handleInviteMember}
               onOwnershipTransferred={handleOwnershipTransferred}
+              onLeave={() => handleWorkspaceRemoved('leave')}
+              onDelete={() => handleWorkspaceRemoved('delete')}
             />
             {usesCognitoAuthentication && (
               <button

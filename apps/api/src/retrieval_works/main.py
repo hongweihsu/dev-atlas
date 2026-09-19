@@ -39,6 +39,7 @@ from retrieval_works.infrastructure.database import (
     create_database_engine,
     create_session_factory,
 )
+from retrieval_works.infrastructure.email import SesInvitationEmailSender
 from retrieval_works.infrastructure.embedding import OpenAIEmbeddingProvider
 from retrieval_works.infrastructure.extraction import OpenAIMultimodalDocumentExtractor
 from retrieval_works.infrastructure.generation import (
@@ -100,6 +101,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         application.state.workspace_access_repository = (
             SqlAlchemyWorkspaceAccessRepository(session_factory)
         )
+        if app_settings.invitation_email_sender is not None:
+            application.state.invitation_email_sender = SesInvitationEmailSender(
+                region=app_settings.aws_region,
+                sender=app_settings.invitation_email_sender,
+            )
         if app_settings.auth_jwt_secret is not None:
             jwt_secret = app_settings.auth_jwt_secret.get_secret_value()
             application.state.token_verifier = PyJwtTokenVerifier(
@@ -208,6 +214,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             del application.state.manage_document_lifecycle
             del application.state.manage_document_versions
             del application.state.workspace_access_repository
+            if hasattr(application.state, "invitation_email_sender"):
+                del application.state.invitation_email_sender
             del application.state.mutation_rate_limiter
             del application.state.readiness_checker
             if (

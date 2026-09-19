@@ -7,6 +7,7 @@ data "aws_iam_policy_document" "ec2_assume_role" {
       identifiers = ["ec2.amazonaws.com"]
     }
   }
+
 }
 
 resource "aws_iam_role" "app" {
@@ -49,6 +50,12 @@ data "aws_iam_policy_document" "runtime" {
     sid       = "ReadDeploymentArtifacts"
     actions   = ["s3:GetObject"]
     resources = ["${aws_s3_bucket.backup.arn}/artifacts/*"]
+  }
+
+  statement {
+    sid       = "SendWorkspaceInvitations"
+    actions   = ["ses:SendEmail"]
+    resources = [aws_sesv2_email_identity.app_domain.arn]
   }
 }
 

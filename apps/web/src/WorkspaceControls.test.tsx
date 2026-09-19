@@ -93,6 +93,8 @@ test('owner manages member roles and revokes pending invitations', async () => {
       onCreate={vi.fn()}
       onInvite={vi.fn()}
       onOwnershipTransferred={onOwnershipTransferred}
+      onLeave={vi.fn()}
+      onDelete={vi.fn()}
     />,
   )
 

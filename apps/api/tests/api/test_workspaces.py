@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from typing import cast
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -31,10 +32,13 @@ def workspace_api() -> Iterator[tuple[TestClient, AsyncMock, AuthorizedWorkspace
     workspace = AuthorizedWorkspace(uuid4(), uuid4(), "Engineering", "owner")
     repository = AsyncMock()
     limiter = AsyncMock()
+    email_sender = AsyncMock()
     repository.rate_limiter = limiter
+    repository.email_sender = email_sender
     application.state.workspace_access_repository = repository
     application.state.settings = Settings()
     application.state.mutation_rate_limiter = limiter
+    application.state.invitation_email_sender = email_sender
     application.dependency_overrides[get_authenticated_principal] = lambda: principal
     application.dependency_overrides[get_authorized_workspace] = lambda: workspace
     with TestClient(application) as client:
@@ -106,10 +110,45 @@ def test_owner_can_create_email_bound_invitation(
         "workspace_name": "Engineering",
         "email": "reader@example.com",
         "role": "viewer",
+        "email_delivery": "sent",
     }
     repository.create_invitation.assert_awaited_once_with(
         workspace, "reader@example.com", "viewer"
     )
+    repository.email_sender.send_invitation.assert_awaited_once_with(
+        recipient="reader@example.com",
+        workspace_name="Engineering",
+        role="viewer",
+        invitation_url="http://localhost:5173/?invite=one-time-token",
+    )
+
+
+def test_member_can_leave_but_owner_must_transfer_or_delete(
+    workspace_api: tuple[TestClient, AsyncMock, AuthorizedWorkspace],
+) -> None:
+    client, repository, workspace = workspace_api
+    member = AuthorizedWorkspace(
+        workspace.user_id, workspace.workspace_id, workspace.workspace_name, "editor"
+    )
+    cast(FastAPI, client.app).dependency_overrides[
+        get_authorized_workspace
+    ] = lambda: member
+
+    response = client.delete(f"/workspaces/{workspace.workspace_id}/membership")
+
+    assert response.status_code == 204
+    repository.leave_workspace.assert_awaited_once_with(member)
+
+
+def test_owner_can_delete_workspace(
+    workspace_api: tuple[TestClient, AsyncMock, AuthorizedWorkspace],
+) -> None:
+    client, repository, workspace = workspace_api
+
+    response = client.delete(f"/workspaces/{workspace.workspace_id}")
+
+    assert response.status_code == 204
+    repository.delete_workspace.assert_awaited_once_with(workspace)
 
 
 def test_invitation_rejects_a_different_verified_email(

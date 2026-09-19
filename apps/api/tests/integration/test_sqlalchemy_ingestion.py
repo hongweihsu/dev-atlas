@@ -287,12 +287,18 @@ async def test_workspace_invitation_is_email_bound_and_single_use() -> None:
             item.invitation_id for item in await repository.list_invitations(shared)
         }
 
-        await repository.remove_member(shared, membership.user_id)
+        await repository.leave_workspace(membership)
         assert membership.user_id not in {
             item.user_id for item in await repository.list_members(shared)
         }
+        with pytest.raises(ValueError, match="transfer ownership"):
+            await repository.leave_workspace(shared)
         with pytest.raises(ValueError, match="owner membership cannot be removed"):
             await repository.remove_member(shared, shared.user_id)
+        await repository.delete_workspace(shared)
+        assert shared.workspace_id not in {
+            item.workspace_id for item in await repository.list_for_principal(owner)
+        }
     finally:
         if workspace_ids:
             async with session_factory.begin() as session:

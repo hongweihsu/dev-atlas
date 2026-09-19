@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from typing import Literal, cast
 from uuid import UUID
@@ -7,9 +8,11 @@ from pydantic import BaseModel, Field, field_validator
 
 from retrieval_works.api.dependencies.authentication import (
     CurrentPrincipal,
+    CurrentWorkspace,
     OwnedWorkspace,
 )
 from retrieval_works.api.dependencies.rate_limit import enforce_mutation_rate_limit
+from retrieval_works.application.ports.invitation_email import InvitationEmailSender
 from retrieval_works.application.ports.workspace_access import (
     AuthorizedWorkspace,
     WorkspaceAccessRepository,
@@ -17,6 +20,7 @@ from retrieval_works.application.ports.workspace_access import (
 )
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
+logger = logging.getLogger(__name__)
 
 
 class WorkspaceResponse(BaseModel):
@@ -58,6 +62,7 @@ class InvitationResponse(BaseModel):
     workspace_name: str
     email: str
     role: Literal["editor", "viewer"]
+    email_delivery: Literal["sent", "unavailable", "failed"]
 
 
 class AcceptInvitationRequest(BaseModel):
@@ -190,13 +195,62 @@ async def create_invitation(
             status.HTTP_409_CONFLICT,
             detail={"code": "invitation_conflict", "message": str(error)},
         ) from error
+    invitation_url = (
+        f"{settings.public_app_url.rstrip('/')}"
+        f"/?invite={result.token}"
+    )
+    sender = cast(
+        InvitationEmailSender | None,
+        getattr(request.app.state, "invitation_email_sender", None),
+    )
+    email_delivery: Literal["sent", "unavailable", "failed"] = "unavailable"
+    if sender is not None:
+        try:
+            await sender.send_invitation(
+                recipient=result.email,
+                workspace_name=result.workspace_name,
+                role=result.role,
+                invitation_url=invitation_url,
+            )
+            email_delivery = "sent"
+        except Exception:
+            logger.exception(
+                "workspace_invitation_email_failed",
+                extra={"invitation_id": str(result.invitation_id)},
+            )
+            email_delivery = "failed"
     return InvitationResponse(
         invitation_id=str(result.invitation_id),
         token=result.token,
         workspace_name=result.workspace_name,
         email=result.email,
         role=cast(Literal["editor", "viewer"], result.role),
+        email_delivery=email_delivery,
     )
+
+
+@router.delete(
+    "/{target_workspace_id}/membership", status_code=status.HTTP_204_NO_CONTENT
+)
+async def leave_workspace(
+    target_workspace_id: UUID, request: Request, workspace: CurrentWorkspace
+) -> None:
+    _require_matching_workspace(target_workspace_id, workspace)
+    try:
+        await _repository(request).leave_workspace(workspace)
+    except ValueError as error:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            detail={"code": "owner_cannot_leave", "message": str(error)},
+        ) from error
+
+
+@router.delete("/{target_workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_workspace(
+    target_workspace_id: UUID, request: Request, workspace: OwnedWorkspace
+) -> None:
+    _require_matching_workspace(target_workspace_id, workspace)
+    await _repository(request).delete_workspace(workspace)
 
 
 @router.post("/invitations/accept", response_model=WorkspaceResponse)

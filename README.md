@@ -141,7 +141,6 @@ limitations, see the [engineering case study](docs/case-study.md).
 ### Planned
 
 - Persistent or cached lexical indexing when its measured review gate is reached
-- Automatic invitation email delivery and workspace deletion or leave semantics
 - Final authenticated browser workflow recording, screenshots, and short demo
   video for portfolio presentation
 
@@ -245,8 +244,9 @@ with trusted native pages under their original page numbers.
 - Local token issuance is development-only. Production uses Cognito hosted
   login; a verified first login idempotently creates a personal workspace.
   Owners can create workspaces, invite editor/viewer members, and administer
-  those memberships, including explicit ownership transfer; workspace deletion
-  is not implemented. The hybrid comparison covers only five controlled documents and
+  those memberships, including explicit ownership transfer. SES-backed invitation
+  delivery retains a copy-link fallback; non-owners can leave and owners can permanently
+  delete a workspace and its tenant-scoped data. The hybrid comparison covers only five controlled documents and
   must not be interpreted as general, large-scale, or multilingual search accuracy.
 - Ingestion and grounded answers require an API key and incur provider usage.
 - Follow-up conversation turns add one model request for standalone-question

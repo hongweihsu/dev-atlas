@@ -55,6 +55,9 @@ button { cursor: pointer; }
 .workspace-members__row > div span, .workspace-members > p { margin: 0; color: #718079; font-size: 0.68rem; }
 .workspace-members__row select { width: 6.5rem; height: 2rem; }
 .workspace-members__role { color: #76d99e; text-transform: uppercase; }
+.workspace-members__danger { display: grid; gap: 0.55rem; margin-top: 1.2rem; padding: 1rem; border: 1px solid rgba(240, 130, 120, 0.42); }
+.workspace-members__danger span { color: #91a19b; font-size: 0.7rem; }
+.workspace-members__danger button { justify-self: start; border-color: #f08278; color: #ffc2bc; }
 .service-banner { max-width: 86rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem auto 0; padding: 1rem 1.1rem; border: 1px solid rgba(240, 130, 120, 0.42); background: rgba(240, 130, 120, 0.08); }
 .service-banner > div { display: grid; gap: 0.2rem; }
 .service-banner strong { color: #ffc2bc; font-size: 0.84rem; }

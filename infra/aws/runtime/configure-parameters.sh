@@ -72,6 +72,9 @@ put_parameter AUTH_JWT_ISSUER "$issuer"
 put_parameter AUTH_JWT_AUDIENCE "$client_id"
 put_parameter AUTH_COGNITO_CLIENT_ID "$client_id"
 put_parameter OBSERVABILITY_METRICS_TOKEN "$metrics_token" SecureString
+put_parameter PUBLIC_APP_URL https://retrieval.dennishsu.dev
+put_parameter INVITATION_EMAIL_SENDER "Retrieval Works <no-reply@dennishsu.dev>"
+put_parameter AWS_REGION ap-southeast-2
 put_parameter BACKUP_BUCKET "$backup_bucket"
 
 echo "Stored encrypted production configuration under $parameter_path."
