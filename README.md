@@ -2,14 +2,184 @@
 
 **AI Technical Research & Knowledge Platform**
 
-Retrieval Works is a learning-first, production-oriented AI engineering project for
-organizing and researching technical knowledge. It has grown deliberately from
-a full-stack foundation into a measured, permission-aware retrieval system.
+## Project Overview
 
-For the implementation narrative, measured results, trade-offs, and intentional
-limitations, see the [engineering case study](docs/case-study.md).
+Retrieval Works helps users organize technical documents into shared workspaces
+and turn them into searchable knowledge with source-cited answers. Users can
+upload text and PDFs, search across selected KnowledgeBases, and research
+questions while retaining document versions and citation provenance. This AI
+engineering portfolio project focuses on measured retrieval quality,
+server-enforced authorization, and bounded model workflows.
 
-## Current status
+## Screenshots / Demo
+
+Screenshots and a short authenticated workflow recording are still planned.
+To explore the implemented interface, follow the [local setup](#local-setup)
+below: upload a document, ask a question, and expand a citation to inspect its
+source; the workspace also exposes version history and research tool steps.
+
+## Key Engineering Highlights
+
+- **Server-enforced workspace authorization:** Cognito verifies identity;
+  database membership controls roles and data access. Model-selected search
+  scopes are re-authorized before execution.
+  [Authorization decision](docs/adr/002-workspace-authorization-model.md)
+- **Measured hybrid retrieval:** pgvector dense search and BM25S lexical search
+  are combined with reciprocal-rank fusion, avoiding incompatible raw-score
+  scales. Reviewed evaluations expose where each strategy wins.
+  [Retrieval decision](docs/adr/004-bm25s-rrf-hybrid-retrieval.md)
+- **Durable ingestion and source provenance:** PostgreSQL commits ingestion jobs
+  and outbox events atomically; Redis/ARQ dispatches worker tasks. Immutable
+  document versions preserve chunk offsets and PDF page references for citations.
+  [Outbox decision](docs/adr/016-transactional-ingestion-outbox.md) ·
+  [Versioning decision](docs/adr/003-document-versioning.md)
+- **Bounded AI orchestration:** LangGraph loads limited conversation history;
+  research enforces a three-tool-call budget, and corrective RAG permits one
+  evidence-triggered retry. The UI exposes tool steps and stop reasons.
+  [Agent decision](docs/adr/011-bounded-agentic-research-loop.md) ·
+  [Correction decision](docs/adr/012-evidence-triggered-single-correction.md)
+- **Native-first PDF extraction:** ordinary text stays on a deterministic path;
+  only flagged pages use multimodal extraction, with original page provenance
+  retained. Reviewed fixtures measure evidence and table-structure retention.
+  [Selective-page evaluation](evaluation/reports/2026-09-18-phase-18-selective-pages.md)
+- **Cost-aware operations and privacy-bounded telemetry:** a single ARM EC2 host
+  keeps the demo topology small; correlated HTTP/AI metrics omit document content.
+  This accepts a single point of failure, and SLOs remain targets.
+  [AWS architecture](docs/architecture/aws-demo-deployment.md) ·
+  [Observability](docs/architecture/observability.md)
+
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+  user[User] --> web[React + Vite]
+  web -->|Sign in| cognito[Cognito]
+  web -->|JWT / HTTP requests| api[FastAPI: authorization + workflows]
+  api -->|Documents, membership, jobs + outbox| db[(PostgreSQL + pgvector)]
+  db -->|Pending ingestion jobs + outbox| worker[ARQ ingestion worker]
+  worker -->|Dispatch unpublished jobs| redis[(Redis)]
+  redis -->|Queued job IDs| worker
+  worker -->|Extracted chunks + embeddings| db
+  worker -->|Selected PDF pages + embeddings| model[OpenAI API]
+  api -->|Authorized dense candidates| db
+  api -->|Authorized active chunks| bm25[BM25S lexical candidates]
+  db -->|Dense ranks| rrf[RRF fusion]
+  bm25 -->|Lexical ranks| rrf
+  rrf -->|Retrieved evidence| api
+  api -->|Bounded generation / tools| model
+  api -->|Answers + citations + tool steps| web
+```
+
+The API owns authorization and persistent-data access; PostgreSQL retains durable
+job state while Redis handles dispatch. See the
+[system overview](docs/architecture/system-overview.md),
+[domain model](docs/architecture/domain-model.md), and
+[deployed AWS topology](docs/architecture/aws-demo-deployment.md) for the full
+runtime and trust boundaries.
+
+## Evaluation & Trade-offs
+
+### Controlled product corpus
+
+Five documents, eleven chunks, and sixteen reviewed judgments; dense retrieval
+uses `text-embedding-3-small`, lexical retrieval uses BM25S, and hybrid uses RRF.
+
+| Metric | BM25 | Dense (pgvector) | Hybrid RRF |
+| --- | ---: | ---: | ---: |
+| DocumentRecall@1 | 1.000 | 0.875 | 0.938 |
+| DocumentMRR@5 | 1.000 | 0.927 | 0.938 |
+| EvidenceHit@1 | 1.000 | 0.875 | 0.938 |
+| EvidenceHit@3 | 1.000 | 1.000 | 1.000 |
+
+Hybrid improved rank-one retrieval over dense search but did not beat BM25 on
+this small, lexical-heavy English corpus. These results do not establish
+large-scale or multilingual accuracy.
+[Configuration and per-case results](evaluation/reports/2026-09-10-phase-3-hybrid-comparison.md)
+
+### Public retrieval benchmark
+
+Three NanoBEIR tasks, fifty queries each; scores below are **nDCG@10**.
+This document-level benchmark evaluates retrieval methods separately from the
+product ingestion and chunking pipeline.
+
+| Task | BM25 | Dense | Hybrid RRF |
+| --- | ---: | ---: | ---: |
+| NanoSciFact | 0.7033 | **0.7647** | 0.7635 |
+| NanoNFCorpus | 0.3180 | **0.3869** | 0.3774 |
+| NanoHotpotQA | 0.8098 | 0.7898 | **0.8444** |
+
+The best strategy depends on the workload: dense led two tasks, while hybrid led
+NanoHotpotQA. No statistical significance test was reported; one fixed RRF
+configuration does not establish universal superiority.
+[Full benchmark and limitations](evaluation/reports/2026-09-11-nanobeir-three-task-baseline.md)
+
+Other explicit trade-offs include rebuilding BM25 per search for freshness,
+provider cost for flagged PDF pages, and a single-node deployment that is not
+highly available. See the [evaluation guide](evaluation/README.md),
+[engineering case study](docs/case-study.md), and [limitations](#limitations).
+
+## Local setup
+
+### Docker Compose (recommended)
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Open <http://localhost:5173>. The API health endpoint is available at
+<http://localhost:8000/health>.
+
+Stop the stack with:
+
+```bash
+docker compose down
+```
+
+Add `--volumes` only when you intentionally want to remove local database data.
+
+### Run checks locally
+
+Backend dependencies require Python 3.12 or 3.13:
+
+```bash
+cd apps/api
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+ruff check .
+ruff format --check .
+mypy
+pytest
+```
+
+Frontend:
+
+```bash
+cd apps/web
+pnpm install
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
+
+## Configuration
+
+Copy `.env.example` to `.env` for local defaults. `.env` is ignored by Git.
+Production credentials must be supplied through an appropriate secrets system;
+the example values are development-only. Set `OPENAI_API_KEY` to enable live
+document ingestion; leave it empty to keep the embedding-backed worker safely
+unavailable. `REDIS_URL` configures async job dispatch and defaults to the local
+Compose Redis service.
+Docker Compose enables a local development-session issuer by default. That
+issuer uses an in-memory browser token and a development signing secret; disable
+`AUTH_DEVELOPMENT_MODE` and configure a production identity adapter before any
+deployment. For an external provider, configure its HTTPS `AUTH_JWKS_URL`, exact
+`AUTH_JWT_ISSUER`, and API `AUTH_JWT_AUDIENCE`, leaving the local signing secret
+unset.
+
+## Detailed Features
 
 ### Implemented
 
@@ -145,90 +315,6 @@ limitations, see the [engineering case study](docs/case-study.md).
   video for portfolio presentation
 
 Planned capabilities are not implemented or benchmarked yet.
-
-## Architecture
-
-```text
-Browser
-  | HTTP / JSON
-  v
-React + Vite  --->  FastAPI  --->  PostgreSQL + pgvector
-   web               api        \       database
-                                Redis ---> ARQ worker
-```
-
-The browser calls the API; the API owns access to persistent data. During local
-development, Vite proxies `/api` requests to FastAPI. See the
-[system overview](docs/architecture/system-overview.md) and
-[domain model](docs/architecture/domain-model.md). The deployed low-cost cloud
-topology is documented in the
-[AWS demo deployment](docs/architecture/aws-demo-deployment.md), and the
-sensitive-data boundary, metrics, initial SLOs, and recovery workflow are in
-[observability and production hardening](docs/architecture/observability.md).
-Phase 1
-verification is recorded in the
-[acceptance record](docs/verification/phase-1-acceptance.md).
-
-## Local setup
-
-### Docker Compose (recommended)
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Open <http://localhost:5173>. The API health endpoint is available at
-<http://localhost:8000/health>.
-
-Stop the stack with:
-
-```bash
-docker compose down
-```
-
-Add `--volumes` only when you intentionally want to remove local database data.
-
-### Run checks locally
-
-Backend dependencies require Python 3.12 or 3.13:
-
-```bash
-cd apps/api
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
-ruff check .
-ruff format --check .
-mypy
-pytest
-```
-
-Frontend:
-
-```bash
-cd apps/web
-pnpm install
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-```
-
-## Configuration
-
-Copy `.env.example` to `.env` for local defaults. `.env` is ignored by Git.
-Production credentials must be supplied through an appropriate secrets system;
-the example values are development-only. Set `OPENAI_API_KEY` to enable live
-document ingestion; leave it empty to keep the embedding-backed worker safely
-unavailable. `REDIS_URL` configures async job dispatch and defaults to the local
-Compose Redis service.
-Docker Compose enables a local development-session issuer by default. That
-issuer uses an in-memory browser token and a development signing secret; disable
-`AUTH_DEVELOPMENT_MODE` and configure a production identity adapter before any
-deployment. For an external provider, configure its HTTPS `AUTH_JWKS_URL`, exact
-`AUTH_JWT_ISSUER`, and API `AUTH_JWT_AUDIENCE`, leaving the local signing secret
-unset.
 
 ## Future direction
 
